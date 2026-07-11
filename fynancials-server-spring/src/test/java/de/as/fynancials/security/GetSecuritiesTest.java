@@ -1,0 +1,425 @@
+package de.as.fynancials.security;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.as.fynancials.security.api.model.PaginatedSecurityReadDto;
+import de.as.fynancials.security.api.model.PriceMetaInfoDto;
+import de.as.fynancials.security.api.model.SecurityLinksDto;
+import de.as.fynancials.security.api.model.SecurityOrderPropertyDto;
+import de.as.fynancials.security.api.model.SecurityReadDto;
+import de.as.fynancials.security.api.model.SecurityTypeDto;
+import de.as.fynancials.security.api.model.SortOrderDto;
+import integration.IntegrationTest;
+import integration.SecurityIds;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.ZoneId;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.when;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlMergeMode;
+import static org.springframework.test.context.jdbc.SqlMergeMode.MergeMode.MERGE;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@IntegrationTest
+class GetSecuritiesTest {
+
+  private static final String ENDPOINT = "/securities";
+  private static final long TOTAL_NUMBER_OF_SECURITIES = 47;
+
+  private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+
+  @Autowired
+  private MockMvc mockMvc;
+
+  @Autowired
+  private SecurityRepository securityRepository;
+
+  @MockitoBean
+  private Clock clock;
+
+  @BeforeEach
+  void setUp() {
+    when(clock.instant()).thenReturn(Instant.parse("2024-01-01T16:37:08Z"));
+    when(clock.getZone()).thenReturn(ZoneId.of("Europe/Berlin"));
+  }
+
+  @Test
+  @SqlMergeMode(MERGE)
+  @Sql(statements = {"DELETE FROM TRANSACTION", "DELETE FROM SECURITY_GROUP", "DELETE FROM HISTORICAL_SECURITY_PRICE",
+      "DELETE FROM HISTORICAL_SECURITY_PRICE_CONFIG"})
+  void getSecurities_emptyDatabase() throws Exception {
+    securityRepository.deleteAll();
+    MvcResult result = getSecurities(null, null).andExpect(status().isNoContent()).andReturn();
+    assertThat(result.getResponse().getContentLength()).isZero();
+  }
+
+  @Test
+  @SqlMergeMode(MERGE)
+  @Sql(statements = {"DELETE FROM TRANSACTION", "DELETE FROM SECURITY_GROUP", "DELETE FROM HISTORICAL_SECURITY_PRICE",
+      "DELETE FROM HISTORICAL_SECURITY_PRICE_CONFIG"})
+  void getSecurities_someContent() throws Exception {
+    Collection<Long> ids = securityRepository.findAll().stream().map(SecurityEntity::getId)
+        .filter(e -> e != SecurityIds.MSFT && e != SecurityIds.ASML).toList();
+    securityRepository.deleteAllById(ids);
+
+    MvcResult result = getSecurities(null, null).andExpect(status().isOk()).andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    SecurityReadDto microsoft = new SecurityReadDto();
+    microsoft.setId(1L);
+    microsoft.setName("Microsoft");
+    microsoft.setIsin("US5949181045");
+    microsoft.setWkn("870747");
+    microsoft.setSymbols(List.of("MSFT", "MSF.DE"));
+    microsoft.setSector("Technology");
+    microsoft.setSecurityType(SecurityTypeDto.STOCK);
+    microsoft.setVersion(1L);
+    microsoft.setLinks(new SecurityLinksDto());
+    microsoft.getLinks().setLogo("/securities/1/logo");
+
+    SecurityReadDto asml = new SecurityReadDto();
+    asml.setId(5L);
+    asml.setName("ASML");
+    asml.setIsin("NL0010273215");
+    asml.setSymbols(List.of());
+    asml.setSecurityType(SecurityTypeDto.STOCK);
+    asml.setVersion(0L);
+    asml.setLinks(new SecurityLinksDto());
+    asml.getLinks().setLogo("/securities/5/logo");
+
+    List<SecurityReadDto> items =
+        objectMapper.readValue(objectMapper.writeValueAsString(responseBody.getItems()), new TypeReference<>() {});
+    assertThat(items).hasSize(2);
+    assertThat(items).contains(microsoft);
+    assertThat(items).contains(asml);
+
+    assertThat(responseBody.getTotal()).isEqualTo(2);
+    assertThat(responseBody.getCurrentPage()).isZero();
+    assertThat(responseBody.getLastPage()).isZero();
+    assertThat(responseBody.getPageSize()).isEqualTo(10);
+  }
+
+  @Test
+  void getSecurities_defaultPage() throws Exception {
+    int expectedDefaultPage = 0;
+    int expectedDefaultPageSize = 10;
+    MvcResult result = getSecurities(null, null).andExpect(status().isOk()).andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    assertThat(responseBody.getTotal()).isEqualTo(TOTAL_NUMBER_OF_SECURITIES);
+    assertThat(responseBody.getCurrentPage()).isEqualTo(expectedDefaultPage);
+    assertThat(responseBody.getLastPage()).isEqualTo(4);
+    assertThat(responseBody.getPageSize()).isEqualTo(expectedDefaultPageSize);
+
+    List<SecurityReadDto> items = responseBody.getItems();
+    assertThat(items).hasSize(10);
+    verifySecurityIds(items, 1, 10);
+  }
+
+  @Test
+  void getSecurities_specificFullPage() throws Exception {
+    int page = 2;
+    MvcResult result = getSecurities(page, null).andExpect(status().isOk()).andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    assertThat(responseBody.getTotal()).isEqualTo(TOTAL_NUMBER_OF_SECURITIES);
+    assertThat(responseBody.getCurrentPage()).isEqualTo(page);
+    assertThat(responseBody.getLastPage()).isEqualTo(4);
+    assertThat(responseBody.getPageSize()).isEqualTo(10);
+
+    List<SecurityReadDto> items = responseBody.getItems();
+    assertThat(items).hasSize(10);
+    verifySecurityIds(items, 21, 30);
+  }
+
+  @Test
+  void getSecurities_withPriceMetaInfo_ok() throws Exception {
+    MvcResult mvcResult = getSecurities(0, 24).andExpect(status().isOk()).andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), new TypeReference<>() {});
+    assertThat(responseBody.getItems()).hasSize(24);
+
+    SecurityReadDto security = responseBody.getItems().get(12);
+    assertThat(security.getId()).isEqualTo(13);
+    assertThat(security.getName()).isEqualTo("Amazon");
+
+    PriceMetaInfoDto priceMetaInfo = security.getPriceMetaInfo();
+    assertThat(priceMetaInfo.getHighTrailingTwelveMonths()).isEqualTo(140.94);
+    assertThat(priceMetaInfo.getLowTrailingTwelveMonths()).isEqualTo(133.32);
+    assertThat(priceMetaInfo.getLatestPrice()).isEqualTo(138.58);
+    assertThat(priceMetaInfo.getCurrency()).isEqualTo("EUR");
+    assertThat(priceMetaInfo.getLatestPriceDate()).isEqualTo(LocalDate.of(2023, Month.DECEMBER, 29));
+
+    security = responseBody.getItems().get(23);
+    assertThat(security.getId()).isEqualTo(24);
+    assertThat(security.getName()).isEqualTo("Pinterest");
+
+    priceMetaInfo = security.getPriceMetaInfo();
+    assertThat(priceMetaInfo.getHighTrailingTwelveMonths()).isEqualTo(38.04);
+    assertThat(priceMetaInfo.getLowTrailingTwelveMonths()).isEqualTo(33.52);
+    assertThat(priceMetaInfo.getLatestPrice()).isEqualTo(37.04);
+    assertThat(priceMetaInfo.getCurrency()).isEqualTo("USD");
+    assertThat(priceMetaInfo.getLatestPriceDate()).isEqualTo(LocalDate.of(2023, Month.DECEMBER, 29));
+  }
+
+  @Test
+  void getSecurities_lastPage() throws Exception {
+    int page = 4;
+    MvcResult result = getSecurities(page, null).andExpect(status().isOk()).andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    assertThat(responseBody.getTotal()).isEqualTo(TOTAL_NUMBER_OF_SECURITIES);
+    assertThat(responseBody.getCurrentPage()).isEqualTo(page);
+    assertThat(responseBody.getLastPage()).isEqualTo(4);
+    assertThat(responseBody.getPageSize()).isEqualTo(10);
+
+    List<SecurityReadDto> items = responseBody.getItems();
+    assertThat(items).hasSize(7);
+    verifySecurityIds(items, 41, 47);
+  }
+
+  @Test
+  void getSecurities_pageIsNegative() throws Exception {
+    MvcResult result = getSecurities(-1, null).andExpect(status().isBadRequest()).andReturn();
+    assertThat(result.getResponse().getContentLength()).isZero();
+  }
+
+  @Test
+  void getSecurities_pageWithoutContent() throws Exception {
+    MvcResult result = getSecurities(100, null).andExpect(status().isNoContent()).andReturn();
+    assertThat(result.getResponse().getContentLength()).isZero();
+  }
+
+  @Test
+  void getSecurities_specificPageSize() throws Exception {
+    MvcResult result = getSecurities(null, 5).andExpect(status().isOk()).andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    assertThat(responseBody.getTotal()).isEqualTo(TOTAL_NUMBER_OF_SECURITIES);
+    assertThat(responseBody.getCurrentPage()).isZero();
+    assertThat(responseBody.getLastPage()).isEqualTo(9);
+    assertThat(responseBody.getPageSize()).isEqualTo(5);
+
+    List<SecurityReadDto> items = responseBody.getItems();
+    assertThat(items).hasSize(5);
+    verifySecurityIds(items, 1, 5);
+  }
+
+  @Test
+  void getSecurities_specificPageAndPageSize() throws Exception {
+    MvcResult result = getSecurities(4, 5).andExpect(status().isOk()).andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    assertThat(responseBody.getTotal()).isEqualTo(TOTAL_NUMBER_OF_SECURITIES);
+    assertThat(responseBody.getCurrentPage()).isEqualTo(4);
+    assertThat(responseBody.getLastPage()).isEqualTo(9);
+    assertThat(responseBody.getPageSize()).isEqualTo(5);
+
+    List<SecurityReadDto> items = responseBody.getItems();
+    assertThat(items).hasSize(5);
+    verifySecurityIds(items, 21, 25);
+  }
+
+  @Test
+  void getSecurities_pageSizeIsZero() throws Exception {
+    MvcResult result = getSecurities(null, 0).andExpect(status().isBadRequest()).andReturn();
+    assertThat(result.getResponse().getContentLength()).isZero();
+  }
+
+  @Test
+  void getSecurities_pageSizeIsNegative() throws Exception {
+    MvcResult result = getSecurities(null, -1).andExpect(status().isBadRequest()).andReturn();
+    assertThat(result.getResponse().getContentLength()).isZero();
+  }
+
+  @Test
+  void getSecurities_pageAndPageSizeAreInvalid() throws Exception {
+    MvcResult result = getSecurities(-1, -1).andExpect(status().isBadRequest()).andReturn();
+    assertThat(result.getResponse().getContentLength()).isZero();
+  }
+
+  @Test
+  void getSecurities_searchBySector() throws Exception {
+    MvcResult mvcResult = getSecurities(null, null, "eal est", null, null).andExpect(status().isOk()).andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    assertThat(responseBody.getTotal()).isEqualTo(8);
+    assertThat(responseBody.getCurrentPage()).isEqualTo(0);
+    assertThat(responseBody.getLastPage()).isEqualTo(0);
+    assertThat(responseBody.getPageSize()).isEqualTo(10);
+
+    List<SecurityReadDto> items = responseBody.getItems();
+    assertThat(items).hasSize(8);
+    Set<String> names = items.stream().map(SecurityReadDto::getName).collect(Collectors.toSet());
+    assertThat(names).contains("Equinix", "American Tower", "Digital Realty", "Gladstone Land", "LTC Properties",
+        "Omega Healthcare", "Orion Office", "Realty Income");
+  }
+
+  @Test
+  void getSecurities_searchByName() throws Exception {
+    MvcResult mvcResult = getSecurities(null, null, "alpha", null, null).andExpect(status().isOk()).andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    assertThat(responseBody.getTotal()).isEqualTo(2);
+    assertThat(responseBody.getCurrentPage()).isEqualTo(0);
+    assertThat(responseBody.getLastPage()).isEqualTo(0);
+    assertThat(responseBody.getPageSize()).isEqualTo(10);
+
+    List<SecurityReadDto> items = responseBody.getItems();
+    assertThat(items).hasSize(2);
+    Set<String> names = items.stream().map(SecurityReadDto::getName).collect(Collectors.toSet());
+    assertThat(names).contains("Alphabet A", "Alphabet C");
+  }
+
+  @Test
+  void searchBySector_orderByName_implicitAscending_lastPage() throws Exception {
+    MvcResult mvcResult =
+        getSecurities(1, null, "technology", SecurityOrderPropertyDto.NAME, null).andExpect(status().isOk())
+            .andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    assertThat(responseBody.getTotal()).isEqualTo(14);
+    assertThat(responseBody.getCurrentPage()).isEqualTo(1);
+    assertThat(responseBody.getLastPage()).isEqualTo(1);
+    assertThat(responseBody.getPageSize()).isEqualTo(10);
+
+    List<SecurityReadDto> items = responseBody.getItems();
+    List<String> expectedNames = List.of("PTC", "Pinterest", "Qualcomm", "Salesforce");
+    assertThat(items).hasSameSizeAs(expectedNames);
+    for (int i = 0; i < items.size(); i++) {
+      assertThat(items.get(i).getName()).isEqualTo(expectedNames.get(i));
+    }
+  }
+
+  @Test
+  void searchBySector_orderByName_explicitAscending_firstPage() throws Exception {
+    MvcResult mvcResult =
+        getSecurities(0, 10, "Financials", SecurityOrderPropertyDto.NAME, SortOrderDto.ASC).andExpect(status().isOk())
+            .andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    assertThat(responseBody.getTotal()).isEqualTo(3);
+    assertThat(responseBody.getCurrentPage()).isEqualTo(0);
+    assertThat(responseBody.getLastPage()).isEqualTo(0);
+    assertThat(responseBody.getPageSize()).isEqualTo(10);
+
+    List<SecurityReadDto> items = responseBody.getItems();
+    List<String> expectedNames = List.of("Block", "Main Street Capital", "S&P Global");
+    assertThat(items).hasSameSizeAs(expectedNames);
+    for (int i = 0; i < items.size(); i++) {
+      assertThat(items.get(i).getName()).isEqualTo(expectedNames.get(i));
+    }
+  }
+
+  /**
+   * 'Health' matches the health sector and 'Omega Healthcare'.
+   */
+  @Test
+  void searchBySectorAndName_orderByName_explicitDescending_firstPage() throws Exception {
+    MvcResult mvcResult =
+        getSecurities(0, 3, "Health", SecurityOrderPropertyDto.NAME, SortOrderDto.DESC).andExpect(status().isOk())
+            .andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    assertThat(responseBody.getTotal()).isEqualTo(5);
+    assertThat(responseBody.getCurrentPage()).isEqualTo(0);
+    assertThat(responseBody.getLastPage()).isEqualTo(1);
+    assertThat(responseBody.getPageSize()).isEqualTo(3);
+
+    List<SecurityReadDto> items = responseBody.getItems();
+    List<String> expectedNames = List.of("UnitedHealth", "Thermo Fisher", "Pfizer");
+    assertThat(items).hasSameSizeAs(expectedNames);
+    for (int i = 0; i < items.size(); i++) {
+      assertThat(items.get(i).getName()).isEqualTo(expectedNames.get(i));
+    }
+  }
+
+  @Test
+  void searchBySymbol() throws Exception {
+    MvcResult mvcResult = getSecurities(null, null, "MSFT", null, null).andExpect(status().isOk()).andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    assertThat(responseBody.getTotal()).isEqualTo(1);
+    assertThat(responseBody.getCurrentPage()).isEqualTo(0);
+    assertThat(responseBody.getLastPage()).isEqualTo(0);
+    assertThat(responseBody.getPageSize()).isEqualTo(10);
+
+    assertThat(responseBody.getItems()).hasSize(1);
+    assertThat(responseBody.getItems().get(0).getName()).isEqualTo("Microsoft");
+  }
+
+  @Test
+  void search_noResult() throws Exception {
+    MvcResult mvcResult =
+        getSecurities(null, null, "thisYieldsNoResults", null, null).andExpect(status().isNoContent()).andReturn();
+    assertThat(mvcResult.getResponse().getContentLength()).isZero();
+  }
+
+  private ResultActions getSecurities(Integer page, Integer pageSize) throws Exception {
+    MockHttpServletRequestBuilder requestBuilder = get(ENDPOINT);
+    if (page != null) {
+      requestBuilder = requestBuilder.queryParam("page", page.toString());
+    }
+    if (pageSize != null) {
+      requestBuilder = requestBuilder.queryParam("pageSize", pageSize.toString());
+    }
+    return mockMvc.perform(requestBuilder);
+  }
+
+  private ResultActions getSecurities(Integer page, Integer pageSize, String search, SecurityOrderPropertyDto orderBy,
+                                      SortOrderDto order) throws Exception {
+    MockHttpServletRequestBuilder requestBuilder = get(ENDPOINT);
+    if (page != null) {
+      requestBuilder = requestBuilder.queryParam("page", page.toString());
+    }
+    if (pageSize != null) {
+      requestBuilder = requestBuilder.queryParam("pageSize", pageSize.toString());
+    }
+    if (search != null) {
+      requestBuilder = requestBuilder.queryParam("search", search);
+    }
+    if (orderBy != null) {
+      requestBuilder = requestBuilder.queryParam("orderBy", orderBy.getValue());
+    }
+    if (order != null) {
+      requestBuilder = requestBuilder.queryParam("order", order.getValue());
+    }
+    return mockMvc.perform(requestBuilder);
+  }
+
+  private void verifySecurityIds(List<SecurityReadDto> securities, long minId, long maxId) {
+    Set<Long> ids = securities.stream().map(SecurityReadDto::getId).collect(Collectors.toSet());
+
+    for (long id = minId; id <= maxId; id++) {
+      assertThat(ids).contains(id);
+    }
+  }
+}

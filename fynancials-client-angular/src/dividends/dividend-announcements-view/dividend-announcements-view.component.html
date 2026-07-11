@@ -1,0 +1,15 @@
+<mat-accordion multi="true">
+    @for (week of weeks; track week) {
+        <mat-expansion-panel [expanded]="week === weeks[0]"
+                             class="week">
+            <mat-expansion-panel-header>
+                <mat-panel-title *ngrxLet="dividendAnnouncementsByWeek[week].length as announcements">
+                    Week of {{ week | fyDate }} ({{ announcements }} Dividend
+                    Announcement{{ announcements === 1 ? '' : 's' }})
+                </mat-panel-title>
+            </mat-expansion-panel-header>
+            <app-dividend-announcements-week [dividendAnnouncements]="dividendAnnouncementsByWeek[week]">
+            </app-dividend-announcements-week>
+        </mat-expansion-panel>
+    }
+</mat-accordion>

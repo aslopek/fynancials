@@ -1,0 +1,20 @@
+<div class="wrapper">
+    <div class="data-source-list">
+        @for (dataSource of dataSources(); track dataSource.id) {
+            <app-data-source-card [dataSource]="dataSource"
+                                  (remove)="delete($event)">
+            </app-data-source-card>
+        }
+        <app-data-source-card dataSource="new">
+        </app-data-source-card>
+    </div>
+    <div class="detail-view">
+        @if (showApiKeyOnly()) {
+            <app-data-source-api-key>
+            </app-data-source-api-key>
+        } @else {
+            <app-data-source-details [dataSourceVariant]="dataSourceVariant()">
+            </app-data-source-details>
+        }
+    </div>
+</div>

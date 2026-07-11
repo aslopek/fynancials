@@ -1,0 +1,42 @@
+@use '../../../styles' as styles;
+
+.performance-label {
+  display: flex;
+  flex-direction: row;
+  align-content: center;
+  align-items: center;
+}
+
+// use em instead of rem: border-radius/padding below are in em so the pill shape scales with this element's own font-size
+h4 {
+  font-weight: 500;
+  font-size: 0.95em;
+  margin: 0;
+}
+
+.performance-positive {
+  background-color: styles.$color-positive-tint;
+  color: styles.$color-positive;
+}
+
+.performance-negative {
+  background-color: styles.$color-negative-tint;
+  color: styles.$color-negative;
+}
+
+.padding {
+  padding: 0.15em 0.7em;
+}
+
+.absolute-performance-hidden {
+  border-radius: 1em;
+}
+
+.relative-performance {
+  border-radius: 1em 0 0 1em;
+  border-right: 0.0625rem solid rgba(255, 255, 255, 0.2);
+}
+
+.absolute-performance {
+  border-radius: 0 1em 1em 0;
+}

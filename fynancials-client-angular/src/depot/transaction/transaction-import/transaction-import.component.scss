@@ -1,0 +1,14 @@
+.title-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.stepper {
+  overflow: auto;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+}

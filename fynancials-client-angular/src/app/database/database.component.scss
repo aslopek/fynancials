@@ -1,0 +1,43 @@
+.database-content {
+  height: 100%;
+  width: 100%;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.drawer {
+  height: 100%;
+  width: 100%;
+  flex-grow: unset;
+}
+
+.side-panel {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.side-panel-toggle-button {
+  flex-direction: row-reverse;
+  padding: 0;
+}
+
+.side-panel-text {
+  margin-top: 0;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: row;
+}
+
+.copy-button {
+  cursor: pointer;
+  transform: scale(0.75);
+}

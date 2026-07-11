@@ -1,0 +1,53 @@
+<div class="content">
+    <h3>New Securities</h3>
+    @if (transactionImportStore.unknownSecurities().length === 0) {
+        <p>No new securities will be created.</p>
+    } @else {
+        <table class="securities-table">
+            <tr>
+                <th>Name</th>
+                <th>ISIN</th>
+                <th>Symbol</th>
+            </tr>
+            @for (security of transactionImportStore.unknownSecurities(); track security.isin) {
+                <tr>
+                    <td>{{ security.name }}</td>
+                    <td>{{ security.isin }}</td>
+                    <td>{{ security.symbols[0] ?? '' }}</td>
+                </tr>
+            }
+        </table>
+    }
+
+    <h3>Transactions</h3>
+    @let preview = transactionImportStore.importPreview();
+    @if (preview.countsByType.length === 0) {
+        <p>No importable transactions found.</p>
+    } @else {
+        <ul>
+            @for (item of preview.countsByType; track item.transactionType) {
+                <li>{{ item.transactionType | transactionTypeDisplayName }}: {{ item.count }}</li>
+            }
+        </ul>
+        @if (preview.minDate !== null && preview.maxDate !== null) {
+            <p>Date range: {{ preview.minDate | fyDate }} - {{ preview.maxDate | fyDate }}</p>
+        }
+    }
+
+    @if (preview.skipped.length > 0) {
+        <h3>Skipped Rows</h3>
+        <ul>
+            @for (skipped of preview.skipped; track skipped.reason) {
+                <li>{{ skipped.reason }}: {{ skipped.count }}</li>
+            }
+        </ul>
+    }
+
+    <button (click)="startImport()"
+            class="next-button"
+            color="primary"
+            mat-flat-button
+            matStepperNext>
+        Start Import
+    </button>
+</div>

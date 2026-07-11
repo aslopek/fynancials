@@ -1,0 +1,758 @@
+databaseChangeLog:
+  - changeSet:
+      id: 12
+      author: Armin Slopek
+      description: Add some historical security price data sources
+      changes:
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE
+            columns:
+              - column:
+                  name: ID
+                  valueNumeric: 1
+              - column:
+                  name: CREATED_AT
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: UPDATED_AT
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: VERSION
+                  valueNumeric: 0
+              - column:
+                  name: NAME
+                  value: Twelve Data
+              - column:
+                  name: JSON_PATH_DATE
+                  value: $.values[*].datetime
+              - column:
+                  name: DATE_FORMAT
+                  value: yyyy-MM-dd
+              - column:
+                  name: JSON_PATH_VALUE
+                  value: $.values[*].close
+              - column:
+                  name: JSON_PATH_CURRENCY
+                  value: $.meta.currency
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_URL
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'Twelve Data')"
+              - column:
+                  name: TIMESPAN_IN_DAYS
+                  valueNumeric: 30
+              - column:
+                  name: URL_PATTERN
+                  value: "https://api.twelvedata.com/time_series?symbol=#id()&interval=1day&apikey=#mask()&outputsize=30"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_URL
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'Twelve Data')"
+              - column:
+                  name: TIMESPAN_IN_DAYS
+                  valueNumeric: 90
+              - column:
+                  name: URL_PATTERN
+                  value: "https://api.twelvedata.com/time_series?symbol=#id()&interval=1day&apikey=#mask()&outputsize=90"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_URL
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'Twelve Data')"
+              - column:
+                  name: TIMESPAN_IN_DAYS
+                  valueNumeric: 365
+              - column:
+                  name: URL_PATTERN
+                  value: "https://api.twelvedata.com/time_series?symbol=#id()&interval=1day&apikey=#mask()&outputsize=365"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_URL
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'Twelve Data')"
+              - column:
+                  name: TIMESPAN_IN_DAYS
+                  valueNumeric: 1825
+              - column:
+                  name: URL_PATTERN
+                  value: "https://api.twelvedata.com/time_series?symbol=#id()&interval=1day&apikey=#mask()&outputsize=1825"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_URL
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'Twelve Data')"
+              - column:
+                  name: TIMESPAN_IN_DAYS
+                  valueNumeric: 3650
+              - column:
+                  name: URL_PATTERN
+                  value: "https://api.twelvedata.com/time_series?symbol=#id()&interval=1day&apikey=#mask()&outputsize=3650"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_URL
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'Twelve Data')"
+              - column:
+                  name: TIMESPAN_IN_DAYS
+                  valueNumeric: 5000
+              - column:
+                  name: URL_PATTERN
+                  value: "https://api.twelvedata.com/time_series?symbol=#id()&interval=1day&apikey=#mask()&outputsize=5000"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_MARKET_CLOSE_TIME
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'Twelve Data')"
+              - column:
+                  name: TIME_ZONE
+                  value: America/New_York
+              - column:
+                  name: TIME
+                  value: "16:00:00"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_MARKET_CLOSE_TIME
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'Twelve Data')"
+              - column:
+                  name: TIME_ZONE
+                  value: Europe/Berlin
+              - column:
+                  name: TIME
+                  value: "22:00:00"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'Twelve Data')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: GBp
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: GBP
+              - column:
+                  name: MULTIPLIER
+                  valueNumeric: 0.01
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'Twelve Data')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: GBX
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: GBP
+              - column:
+                  name: MULTIPLIER
+                  valueNumeric: 0.01
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'Twelve Data')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: ILA
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: ILS
+              - column:
+                  name: MULTIPLIER
+                  valueNumeric: 0.01
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE
+            columns:
+              - column:
+                  name: ID
+                  valueNumeric: 2
+              - column:
+                  name: CREATED_AT
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: UPDATED_AT
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: VERSION
+                  valueNumeric: 0
+              - column:
+                  name: NAME
+                  value: EODHD
+              - column:
+                  name: JSON_PATH_DATE
+                  value: $[*].date
+              - column:
+                  name: DATE_FORMAT
+                  value: yyyy-MM-dd
+              - column:
+                  name: JSON_PATH_VALUE
+                  value: $[*].close
+              - column:
+                  name: REGEX_CURRENCY
+                  value: '\.([A-Z0-9]+)$'
+              - column:
+                  name: REGEX_CURRENCY_GROUP
+                  valueNumeric: 1
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_URL
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: TIMESPAN_IN_DAYS
+                  valueNumeric: 7
+              - column:
+                  name: URL_PATTERN
+                  value: "https://eodhd.com/api/technical/#id()?from=#date(yyyy-MM-dd,7)&function=splitadjusted&api_token=#mask()&fmt=json"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_URL
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: TIMESPAN_IN_DAYS
+                  valueNumeric: 30
+              - column:
+                  name: URL_PATTERN
+                  value: "https://eodhd.com/api/technical/#id()?from=#date(yyyy-MM-dd,30)&function=splitadjusted&api_token=#mask()&fmt=json"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_URL
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: TIMESPAN_IN_DAYS
+                  valueNumeric: 365
+              - column:
+                  name: URL_PATTERN
+                  value: "https://eodhd.com/api/technical/#id()?from=#date(yyyy-MM-dd,365)&function=splitadjusted&api_token=#mask()&fmt=json"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_URL
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: TIMESPAN_IN_DAYS
+                  valueNumeric: 1825
+              - column:
+                  name: URL_PATTERN
+                  value: "https://eodhd.com/api/technical/#id()?from=#date(yyyy-MM-dd,1825)&function=splitadjusted&api_token=#mask()&fmt=json"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_URL
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: TIMESPAN_IN_DAYS
+                  valueNumeric: 3650
+              - column:
+                  name: URL_PATTERN
+                  value: "https://eodhd.com/api/technical/#id()?from=#date(yyyy-MM-dd,3650)&function=splitadjusted&api_token=#mask()&fmt=json"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_URL
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: TIMESPAN_IN_DAYS
+                  valueNumeric: 999999
+              - column:
+                  name: URL_PATTERN
+                  value: "https://eodhd.com/api/technical/#id()?function=splitadjusted&api_token=#mask()&fmt=json"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_MARKET_CLOSE_TIME
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: TIME_ZONE
+                  value: America/New_York
+              - column:
+                  name: TIME
+                  value: "16:00:00"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_MARKET_CLOSE_TIME
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: TIME_ZONE
+                  value: Europe/Berlin
+              - column:
+                  name: TIME
+                  value: "22:00:00"
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: US
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: USD
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: TO
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: CAD
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: V
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: CAD
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: NEO
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: CAD
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: SA
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: BRL
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: XETRA
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: F
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: VI
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: STU
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: MU
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: HA
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: DU
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: HM
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: LSE
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: GBP
+              - column:
+                  name: MULTIPLIER
+                  valueNumeric: 0.01
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: PA
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: AM
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: BR
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: LS
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: SW
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: CHF
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: MI
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: MC
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: IR
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: ST
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: SEK
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: CO
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: DKK
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: OL
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: NOK
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: HE
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: EUR
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: WAR
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: PLN
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: TA
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: ILS
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: T
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: JPY
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: HK
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: HKD
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: SHG
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: CNY
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: SHE
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: CNY
+
+        - insert:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  valueComputed: "(SELECT ID FROM HISTORICAL_SECURITY_PRICE_DATA_SOURCE WHERE NAME = 'EODHD')"
+              - column:
+                  name: CURRENCY_KEY
+                  value: ASX
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  value: AUD

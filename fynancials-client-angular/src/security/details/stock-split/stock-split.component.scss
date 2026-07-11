@@ -1,0 +1,26 @@
+.wrapper {
+  padding: 1rem;
+  margin-top: 2rem;
+  overflow-x: hidden;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.stock-split-item {
+  padding-right: 50%;
+  min-width: 15rem;
+  overflow-x: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.margin-right {
+  margin-right: 1rem;
+}
+
+.clickable {
+  cursor: pointer;
+}

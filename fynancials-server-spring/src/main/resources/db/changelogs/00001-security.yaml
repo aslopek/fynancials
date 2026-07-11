@@ -1,0 +1,86 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: Armin Slopek
+      changes:
+        - createTable:
+            tableName: SECURITY
+            columns:
+              - column:
+                  name: ID
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: UPDATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: VERSION
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ISIN
+                  type: VARCHAR(12)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: NAME
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: WKN
+                  type: VARCHAR(6)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: SECTOR
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: SECURITY_TYPE
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: SECURITY_SYMBOL
+            columns:
+              - column:
+                  name: SECURITY_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: FK_SECURITY_SYMBOL
+                    referencedTableName: SECURITY
+                    referencedColumnNames:
+                      - ID
+              - column:
+                  name: SYMBOL
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+
+        - addUniqueConstraint:
+            tableName: SECURITY_SYMBOL
+            constraintName: UNIQUE_SECURITY_SYMBOL_SYMBOL
+            columnNames: SYMBOL
+            validate: true
+
+        - addPrimaryKey:
+            tableName: SECURITY_SYMBOL
+            constraintName: PK_SECURITY_SYMBOL
+            columnNames: SECURITY_ID, SYMBOL
+            validate: true

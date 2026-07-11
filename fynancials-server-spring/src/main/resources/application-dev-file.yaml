@@ -1,0 +1,7 @@
+spring:
+  datasource:
+    url: jdbc:h2:file:${FY_DB_FILE_PATH:~/fynancials};TRACE_LEVEL_FILE=0
+    username: admin
+    password: admin
+  liquibase:
+    change-log: classpath:db/liquibase.xml

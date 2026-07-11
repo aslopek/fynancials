@@ -1,0 +1,86 @@
+@if (dataAvailable()) {
+    <mat-button-toggle-group class="range-toggle-group">
+        <mat-button-toggle (click)="changeDataRange('max')"
+                           [checked]="dataRange() === 'max'">
+            Max
+        </mat-button-toggle>
+
+        <mat-button-toggle (click)="changeDataRange('ytd')"
+                           [checked]="dataRange() === 'ytd'">
+            YTD
+        </mat-button-toggle>
+
+        <mat-button-toggle (click)="changeDataRange('1w')"
+                           [checked]="dataRange() === '1w'">
+            1W
+        </mat-button-toggle>
+
+        <mat-button-toggle (click)="changeDataRange('1m')"
+                           [checked]="dataRange() === '1m'">
+            1M
+        </mat-button-toggle>
+
+        <mat-button-toggle (click)="changeDataRange('3m')"
+                           [checked]="dataRange() === '3m'">
+            3M
+        </mat-button-toggle>
+
+        <mat-button-toggle (click)="changeDataRange('6m')"
+                           [checked]="dataRange() === '6m'">
+            6M
+        </mat-button-toggle>
+
+        <mat-button-toggle (click)="changeDataRange('1y')"
+                           [checked]="dataRange() === '1y'">
+            1Y
+        </mat-button-toggle>
+
+        <mat-button-toggle (click)="changeDataRange('2y')"
+                           [checked]="dataRange() === '2y'">
+            2Y
+        </mat-button-toggle>
+
+        <mat-button-toggle (click)="changeDataRange('3y')"
+                           [checked]="dataRange() === '3y'">
+            3Y
+        </mat-button-toggle>
+
+        <mat-button-toggle (click)="changeDataRange('5y')"
+                           [checked]="dataRange() === '5y'">
+            5Y
+        </mat-button-toggle>
+
+        <mat-button-toggle (click)="changeDataRange('10y')"
+                           [checked]="dataRange() === '10y'">
+            10Y
+        </mat-button-toggle>
+    </mat-button-toggle-group>
+
+    @if (isLoading()) {
+        <mat-progress-bar mode="query"
+                          color="accent"
+                          class="progress-bar">
+        </mat-progress-bar>
+    }
+
+    <div (chartInit)="onChartInit($event)"
+         [options]="prices() | historicalPriceChart : percent()"
+         class="chart"
+         echarts>
+    </div>
+
+    <div class="chart-footer">
+        <div class="chart-footer__inner">
+            <app-currency-select (onCurrencySelect)="changeCurrency($event)">
+            </app-currency-select>
+
+            <mat-checkbox class="chart-footer__checkbox"
+                          [checked]="percent()"
+                          (change)="usePercent($event.checked)">
+                Show as Percent Change
+            </mat-checkbox>
+        </div>
+    </div>
+} @else {
+    <p class="no-data">No price data available</p>
+}

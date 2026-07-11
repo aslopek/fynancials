@@ -1,0 +1,25 @@
+@use '../../../styles' as styles;
+
+.security-group-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 30rem;
+}
+
+.hint {
+  color: styles.$color-muted-text;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.error {
+  color: styles.$color-error;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+}

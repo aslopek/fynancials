@@ -1,0 +1,27 @@
+<div class="wrapper">
+    <p>
+        Please confirm the name of the depot you would like to delete:
+    </p>
+    <p>
+        {{ depot().name }}
+    </p>
+    <mat-form-field>
+        <mat-label>Confirm Depot Name</mat-label>
+        <input #confirmDepotName
+               matInput
+               type="text">
+    </mat-form-field>
+    <div class="button-group">
+        <button (click)="deleteDepot()"
+                [disabled]="depot().name !== confirmDepotName.value"
+                color="warn"
+                mat-flat-button>
+            Delete
+        </button>
+        <button (click)="cancel()"
+                color="primary"
+                mat-stroked-button>
+            Cancel
+        </button>
+    </div>
+</div>

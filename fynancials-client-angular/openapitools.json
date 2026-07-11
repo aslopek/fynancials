@@ -1,0 +1,70 @@
+{
+  "$schema": "./node_modules/@openapitools/openapi-generator-cli/config.schema.json",
+  "spaces": 2,
+  "generator-cli": {
+    "version": "7.23.0",
+    "storageDir": "../openapigen",
+    "generators": {
+      "fynancials-configuration": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/configuration",
+        "inputSpec": "../fynancials-api/configuration.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "fynancials-configuration-security-group": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/configuration-security-group",
+        "inputSpec": "../fynancials-api/configuration-security-group.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "fynancials-depot": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/depot",
+        "inputSpec": "../fynancials-api/depot.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "fynancials-depot-dividend": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/depot-dividend",
+        "inputSpec": "../fynancials-api/depot-dividend.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "fynancials-depot-performance": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/depot-performance",
+        "inputSpec": "../fynancials-api/depot-performance.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "fynancials-depot-position": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/depot-position",
+        "inputSpec": "../fynancials-api/depot-position.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "fynancials-depot-transaction": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/depot-transaction",
+        "inputSpec": "../fynancials-api/depot-transaction.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "fynancials-historical-security-price": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/historical-security-price",
+        "inputSpec": "../fynancials-api/historical-security-price.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "fynancials-notification-dividend-announcement": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/notification/dividend-announcement",
+        "inputSpec": "../fynancials-api/notification-dividend-announcement.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "fynancials-security": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/security",
+        "inputSpec": "../fynancials-api/security.yaml",
+        "config": "api/openapi-config.json"
+      }
+    }
+  }
+}

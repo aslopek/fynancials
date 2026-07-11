@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main, next-release ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  versions-in-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: node scripts/check-versions.js
+
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/dependency-review-action@v5
+        with:
+          allow-licenses: >-
+            MIT, ISC, Apache-2.0, BSD-2-Clause, BSD-3-Clause, 0BSD, BlueOak-1.0.0,
+            CC0-1.0, Unlicense, MPL-2.0, EPL-1.0, EPL-2.0
+
+  api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fynancials-api
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: '25'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: fynancials-api/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  angular-client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fynancials-client-angular
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: '25'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: fynancials-client-angular/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test
+      - run: npm run licenses:check
+
+  spring-server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fynancials-server-spring
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: '25'
+          cache: maven
+      - run: mvn -B verify

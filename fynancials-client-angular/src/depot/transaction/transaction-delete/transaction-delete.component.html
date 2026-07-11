@@ -1,0 +1,25 @@
+<div class="wrapper">
+    <h2>Do you really want to delete this transaction?</h2>
+
+    <p>{{ securityName }}</p>
+
+    <p>
+        <mat-icon fontIcon="{{transaction.transactionType | transactionTypeDisplayIcon}}"></mat-icon>
+        {{ transaction.transactionType | transactionTypeDisplayName }}
+    </p>
+
+    <p>Transaction Date: {{ transaction.date | fyDate }}</p>
+
+    <div class="button-group">
+        <button (click)="deleteTransaction()"
+                color="warn"
+                mat-flat-button>
+            Delete
+        </button>
+        <button (click)="cancel()"
+                color="primary"
+                mat-stroked-button>
+            Cancel
+        </button>
+    </div>
+</div>

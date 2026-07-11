@@ -1,0 +1,10 @@
+<mat-form-field>
+    <mat-label>Currency</mat-label>
+    <mat-select [value]="undefined"
+                (selectionChange)="changeCurrency($event.value)">
+        <mat-option [value]="undefined">No Currency Selected</mat-option>
+        @for (currency of currencies; track currency) {
+            <mat-option [value]="currency">{{ currency | fyCurrencySymbol }} {{ currency }}</mat-option>
+        }
+    </mat-select>
+</mat-form-field>

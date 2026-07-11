@@ -1,0 +1,152 @@
+openapi: 3.0.3
+info:
+  title: Configuration API
+  description: The API definitions for reading and manipulation the application's configuration
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:23726'
+    description: Locally serving the API
+
+paths:
+  /config/security-groups:
+    post:
+      tags:
+        - SecurityGroup
+      operationId: createSecurityGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecurityGroupCreate'
+      responses:
+        '201':
+          description: Successfully created the security group
+          headers:
+            location:
+              required: true
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityGroupRead'
+        '400':
+          description: Passed invalid parameters
+        '409':
+          description: A security group with the same name exists already
+    get:
+      tags:
+        - SecurityGroup
+      operationId: getSecurityGroups
+      responses:
+        '200':
+          description: Successfully retrieved the security groups
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: false
+                minItems: 0
+                items:
+                  $ref: '#/components/schemas/SecurityGroupRead'
+
+  /config/security-groups/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: identifies the security group
+        schema:
+          $ref: '#/components/schemas/Id'
+    put:
+      tags:
+        - SecurityGroup
+      operationId: updateSecurityGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecurityGroupUpdate'
+      responses:
+        '200':
+          description: Successfully updated the security group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityGroupRead'
+        '400':
+          description: Passed invalid parameters
+        '404':
+          description: No security group with the given ID exists
+        '409':
+          description: Conflict while updating security group (e.g. name already in use, optimistic locking failed)
+    delete:
+      tags:
+        - SecurityGroup
+      operationId: deleteSecurityGroup
+      responses:
+        '204':
+          description: Successfully deleted the security group
+        '404':
+          description: No security group with the given ID exists
+
+
+components:
+  schemas:
+    Id:
+      type: integer
+      format: int64
+      nullable: false
+      minimum: 1
+      example: 1
+
+    Version:
+      description: Required for the optimistic locking mechanism
+      type: integer
+      format: int64
+      nullable: false
+      minimum: 0
+      example: 1
+
+    SecurityGroupCreate:
+      type: object
+      nullable: false
+      required:
+        - name
+        - securities
+      properties:
+        name:
+          type: string
+          nullable: false
+          minLength: 1
+          maxLength: 255
+        securities:
+          type: array
+          nullable: false
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/Id'
+
+    SecurityGroupUpdate:
+      allOf:
+        - $ref: '#/components/schemas/SecurityGroupCreate'
+        - type: object
+          nullable: false
+          required:
+            - version
+          properties:
+            version:
+              $ref: '#/components/schemas/Version'
+
+    SecurityGroupRead:
+      allOf:
+        - $ref: '#/components/schemas/SecurityGroupUpdate'
+        - type: object
+          nullable: false
+          required:
+            - id
+          properties:
+            id:
+              $ref: '#/components/schemas/Id'

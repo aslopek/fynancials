@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 4
+      author: Armin Slopek
+      changes:
+        - createTable:
+            tableName: SECURITY_LOGO
+            columns:
+              - column:
+                  name: ID
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: UPDATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: LOGO
+                  type: BLOB
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: FK_SECURITY_LOGO
+            baseTableName: SECURITY_LOGO
+            baseColumnNames: ID
+            referencedTableName: SECURITY
+            referencedColumnNames: ID
+            onDelete: CASCADE

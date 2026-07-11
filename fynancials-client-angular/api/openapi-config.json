@@ -1,0 +1,5 @@
+{
+  "enumPropertyNaming": "UPPERCASE",
+  "serviceFileSuffix": ".api",
+  "serviceSuffix": "Api"
+}

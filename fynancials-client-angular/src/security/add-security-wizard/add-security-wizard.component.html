@@ -1,0 +1,65 @@
+<app-title-toolbar (onClose)="cancel()"
+                   title="Add Security">
+</app-title-toolbar>
+
+<mat-stepper class="stepper"
+             linear>
+    <mat-step class="step"
+              label="Master Data"
+              [completed]="addSecurityWizardStore.masterDataStepOk()">
+        <app-security-master-data (masterDataChanged)="addSecurityWizardStore.setMasterData($event)"
+                                  (logoChanged)="addSecurityWizardStore.setLogo($event)">
+        </app-security-master-data>
+
+        <button class="next-button"
+                [disabled]="!addSecurityWizardStore.masterDataStepOk()"
+                mat-button
+                matStepperNext>
+            Next
+        </button>
+    </mat-step>
+
+    <mat-step class="step"
+              label="Historical Prices"
+              [completed]="addSecurityWizardStore.historicalSecurityPriceConfigStepOk()">
+        <app-historical-price-config (configChanged)="addSecurityWizardStore.setHistoricalSecurityPriceConfig($event)">
+        </app-historical-price-config>
+
+        <button class="next-button"
+                mat-button
+                matStepperNext
+                [disabled]="!addSecurityWizardStore.historicalSecurityPriceConfigStepOk()">
+            Next
+        </button>
+    </mat-step>
+
+    <mat-step class="step"
+              label="Dividend Announcements"
+              [completed]="addSecurityWizardStore.dividendAnnouncementConfigStepOk()">
+        <app-dividend-announcement-config
+                (configChanged)="addSecurityWizardStore.setDividendAnnouncementConfig($event)"></app-dividend-announcement-config>
+
+        <button class="next-button"
+                mat-button
+                matStepperNext
+                [disabled]="!addSecurityWizardStore.dividendAnnouncementConfigStepOk()">
+            Next
+        </button>
+    </mat-step>
+
+    <mat-step class="step"
+              label="Summary"
+              [completed]="false">
+        <app-summary [masterData]="addSecurityWizardStore.masterData()"
+                     [historicalSecurityPriceConfig]="addSecurityWizardStore.historicalSecurityPriceConfig() ?? undefined"
+                     [dividendAnnouncementConfig]="addSecurityWizardStore.dividendAnnouncementConfig() ?? undefined">
+        </app-summary>
+
+        <button mat-flat-button
+                color="primary"
+                (click)="complete()"
+                [disabled]="!addSecurityWizardStore.allStepsOk()">
+            Complete
+        </button>
+    </mat-step>
+</mat-stepper>

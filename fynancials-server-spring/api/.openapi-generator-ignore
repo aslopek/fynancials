@@ -1,0 +1,3 @@
+src/main/java/org/openapitools/OpenApiGeneratorApplication.java
+src/main/resources/application.properties
+src/test/java/org/openapitools/OpenApiGeneratorApplicationTests.java

@@ -1,0 +1,19 @@
+.title-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.content {
+}
+
+.form-button {
+  margin-left: 1rem;
+}
+
+.loading-spinner {
+  margin: 1rem;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}

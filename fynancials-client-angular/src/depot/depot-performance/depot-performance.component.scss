@@ -1,0 +1,55 @@
+@use '../../styles' as styles;
+
+$tab-bar-height: 3rem;
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+.wrapper {
+  overflow-x: hidden;
+  height: calc(100vh - #{styles.$app-header-height} - #{$tab-bar-height});
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.container-flex {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+  height: 0;
+
+  .left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 0 0 calc(80% - 0.5rem);
+    overflow-y: auto;
+    min-height: 0;
+
+    &:only-child {
+      flex: 1 1 100%;
+    }
+  }
+
+  .right-column {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+app-transaction-overview {
+  display: block;
+  margin-bottom: 2rem !important;
+}
+
+.margin-bottom {
+  margin-bottom: 1rem;
+}

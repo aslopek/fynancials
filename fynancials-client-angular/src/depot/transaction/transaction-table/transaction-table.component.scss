@@ -1,0 +1,47 @@
+.menu-bar {
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.type-column {
+  display: flex;
+  align-items: center;
+}
+
+.type-column-icon {
+  margin-right: 0.5rem;
+}
+
+.type-filter {
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+
+.security-name-filter {
+  flex: 1 1 auto;
+  min-width: 12rem;
+  max-width: 25rem;
+}
+
+.security-name-filter-additional-selection {
+  opacity: 0.75;
+  font-size: 0.75rem;
+}
+
+.table-actions {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.button-column {
+  width: 6rem;
+  min-width: 6rem;
+  max-width: 6rem;
+}
+
+.full-width {
+  width: 100%;
+}

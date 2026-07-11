@@ -1,0 +1,37 @@
+package de.as.fynancials.depot.transaction;
+
+import de.as.fynancials.common.error.BadRequestException;
+import de.as.fynancials.common.error.ConflictException;
+import de.as.fynancials.common.error.NoContentException;
+import de.as.fynancials.common.error.NotFoundException;
+import de.as.fynancials.common.pagination.PageContainer;
+import de.as.fynancials.depot.transaction.api.model.TransactionTypeDto;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Set;
+
+public interface TransactionService {
+
+  Transaction createTransaction(Long depotId, Transaction transaction) throws BadRequestException;
+
+  Transaction getTransactions(Long depotId, Long transactionId) throws NotFoundException;
+
+  List<Transaction> getTransactions(Set<Long> depotIds, Set<TransactionTypeDto> transactionTypes)
+      throws BadRequestException;
+
+  List<Transaction> getTransactions(Set<Long> depotIds, Set<Long> securityIds, Set<TransactionTypeDto> transactionTypes)
+      throws BadRequestException;
+
+  PageContainer<Transaction> getTransactions(TransactionPageRequest request)
+      throws BadRequestException, NoContentException;
+
+  List<Transaction> getTransactions(Long depotId, TransactionTypeDto transactionType, LocalDate date);
+
+  Transaction updateTransaction(Transaction transaction)
+      throws BadRequestException, ConflictException, NotFoundException;
+
+  void splitAdjustment(Long securityId, BigDecimal multiplier, LocalDate exDate);
+
+  void deleteTransaction(Long depotId, Long transactionId) throws NotFoundException;
+}

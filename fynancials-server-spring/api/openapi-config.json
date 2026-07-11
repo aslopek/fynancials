@@ -1,0 +1,12 @@
+{
+  "useSpringBoot3": true,
+  "useJakartaEe": true,
+  "sourceFolder": "src/main/java",
+  "modelNameSuffix": "Dto",
+  "delegatePattern": true,
+  "useTags": true,
+  "serializableModel": true,
+  "openApiNullable": false,
+  "returnResponse": false,
+  "dateLibrary": "java8"
+}

@@ -1,0 +1,19 @@
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <include file="/db/changelogs/00001-security.yaml"/>
+    <include file="/db/changelogs/00002-exchange-rate.yaml"/>
+    <include file="/db/changelogs/00003-historical-security-price.yaml"/>
+    <include file="/db/changelogs/00004-security-logo.yaml"/>
+    <include file="/db/changelogs/00005-depot.yaml"/>
+    <include file="/db/changelogs/00006-security-group.yaml"/>
+    <include file="/db/changelogs/00007-configuration.yaml"/>
+    <include file="/db/changelogs/00008-stocksplit.yaml"/>
+    <include file="/db/changelogs/00009-dividend-announcement.yaml"/>
+    <include file="/db/changelogs/00010-historical-security-price.yaml"/>
+    <include file="/db/changelogs/00011-dividend-announcement.yaml"/>
+    <include file="/db/changelogs/00012-add-hsp-data-sources.yaml"/>
+    <include file="/db/changelogs/00013-add-example-data.yaml"/>
+</databaseChangeLog>

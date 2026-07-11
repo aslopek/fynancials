@@ -1,0 +1,15 @@
+<div class="wrapper">
+    @if (depotComposition().positions.length > 0) {
+        <div (chartInit)="onChartInit($event)"
+             [options]="depotComposition().positions | positionPieChart : hideAbsoluteValues() : currency() : useBuyIn()"
+             class="chart"
+             echarts>
+        </div>
+        <div class="chart-background">
+            @if (!hideAbsoluteValues()) {
+                <h1 class="title">{{ (useBuyIn() ? depotComposition().buyInAbsolute : depotComposition().currentSizeAbsolute) | fyCurrency:currency() }}</h1>
+            }
+            <h1 class="subtitle">{{ depotComposition().positions.length }} Positions</h1>
+        </div>
+    }
+</div>

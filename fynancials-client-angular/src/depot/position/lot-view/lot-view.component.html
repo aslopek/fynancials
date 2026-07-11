@@ -1,0 +1,41 @@
+<div class="lots-container">
+    @for (lot of lotStore.lots(); track $index) {
+        <div class="lot">
+            <div class="lot-header">
+                {{ lot.securityId | securityName }}
+            </div>
+
+            <div class="row">
+                <span class="row-label">Buy Date/Time</span>
+                <span class="row-value">{{ lot.date | fyDate }} {{ lot.time }}</span>
+            </div>
+
+            <div class="row">
+                <span class="row-label">Holding Period</span>
+                <span class="row-value">{{ (lot.holdingPeriodInDays / 365.25) | fyDecimal }}
+                    years ({{ (lot.holdingPeriodInDays | fyDecimal : '1.0-0') }} days)</span>
+            </div>
+
+            @if (!hideAbsoluteValues()) {
+                <div class="row">
+                    <span class="row-label">Current size</span>
+                    <span class="row-value">{{ lot.currentSizeAbsolute | fyCurrency : lot.currency }}
+                        ({{ lot.count | fyDecimal : '1.0-10' }})</span>
+                </div>
+            }
+
+            <div class="row">
+                <span class="row-label">CAGR</span>
+                <span class="row-value">{{ lot.cagr | fyPercent : '1.2-2' : true }}</span>
+            </div>
+
+            <div class="row">
+                <span class="row-label">Performance</span>
+                <app-performance-label [absolutePerformance]="lot.absolutePerformance"
+                                       [relativePerformance]="lot.relativePerformance * 100"
+                                       [currency]="lot.currency">
+                </app-performance-label>
+            </div>
+        </div>
+    }
+</div>

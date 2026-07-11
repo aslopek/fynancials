@@ -1,0 +1,51 @@
+.wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+  width: 100%;
+}
+
+.chart {
+  height: 100%;
+  width: 80%;
+}
+
+.chart-background {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.wrapper {
+  position: relative;
+}
+
+.wrapper .chart {
+  position: relative;
+}
+
+.wrapper .chart-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
+.chart-background .title {
+  font-weight: 500;
+  font-size: 1.6rem;
+  margin: 0;
+}
+
+.chart-background .subtitle {
+  font-weight: 400;
+  font-size: 1rem;
+  margin: 0.3rem 0 0;
+  opacity: 0.6;
+}

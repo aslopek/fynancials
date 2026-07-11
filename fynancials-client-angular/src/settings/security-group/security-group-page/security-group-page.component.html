@@ -1,0 +1,14 @@
+<div class="wrapper">
+    <div class="security-group-list">
+        @for (securityGroup of securityGroupStore.securityGroups(); track securityGroup.id) {
+            <app-security-group-card [securityGroup]="securityGroup"
+                                     (remove)="delete($event)">
+            </app-security-group-card>
+        }
+        <app-security-group-card securityGroup="new">
+        </app-security-group-card>
+    </div>
+    <div class="detail-view">
+        <app-security-group-details></app-security-group-details>
+    </div>
+</div>

@@ -1,0 +1,267 @@
+openapi: 3.0.3
+
+info:
+  title: Depot API
+  description: The API definitions for querying dividend information
+  version: 1.0.0
+
+servers:
+  - url: 'http://localhost:23726'
+    description: Locally serving the API
+
+paths:
+  /dividends:
+    get:
+      tags:
+        - Dividend
+      parameters:
+        - in: query
+          name: depots
+          required: true
+          schema:
+            type: array
+            nullable: false
+            minItems: 1
+            items:
+              $ref: '#/components/schemas/Id'
+        - in: query
+          name: includeSpecialDividends
+          required: false
+          schema:
+            type: boolean
+            nullable: false
+      operationId: getDividends
+      responses:
+        '200':
+          description: Successfully returned the dividends
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dividends'
+        '400':
+          description: '''
+            - passed invalid query parameters
+            - not all depots have the same currency
+            '''
+
+components:
+  schemas:
+    Id:
+      type: integer
+      format: int64
+      nullable: false
+      minimum: 1
+      example: 1
+
+    Dividends:
+      type: object
+      nullable: false
+      required:
+        - byYear
+        - byQuarter
+        - byMonth
+        - dividendYield
+      properties:
+        byYear:
+          description: Ordered by year ascending.
+          type: array
+          nullable: false
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/DividendsByYear'
+        byQuarter:
+          description: Ordered by year and quarter ascending.
+          type: array
+          nullable: false
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/DividendsByQuarter'
+        byMonth:
+          description: Ordered by year and month ascending.
+          type: array
+          nullable: false
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/DividendsByMonth'
+        dividendYield:
+          description: '''
+            Contains further calculations on the dividend yield for each security with at least three regular dividend
+            payments.
+            '''
+          type: array
+          nullable: false
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/DividendYield'
+
+    DividendBase:
+      type: object
+      nullable: false
+      required:
+        - securityIds
+        - displayName
+      properties:
+        securityIds:
+          description: '''Contains the security IDs associated to this dividend. If more than one ID is provided,
+                          the securityGroupId is provided as well.'''
+          type: array
+          nullable: false
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Id'
+        displayName:
+          description: '''Suggested display name for the dividend. If exactly one security matches this dividend, it is
+                          the security name. Otherwise, it is the security group name.'''
+          type: string
+          nullable: false
+          minLength: 1
+          maxLength: 255
+        securityGroupId:
+          $ref: '#/components/schemas/Id'
+
+    DividendYield:
+      allOf:
+        - $ref: '#/components/schemas/DividendBase'
+        - type: object
+          nullable: false
+          required:
+            - estimatedPaymentGross
+            - estimatedPaymentNet
+            - totalDividendsReceived
+            - currentYieldGross
+            - currentYieldNet
+            - yieldOnCostGross
+            - yieldOnCostNet
+            - regularDividendPaymentsPerYear
+          properties:
+            estimatedPaymentGross:
+              description: Estimated payment per year based on the latest regular payment (gross value).
+              type: number
+              format: double
+              nullable: false
+            estimatedPaymentNet:
+              description: Estimated payment per year based on the latest regular
+              type: number
+              format: double
+              nullable: false
+            currentYieldGross:
+              description: Dividend yield per year based on the latest regular payment (gross value) and current position size.
+              type: number
+              format: double
+              nullable: false
+            currentYieldNet:
+              description: Dividend yield per year based on the latest regular payment (net value) and current position size.
+              type: number
+              format: double
+              nullable: false
+            yieldOnCostGross:
+              description: Dividend yield per year based on the latest regular payment (gross value) and buy-in position size.
+              type: number
+              format: double
+              nullable: false
+            yieldOnCostNet:
+              description: Dividend yield per year based on the latest regular payment (net value) and buy-in position size.
+              type: number
+              format: double
+              nullable: false
+            regularDividendPaymentsPerYear:
+              description: '''
+                The number of regular dividend payments per year. Calculated by comparing the pay dates of the three most
+                recent dividend payments.
+                '''
+              type: integer
+              format: int32
+              nullable: false
+              minimum: 1
+
+    Dividend:
+      allOf:
+        - $ref: '#/components/schemas/DividendBase'
+        - type: object
+          nullable: false
+          required:
+            - absoluteValueGross
+            - absoluteValueNet
+            - relativeValueGross
+            - relativeValueNet
+          properties:
+            absoluteValueGross:
+              type: number
+              format: double
+              nullable: false
+            absoluteValueNet:
+              type: number
+              format: double
+              nullable: false
+            relativeValueGross:
+              description: Percentage 0 < x <= 100
+              type: number
+              format: double
+              nullable: false
+            relativeValueNet:
+              description: Percentage 0 < x <= 100
+              type: number
+              format: double
+              nullable: false
+
+    DividendsByYear:
+      type: object
+      nullable: false
+      required:
+        - year
+        - sumGross
+        - sumNet
+        - dividends
+      properties:
+        year:
+          type: integer
+          format: int32
+          nullable: false
+        sumGross:
+          description: Sum of all dividends.absoluteValueGross
+          type: number
+          format: double
+          nullable: false
+          minimum: 0
+        sumNet:
+          description: Sum of all dividends.absoluteValueNet
+          type: number
+          format: double
+          nullable: false
+          minimum: 0
+        dividends:
+          type: array
+          nullable: false
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/Dividend'
+
+    DividendsByQuarter:
+      allOf:
+        - $ref: '#/components/schemas/DividendsByYear'
+        - type: object
+          nullable: false
+          required:
+            - quarter
+          properties:
+            quarter:
+              type: integer
+              nullable: false
+              format: int32
+              minimum: 1
+              maximum: 4
+
+    DividendsByMonth:
+      allOf:
+        - $ref: '#/components/schemas/DividendsByYear'
+        - type: object
+          nullable: false
+          required:
+            - month
+          properties:
+            month:
+              type: integer
+              nullable: false
+              format: int32
+              minimum: 1
+              maximum: 12

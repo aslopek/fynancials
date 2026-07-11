@@ -1,0 +1,62 @@
+databaseChangeLog:
+  - changeSet:
+      id: 11
+      author: Armin Slopek
+      changes:
+        - renameColumn:
+            tableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+            oldColumnName: JSON_PATH_PAY_DATE
+            newColumnName: JSON_PATH_DATE
+            columnDataType: CLOB
+
+        - renameColumn:
+            tableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+            oldColumnName: JSON_PATH_AMOUNT_PER_SHARE
+            newColumnName: JSON_PATH_VALUE
+            columnDataType: CLOB
+
+        - dropNotNullConstraint:
+            tableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+            columnName: JSON_PATH_CURRENCY
+            columnDataType: CLOB
+
+        - addColumn:
+            tableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+            columns:
+              - column:
+                  name: DATE_FORMAT
+                  type: VARCHAR(255)
+
+        - sql:
+            sql: ALTER TABLE DIVIDEND_ANNOUNCEMENT_DATA_SOURCE ALTER COLUMN ID RESTART WITH 101
+
+        - renameTable:
+            oldTableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_HEADER
+            newTableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_REQUEST_HEADER
+
+        - dropColumn:
+            tableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_REQUEST_HEADER
+            columnName: CREATED_AT
+
+        - dropColumn:
+            tableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_REQUEST_HEADER
+            columnName: UPDATED_AT
+
+        - dropColumn:
+            tableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_CURRENCY_MAPPING
+            columnName: CREATED_AT
+
+        - dropColumn:
+            tableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_CURRENCY_MAPPING
+            columnName: UPDATED_AT
+
+        - dropForeignKeyConstraint:
+            baseTableName: DIVIDEND_ANNOUNCEMENT_CONFIG
+            constraintName: FK_DIVIDEND_ANNOUNCEMENT_CONFIG__DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+
+        - addForeignKeyConstraint:
+            constraintName: FK_DIVIDEND_ANNOUNCEMENT_CONFIG__DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+            baseTableName: DIVIDEND_ANNOUNCEMENT_CONFIG
+            baseColumnNames: DATA_SOURCE_ID
+            referencedTableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+            referencedColumnNames: ID

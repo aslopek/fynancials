@@ -1,0 +1,20 @@
+name: Auto release after Dependabot merge
+
+on:
+  pull_request:
+    types: [ closed ]
+
+permissions:
+  actions: write
+
+jobs:
+  trigger-release:
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh workflow run release.yml --repo "${{ github.repository }}" -f bump=patch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

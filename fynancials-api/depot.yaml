@@ -1,0 +1,234 @@
+openapi: 3.0.3
+
+info:
+  title: Depot API
+  description: The API definitions for managing depots
+  version: 1.0.0
+
+servers:
+  - url: 'http://localhost:23726'
+    description: Locally serving the API
+
+paths:
+  /depots:
+    post:
+      tags:
+        - Depot
+      operationId: createDepot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepotCreate'
+      responses:
+        '201':
+          description: Successfully created the depot
+          headers:
+            location:
+              required: true
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepotRead'
+        '400':
+          description: Passed invalid parameters
+        '409':
+          description: Another depot with the same name exists already
+    get:
+      tags:
+        - Depot
+      operationId: getDepots
+      responses:
+        '200':
+          description: Successfully returned the depots
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: false
+                minItems: 1
+                items:
+                  $ref: '#/components/schemas/DepotRead'
+        '204':
+          description: No depots to return
+
+  /depots/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: identifies the depot
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags:
+        - Depot
+      operationId: getDepot
+      responses:
+        '200':
+          description: Successfully returned the depot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepotRead'
+        '404':
+          description: No depot with the given ID exists
+    put:
+      tags:
+        - Depot
+      operationId: updateDepot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepotUpdate'
+      responses:
+        '200':
+          description: Successfully updated the depot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepotRead'
+        '400':
+          description: Passed invalid parameters
+        '404':
+          description: No depot with the given ID exists
+        '409':
+          description: Conflict while updating depot (e.g. name already in use, optimistic locking failed)
+    delete:
+      tags:
+        - Depot
+      operationId: deleteDepot
+      responses:
+        '204':
+          description: Successfully deleted the depot
+        '404':
+          description: No depot with the given ID exists
+
+  /depots/{id}/logo:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: identifies the depot
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags:
+        - DepotLogo
+      operationId: getLogo
+      responses:
+        '200':
+          description: Successfully returned the logo
+          content:
+            image/png:
+              schema:
+                type: string
+                format: file
+                nullable: false
+        '404':
+          description: Could not find a logo for the given depot ID
+    put:
+      tags:
+        - DepotLogo
+      operationId: setLogo
+      requestBody:
+        required: true
+        content:
+          image/png:
+            schema:
+              type: string
+              format: file
+              nullable: false
+      responses:
+        '204':
+          description: Successfully updated the logo
+        '400':
+          description: Could not update the logo, e.g. because no depot for the given ID exists
+    delete:
+      tags:
+        - DepotLogo
+      operationId: deleteLogo
+      responses:
+        '204':
+          description: Successfully deleted the logo, or there was no logo to delete
+
+components:
+  schemas:
+    Id:
+      type: integer
+      format: int64
+      nullable: false
+      minimum: 1
+      example: 1
+
+    Version:
+      description: Required for the optimistic locking mechanism
+      type: integer
+      format: int64
+      nullable: false
+      minimum: 0
+      example: 1
+
+    Currency:
+      type: string
+      nullable: false
+      pattern: ^[A-Z]{3}$
+      example: USD
+
+    DepotCreate:
+      type: object
+      nullable: false
+      required:
+        - name
+        - currency
+      properties:
+        name:
+          type: string
+          nullable: false
+          minLength: 1
+          maxLength: 255
+          example: My Depot
+        currency:
+          $ref: '#/components/schemas/Currency'
+
+    DepotUpdate:
+      allOf:
+        - $ref: '#/components/schemas/DepotCreate'
+        - type: object
+          nullable: false
+          required:
+            - version
+          properties:
+            version:
+              $ref: '#/components/schemas/Version'
+
+    DepotRead:
+      allOf:
+        - $ref: '#/components/schemas/DepotUpdate'
+        - type: object
+          nullable: false
+          required:
+            - id
+            - positions
+            - _links
+          properties:
+            id:
+              $ref: '#/components/schemas/Id'
+            _links:
+              $ref: '#/components/schemas/DepotLinks'
+
+    DepotLinks:
+      type: object
+      nullable: false
+      properties:
+        logo:
+          description: Reference to fetch the depot's logo. Present if and only if a logo exists.
+          type: string
+          nullable: false
+          pattern: ^\/depots\/[1-9][0-9]*\/logo$
+          example: /depots/1/logo

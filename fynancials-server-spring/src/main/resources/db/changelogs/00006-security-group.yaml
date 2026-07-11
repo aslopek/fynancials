@@ -1,0 +1,68 @@
+databaseChangeLog:
+  - changeSet:
+      id: 6
+      author: Armin Slopek
+      changes:
+        - createTable:
+            tableName: SECURITY_GROUP
+            columns:
+              - column:
+                  name: ID
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: UPDATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: VERSION
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: NAME
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+
+        - createTable:
+            tableName: SECURITY_GROUP_SECURITY
+            columns:
+              - column:
+                  name: SECURITY_GROUP_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: SECURITY_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: FK_SECURITY_GROUP_SECURITY_SECURITY
+                    referencedTableName: SECURITY
+                    referencedColumnNames:
+                      - ID
+
+        - addPrimaryKey:
+            tableName: SECURITY_GROUP_SECURITY
+            constraintName: PK_SECURITY_GROUP_SECURITY
+            columnNames: SECURITY_GROUP_ID, SECURITY_ID
+            validate: true
+
+        - addForeignKeyConstraint:
+            constraintName: FK_SECURITY_GROUP_SECURITY_SECURITY_GROUP
+            baseTableName: SECURITY_GROUP_SECURITY
+            baseColumnNames: SECURITY_GROUP_ID
+            referencedTableName: SECURITY_GROUP
+            referencedColumnNames: ID
+            onDelete: CASCADE

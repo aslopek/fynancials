@@ -1,0 +1,18 @@
+.data-source-api-key {
+  max-width: 30rem;
+
+  mat-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    mat-form-field {
+      width: 100%;
+    }
+  }
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+}

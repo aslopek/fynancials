@@ -1,0 +1,34 @@
+<mat-card class="dashboard-transaction-card">
+    <mat-card-header class="card-header-compact">
+        <mat-card-title class="date-title">
+            {{ groupedTransactions()[0]?.date | fyDate }}
+        </mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content class="card-content-compact">
+        @for (transaction of groupedTransactions(); track transaction.id) {
+            <div class="transaction-row">
+                <span class="transaction-type" [ngClass]="transaction.transactionType.toLowerCase()">
+                    <mat-icon [matTooltip]="transaction.transactionType | transactionTypeDisplayName">
+                        {{ transaction.transactionType | transactionTypeDisplayIcon }}
+                    </mat-icon>
+                </span>
+
+                <span>
+                    <security-logo [securityId]="transaction.securityId"
+                                   size="small">
+                    </security-logo>
+                </span>
+
+                <span class="security-id">
+                    {{ transaction.securityId | securityName }}
+                </span>
+
+                <span>
+                    {{ transaction.cashFlow | fyCurrency:currency() }}
+                </span>
+            </div>
+        }
+    </mat-card-content>
+</mat-card>
+

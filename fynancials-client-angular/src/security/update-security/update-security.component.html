@@ -1,0 +1,84 @@
+<app-title-toolbar (onClose)="close()"
+                   class="title-bar"
+                   title="Edit Security">
+</app-title-toolbar>
+
+<div class="content">
+    <mat-tab-group>
+        <mat-tab>
+            <ng-template mat-tab-label>
+                Master Data
+                @if (updateSecurityStore.masterDataTouched()) {
+                    @if (updateSecurityStore.masterDataValid()) {
+                        <mat-icon>fiber_manual_record</mat-icon>
+                    } @else {
+                        <mat-icon>warning</mat-icon>
+                    }
+                }
+            </ng-template>
+
+            <app-security-master-data [securityId]="securityId"
+                                      (masterDataChanged)="updateSecurityStore.setMasterData($event)"
+                                      (logoChanged)="updateSecurityStore.setLogo($event)">
+            </app-security-master-data>
+        </mat-tab>
+
+        <mat-tab>
+            <ng-template mat-tab-label>
+                Historical Prices
+                @if (updateSecurityStore.historicalSecurityPriceConfigTouched()) {
+                    @if (updateSecurityStore.historicalSecurityPriceConfigValid()) {
+                        <mat-icon>fiber_manual_record</mat-icon>
+                    } @else {
+                        <mat-icon>warning</mat-icon>
+                    }
+                }
+            </ng-template>
+
+            <app-historical-price-config [securityId]="securityId"
+                                         (configChanged)="updateSecurityStore.setHistoricalSecurityPriceConfig($event)">
+            </app-historical-price-config>
+        </mat-tab>
+
+        <mat-tab>
+            <ng-template mat-tab-label>
+                Dividend Announcements
+                @if (updateSecurityStore.dividendAnnouncementConfigTouched()) {
+                    @if (updateSecurityStore.dividendAnnouncementConfigValid()) {
+                        <mat-icon>fiber_manual_record</mat-icon>
+                    } @else {
+                        <mat-icon>warning</mat-icon>
+                    }
+                }
+            </ng-template>
+            <app-dividend-announcement-config [securityId]="securityId"
+                                              (configChanged)="updateSecurityStore.setDividendAnnouncementConfig($event)">
+            </app-dividend-announcement-config>
+        </mat-tab>
+
+        <mat-tab label="Stock Splits">
+            <app-stock-split [securityId]="securityId"></app-stock-split>
+        </mat-tab>
+    </mat-tab-group>
+
+    <button (click)="ok()"
+            [disabled]="!updateSecurityStore.enableOkAndApply()"
+            class="form-button"
+            color="primary"
+            mat-flat-button>
+        OK
+    </button>
+    <button (click)="apply()"
+            [disabled]="!updateSecurityStore.enableOkAndApply()"
+            class="form-button"
+            color="primary"
+            mat-stroked-button>
+        Apply
+    </button>
+    <button (click)="close()"
+            class="form-button"
+            color="primary"
+            mat-stroked-button>
+        Cancel
+    </button>
+</div>

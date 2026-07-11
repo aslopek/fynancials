@@ -1,0 +1,76 @@
+databaseChangeLog:
+  - changeSet:
+      id: 7
+      author: Armin Slopek
+      changes:
+        - createTable:
+            tableName: CLIENT_CONFIGURATION
+            columns:
+              - column:
+                  name: ID
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: UPDATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: CLIENT_ID
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: CONFIG_KEY
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: CONFIG_VALUE
+                  type: CLOB
+                  constraints:
+                    nullable: false
+
+        - addUniqueConstraint:
+            tableName: CLIENT_CONFIGURATION
+            columnNames: CLIENT_ID, CONFIG_KEY
+            constraintName: UNIQUE_CLIENT_CONFIGURATION_CLIENT_ID_CONFIG_KEY
+            validate: true
+
+        - createTable:
+            tableName: SERVER_CONFIGURATION
+            columns:
+              - column:
+                  name: ID
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: UPDATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: CONFIG_KEY
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: CONFIG_VALUE
+                  type: CLOB

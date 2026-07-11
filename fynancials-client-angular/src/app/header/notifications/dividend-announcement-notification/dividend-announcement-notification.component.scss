@@ -1,0 +1,28 @@
+.wrapper {
+  padding-bottom: 1rem;
+}
+
+.dividend-announcement-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  cursor: default;
+}
+
+.dividend-announcement-icon {
+  margin-right: 1rem;
+  min-width: 3.5rem;
+  width: 20%;
+}
+
+.dividend-announcement-text {
+  max-width: 70%;
+}
+
+.acknowledge-button {
+  width: 10%;
+}
+
+.spacer {
+  flex: 1 1 auto
+}

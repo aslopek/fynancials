@@ -1,0 +1,122 @@
+<app-title-toolbar (onClose)="close()"
+                   class="title-bar"
+                   title="Add Transaction">
+</app-title-toolbar>
+
+<div class="content">
+    <form class="wrapper-column">
+        <div class="wrapper-row">
+            <mat-form-field class="transaction-type-select">
+                <mat-label>Transaction Type</mat-label>
+                <mat-select [formField]="form.transactionType">
+                    @for (transactionType of allTransactionTypes; track transactionType) {
+                        <mat-option [value]="transactionType">
+                            <mat-icon fontIcon="{{ transactionType | transactionTypeDisplayIcon }}"></mat-icon>
+                            {{ transactionType | transactionTypeDisplayName }}
+                        </mat-option>
+                    }
+                </mat-select>
+            </mat-form-field>
+
+            @if (form.transactionType().value() === TransactionType.DIVIDEND) {
+                <mat-checkbox [formField]="form.isSpecialDividend">
+                    {{ TransactionType.SPECIAL_DIVIDEND | transactionTypeDisplayName }}
+                </mat-checkbox>
+            }
+        </div>
+
+        <mat-form-field>
+            <mat-label>Security</mat-label>
+            <input [formField]="form.securityName"
+                   [matAutocomplete]="autocompleteSecurityName"
+                   matInput
+                   placeholder="Security Name"
+                   type="text">
+            <mat-autocomplete #autocompleteSecurityName="matAutocomplete">
+                @for (securityName of filteredSecurityNames(); track securityName) {
+                    <mat-option [value]="securityName">{{ securityName }}</mat-option>
+                }
+            </mat-autocomplete>
+        </mat-form-field>
+
+        <mat-form-field class="clickable">
+            <mat-label>Date</mat-label>
+            <input (click)="picker.open()"
+                   [formField]="form.date"
+                   [matDatepicker]="picker"
+                   class="clickable"
+                   matInput
+                   readonly>
+            <mat-datepicker-toggle [for]="picker"
+                                   matIconSuffix>
+            </mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+
+        @if (showTimeField()) {
+            <mat-form-field>
+                <mat-label>Time</mat-label>
+                <input [formField]="form.time"
+                       matInput
+                       placeholder="Time"
+                       type="time">
+            </mat-form-field>
+        }
+
+        <mat-form-field>
+            <mat-label>Quantity (original)</mat-label>
+            <input [formField]="form.securityCountOriginal"
+                   matInput
+                   placeholder="Quantity (original)"
+                   type="text">
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>Quantity (split-adjusted)</mat-label>
+            <input [formField]="form.securityCountSplitAdjusted"
+                   matInput
+                   placeholder="Quantity (split-adjusted)"
+                   type="text">
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>Gross Value</mat-label>
+            <input [formField]="form.grossValue"
+                   matInput
+                   placeholder="Gross Value"
+                   type="text">
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>Tax</mat-label>
+            <input [formField]="form.tax"
+                   matInput
+                   placeholder="Tax"
+                   type="text">
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>Fee</mat-label>
+            <input [formField]="form.fee"
+                   matInput
+                   placeholder="Fee"
+                   type="text">
+        </mat-form-field>
+
+        <p>Net Value: {{ netValueInput() | fyNetValue | fyCurrency: depotCurrency() }}</p>
+    </form>
+
+    <button (click)="createTransaction()"
+            [disabled]="!formValid()"
+            class="form-button"
+            color="primary"
+            mat-flat-button>
+        Create
+    </button>
+    <button (click)="close()"
+            class="form-button"
+            color="primary"
+            mat-stroked-button>
+        Cancel
+    </button>
+</div>

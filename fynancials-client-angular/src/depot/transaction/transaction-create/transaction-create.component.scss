@@ -1,0 +1,36 @@
+.title-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.content {
+  padding: 1rem;
+}
+
+.wrapper-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.wrapper-row {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  width: 100%;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.transaction-type-select {
+  width: 80%;
+  margin-right: 2rem;
+}
+
+.form-button {
+  margin-right: 1rem;
+}

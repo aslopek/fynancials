@@ -1,0 +1,34 @@
+@use '@angular/material' as mat;
+@use '../styles' as styles;
+
+.app-header {
+  position: fixed;
+  width: 100%;
+  height: styles.$app-header-height;
+  top: 0;
+  z-index: 1000;
+}
+
+.app-body {
+  margin-top: styles.$app-header-height;
+  height: 100%;
+}
+
+.page-content {
+  padding: 1rem;
+}
+
+.menu-item-icon {
+  margin-right: 0.5rem;
+}
+
+.menu-item {
+  cursor: pointer;
+  margin: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.menu-item.selected {
+  color: mat.get-theme-color(styles.$fynancials-theme, primary);
+}

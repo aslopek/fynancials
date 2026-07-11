@@ -1,0 +1,54 @@
+<div class="row">
+    <!-- Workaround: Having an invisible <mat-list> allows the <mat-list-item>s to be rendered correctly. -->
+    <mat-list class="hidden-list"></mat-list>
+
+    <!-- Monday -->
+    <div class="column margin-right">
+        <p>Monday</p>
+
+        @for (dividendAnnouncement of monday; track dividendAnnouncement) {
+            <app-dividend-announcement [dividendAnnouncement]="dividendAnnouncement">
+            </app-dividend-announcement>
+        }
+    </div>
+
+    <!-- Tuesday -->
+    <div class="column margin-right">
+        <p>Tuesday</p>
+
+        @for (dividendAnnouncement of tuesday; track dividendAnnouncement) {
+            <app-dividend-announcement [dividendAnnouncement]="dividendAnnouncement">
+            </app-dividend-announcement>
+        }
+    </div>
+
+    <!-- Wednesday -->
+    <div class="column margin-right">
+        <p>Wednesday</p>
+
+        @for (dividendAnnouncement of wednesday; track dividendAnnouncement) {
+            <app-dividend-announcement [dividendAnnouncement]="dividendAnnouncement">
+            </app-dividend-announcement>
+        }
+    </div>
+
+    <!-- Thursday -->
+    <div class="column margin-right">
+        <p>Thursday</p>
+
+        @for (dividendAnnouncement of thursday; track dividendAnnouncement) {
+            <app-dividend-announcement [dividendAnnouncement]="dividendAnnouncement">
+            </app-dividend-announcement>
+        }
+    </div>
+
+    <!-- Friday -->
+    <div class="column">
+        <p>Friday</p>
+
+        @for (dividendAnnouncement of friday; track dividendAnnouncement) {
+            <app-dividend-announcement [dividendAnnouncement]="dividendAnnouncement">
+            </app-dividend-announcement>
+        }
+    </div>
+</div>

@@ -1,0 +1,126 @@
+@use '../../../styles' as styles;
+
+.wrapper {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  align-content: center;
+  height: 80vh;
+  width: 100%;
+  overflow-y: auto;
+}
+
+.margin-right {
+  margin-right: 1rem;
+}
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  width: 50%;
+  min-width: 50rem;
+  flex-shrink: 0;
+  background-color: var(--mat-app-background-color, #303030);
+  padding-bottom: 0.5rem;
+  border-bottom: 0.0625rem solid rgba(255, 255, 255, 0.08);
+}
+
+.total-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.title {
+  font-weight: 500;
+  margin: 0;
+}
+
+.column-headers {
+  display: flex;
+  flex-direction: row;
+  margin-top: 1rem;
+}
+
+.column-headers-spacer {
+  width: 30%;
+  margin-right: 2rem;
+}
+
+.column-header {
+  opacity: 0.6;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03rem;
+  margin-right: 1rem;
+  text-align: right;
+}
+
+.position-item {
+  width: 50%;
+  min-width: 50rem;
+  padding: 0.6rem 0.4rem;
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  align-content: center;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  &:not(:last-child) {
+    border-bottom: 0.0625rem solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+.position-item-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  width: 30%;
+}
+
+h3 {
+  font-weight: 500;
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+// use em instead rem on h4/h5: .performance-positive/.performance-negative below use em
+// border-radius/padding so the pill badge scales with whichever of these two font-sizes it's applied to
+h4 {
+  font-weight: 500;
+  font-size: 0.95em;
+  margin: 0;
+}
+
+h5 {
+  font-weight: 400;
+  font-size: 0.8em;
+  margin: 0.2em 0 0;
+}
+
+.sub-value {
+  opacity: 0.6;
+}
+
+.performance-positive {
+  background-color: styles.$color-positive-tint;
+  color: styles.$color-positive;
+  padding: 0.15em 0.6em;
+  border-radius: 1em;
+}
+
+.performance-negative {
+  background-color: styles.$color-negative-tint;
+  color: styles.$color-negative;
+  padding: 0.15em 0.6em;
+  border-radius: 1em;
+}

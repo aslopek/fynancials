@@ -1,0 +1,5 @@
+<div (chartInit)="onChartInit($event)"
+     [options]="aggregatedDividends() | dividendBarChart : hideAbsoluteValues() : currency()"
+     class="chart"
+     echarts>
+</div>

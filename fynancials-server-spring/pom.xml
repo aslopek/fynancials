@@ -1,0 +1,496 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.0</version>
+    </parent>
+    <groupId>de.as.fynancials</groupId>
+    <artifactId>fynancials-server-spring</artifactId>
+    <version>1.0.0</version>
+    <name>Fynancials Spring Backend</name>
+    <description>Monolithic server-side implementation of the Fynancials API using Spring</description>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <properties>
+        <java.version>25</java.version>
+        <application.version>${project.version}</application.version>
+        <spring-boot.version>${project.parent.version}</spring-boot.version>
+        <lombok.version>1.18.42</lombok.version>
+        <mapstruct.version>1.6.3</mapstruct.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-liquibase</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>4.0.0-M1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>2.22.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>2.22.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.jayway.jsonpath</groupId>
+            <artifactId>json-path</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>5.12.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>2.2.52</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-models</artifactId>
+            <version>2.2.52</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>${mapstruct.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+            <version>5.0.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.4.240</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.6.1</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>de.as.fynancials.Application</mainClass>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>application-dev*.yaml</exclude>
+                        <exclude>db/liquibase-dev.xml</exclude>
+                        <exclude>db/example-data/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <!--
+                Places .openapi-generator-ignore into the generator's output dir before it runs, so it skips
+                the Spring Boot bootstrap/test class this project doesn't use (see api/.openapi-generator-ignore).
+                -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-openapi-generator-ignore</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/generated-sources/openapi</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/api</directory>
+                                    <includes>
+                                        <include>.openapi-generator-ignore</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>7.23.0</version>
+                <executions>
+                    <!-- Generate source code for the Configuration API -->
+                    <execution>
+                        <id>generate-configuration-api</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>
+                                ${project.basedir}/../fynancials-api/configuration.yaml
+                            </inputSpec>
+                            <generatorName>spring</generatorName>
+                            <configurationFile>
+                                ${project.basedir}/api/openapi-config.json
+                            </configurationFile>
+                            <configOptions>
+                                <apiPackage>de.as.fynancials.config.api.controller</apiPackage>
+                                <modelPackage>de.as.fynancials.config.api.model</modelPackage>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <!-- Generate source code for the Configuration Security Group API -->
+                    <execution>
+                        <id>generate-configuration-security-group-api</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>
+                                ${project.basedir}/../fynancials-api/configuration-security-group.yaml
+                            </inputSpec>
+                            <generatorName>spring</generatorName>
+                            <configurationFile>
+                                ${project.basedir}/api/openapi-config.json
+                            </configurationFile>
+                            <configOptions>
+                                <apiPackage>de.as.fynancials.config.securitygroup.api.controller</apiPackage>
+                                <modelPackage>de.as.fynancials.config.securitygroup.api.model</modelPackage>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <!-- Generate source code for the Depot API -->
+                    <execution>
+                        <id>generate-depot-api</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>
+                                ${project.basedir}/../fynancials-api/depot.yaml
+                            </inputSpec>
+                            <generatorName>spring</generatorName>
+                            <configurationFile>
+                                ${project.basedir}/api/openapi-config.json
+                            </configurationFile>
+                            <configOptions>
+                                <apiPackage>de.as.fynancials.depot.api.controller</apiPackage>
+                                <modelPackage>de.as.fynancials.depot.api.model</modelPackage>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <!-- Generate source code for the Dividend API-->
+                    <execution>
+                        <id>generate-depot-dividend-api</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>
+                                ${project.basedir}/../fynancials-api/depot-dividend.yaml
+                            </inputSpec>
+                            <generatorName>spring</generatorName>
+                            <configurationFile>
+                                ${project.basedir}/api/openapi-config.json
+                            </configurationFile>
+                            <configOptions>
+                                <apiPackage>de.as.fynancials.depot.dividend.api.controller</apiPackage>
+                                <modelPackage>de.as.fynancials.depot.dividend.api.model</modelPackage>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <!-- Generate source code for the Depot Performance API -->
+                    <execution>
+                        <id>generate-depot-performance-api</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>
+                                ${project.basedir}/../fynancials-api/depot-performance.yaml
+                            </inputSpec>
+                            <generatorName>spring</generatorName>
+                            <configurationFile>
+                                ${project.basedir}/api/openapi-config.json
+                            </configurationFile>
+                            <configOptions>
+                                <apiPackage>de.as.fynancials.depot.performance.api.controller</apiPackage>
+                                <modelPackage>de.as.fynancials.depot.performance.api.model</modelPackage>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <!-- Generate source code for the Depot Position API -->
+                    <execution>
+                        <id>generate-depot-position-api</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>
+                                ${project.basedir}/../fynancials-api/depot-position.yaml
+                            </inputSpec>
+                            <generatorName>spring</generatorName>
+                            <configurationFile>
+                                ${project.basedir}/api/openapi-config.json
+                            </configurationFile>
+                            <configOptions>
+                                <apiPackage>de.as.fynancials.depot.position.api.controller</apiPackage>
+                                <modelPackage>de.as.fynancials.depot.position.api.model</modelPackage>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <!-- Generate source code for the Depot Transaction API -->
+                    <execution>
+                        <id>generate-depot-transaction-api</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>
+                                ${project.basedir}/../fynancials-api/depot-transaction.yaml
+                            </inputSpec>
+                            <generatorName>spring</generatorName>
+                            <configurationFile>
+                                ${project.basedir}/api/openapi-config.json
+                            </configurationFile>
+                            <configOptions>
+                                <apiPackage>de.as.fynancials.depot.transaction.api.controller</apiPackage>
+                                <modelPackage>de.as.fynancials.depot.transaction.api.model</modelPackage>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <!-- Generate source code for the Security API -->
+                    <execution>
+                        <id>generate-security-api</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>
+                                ${project.basedir}/../fynancials-api/security.yaml
+                            </inputSpec>
+                            <generatorName>spring</generatorName>
+                            <configurationFile>
+                                ${project.basedir}/api/openapi-config.json
+                            </configurationFile>
+                            <configOptions>
+                                <apiPackage>de.as.fynancials.security.api.controller</apiPackage>
+                                <modelPackage>de.as.fynancials.security.api.model</modelPackage>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <!-- Generate source code for the Historical Security Price API -->
+                    <execution>
+                        <id>generate-historical-security-price-api</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>
+                                ${project.basedir}/../fynancials-api/historical-security-price.yaml
+                            </inputSpec>
+                            <generatorName>spring</generatorName>
+                            <configurationFile>
+                                ${project.basedir}/api/openapi-config.json
+                            </configurationFile>
+                            <configOptions>
+                                <apiPackage>de.as.fynancials.price.security.historical.api.controller</apiPackage>
+                                <modelPackage>de.as.fynancials.price.security.historical.api.model</modelPackage>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                    <!-- Generate source code for the Notification Dividend Announcement API -->
+                    <execution>
+                        <id>generate-notification-dividend-announcement-api</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>
+                                ${project.basedir}/../fynancials-api/notification-dividend-announcement.yaml
+                            </inputSpec>
+                            <generatorName>spring</generatorName>
+                            <configurationFile>
+                                ${project.basedir}/api/openapi-config.json
+                            </configurationFile>
+                            <configOptions>
+                                <apiPackage>de.as.fynancials.notification.dividendannouncement.api.controller
+                                </apiPackage>
+                                <modelPackage>de.as.fynancials.notification.dividendannouncement.api.model
+                                </modelPackage>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.basedir}/target/generated-sources/openapi/src/main/java</source>
+                                <source>${project.basedir}/target/generated-sources/annotations/</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <executions>
+                    <execution>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>write-project-properties</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>${project.build.outputDirectory}/properties-from-pom.properties</outputFile>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.1</version>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <source>${java.version}</source>
+                            <target>${java.version}</target>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>org.projectlombok</groupId>
+                                    <artifactId>lombok</artifactId>
+                                    <version>${lombok.version}</version>
+                                </path>
+                                <path>
+                                    <groupId>org.mapstruct</groupId>
+                                    <artifactId>mapstruct-processor</artifactId>
+                                    <version>${mapstruct.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                            <compilerArgs>
+                                <compilerArg>
+                                    -Amapstruct.unmappedTargetPolicy=ERROR
+                                </compilerArg>
+                            </compilerArgs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

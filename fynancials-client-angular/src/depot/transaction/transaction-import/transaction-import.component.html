@@ -1,0 +1,31 @@
+<app-title-toolbar (onClose)="close()"
+                   class="title-bar"
+                   title="Import Transactions">
+</app-title-toolbar>
+
+<mat-stepper class="stepper"
+             linear>
+    <mat-step class="step"
+              label="File"
+              [completed]="transactionImportStore.rows().length > 0">
+        <app-file-step></app-file-step>
+    </mat-step>
+
+    <mat-step class="step"
+              label="Mapping"
+              [completed]="transactionImportStore.mappingOk()">
+        <app-mapping-step></app-mapping-step>
+    </mat-step>
+
+    <mat-step class="step"
+              label="Review"
+              [completed]="transactionImportStore.mappingOk()">
+        <app-review-step></app-review-step>
+    </mat-step>
+
+    <mat-step class="step"
+              label="Import"
+              [completed]="transactionImportStore.phase() === 'done'">
+        <app-import-step (closeRequested)="close()"></app-import-step>
+    </mat-step>
+</mat-stepper>

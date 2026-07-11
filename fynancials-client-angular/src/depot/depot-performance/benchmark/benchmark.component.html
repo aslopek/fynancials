@@ -1,0 +1,44 @@
+<div class="wrapper">
+    <div class="control-panel">
+        @if (isBenchmarkActive()) {
+            <button matButton="filled"
+                    color="primary"
+                    (click)="stopBenchmark()">
+                Stop Benchmark
+            </button>
+        } @else {
+            <button matButton="filled"
+                    color="primary"
+                    [disabled]="benchmark() == null"
+                    (click)="startBenchmark()">
+                Start benchmark
+            </button>
+        }
+
+        <mat-button-toggle-group
+                [value]="mode()"
+                (change)="mode.set($event.value)">
+            <mat-button-toggle value="fixedInterest.cashFlowBased">
+                Fixed Interest (Cashflow based)
+            </mat-button-toggle>
+            <mat-button-toggle value="fixedInterest.intervalBased">
+                Fixed Interest (Regular Investments)
+            </mat-button-toggle>
+            <mat-button-toggle value="security.cashflowBased"
+                               [disabled]="true">
+                Security (Cashflow based)
+            </mat-button-toggle>
+            <mat-button-toggle value="security.intervalBased"
+                               [disabled]="true">
+                Security (Regular Investments)
+            </mat-button-toggle>
+            <mat-button-toggle value="security.luckyInvestor"
+                               [disabled]="true">
+                Security (Lucky Investor)
+            </mat-button-toggle>
+        </mat-button-toggle-group>
+    </div>
+    <app-fixed-interest-benchmark [mode]="mode()"
+                                  (benchmark)="onBenchmarkUpdate($event)">
+    </app-fixed-interest-benchmark>
+</div>

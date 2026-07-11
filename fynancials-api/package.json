@@ -1,0 +1,31 @@
+{
+  "name": "@fynancials/api",
+  "private": true,
+  "version": "1.0.0",
+  "description": "API specifications for Fynancials and external systems it depends on",
+  "author": "Armin Slopek",
+  "license": "MIT",
+  "files": [
+    "**/*.yaml"
+  ],
+  "scripts": {
+    "test": "npm run test:configuration && npm run test:configuration-security-group && npm run test:depot && npm run test:depot-dividend && npm run test:depot-performance && npm run test:depot-position && npm run test:depot-transaction && npm run test:historical-security-prices && npm run test:notification-dividend-announcement && npm run test:security",
+    "test:configuration": "npx @openapitools/openapi-generator-cli validate -i configuration.yaml",
+    "test:configuration-security-group": "npx @openapitools/openapi-generator-cli validate -i configuration-security-group.yaml",
+    "test:depot": "npx @openapitools/openapi-generator-cli validate -i depot.yaml",
+    "test:depot-dividend": "npx @openapitools/openapi-generator-cli validate -i depot-dividend.yaml",
+    "test:depot-performance": "npx @openapitools/openapi-generator-cli validate -i depot-performance.yaml",
+    "test:depot-position": "npx @openapitools/openapi-generator-cli validate -i depot-position.yaml",
+    "test:depot-transaction": "npx @openapitools/openapi-generator-cli validate -i depot-transaction.yaml",
+    "test:historical-security-prices": "npx @openapitools/openapi-generator-cli validate -i historical-security-price.yaml",
+    "test:notification-dividend-announcement": "npx @openapitools/openapi-generator-cli validate -i notification-dividend-announcement.yaml",
+    "test:security": "npx @openapitools/openapi-generator-cli validate -i security.yaml"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aslopek/fynancials"
+  },
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "^2.25.0"
+  }
+}

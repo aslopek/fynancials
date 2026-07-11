@@ -1,0 +1,513 @@
+openapi: 3.0.3
+
+info:
+  title: Dividend Announcement API
+  description: The API definitions querying dividend announcements
+  version: 1.0.0
+
+servers:
+  - url: 'http://localhost:23726'
+    description: Locally serving the API
+
+paths:
+  /notifications/dividend-announcements:
+    get:
+      parameters:
+        - in: query
+          name: isNew
+          required: false
+          description: When set, determines if only new or not-new dividend announcements shall be returned
+          schema:
+            type: boolean
+            nullable: false
+            example: true
+      tags:
+        - DividendAnnouncement
+      operationId: getDividendAnnouncements
+      responses:
+        '200':
+          description: Successfully returned the dividend announcements
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: false
+                minItems: 0
+                items:
+                  $ref: '#/components/schemas/DividendAnnouncementRead'
+
+  /notifications/dividend-announcements/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: Identifies a dividend announcement
+        schema:
+          $ref: '#/components/schemas/Id'
+    put:
+      tags:
+        - DividendAnnouncement
+      operationId: updateDividendAnnouncement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DividendAnnouncementUpdate'
+      responses:
+        '204':
+          description: Successfully updated the dividend announcement
+        '400':
+          description: Passed invalid parameters
+        '404':
+          description: The dividend announcement to be updated does not exist
+
+  /notifications/dividend-announcements/configs:
+    get:
+      tags:
+        - DividendAnnouncementConfig
+      operationId: getDividendAnnouncementConfigs
+      responses:
+        '200':
+          description: Successfully returned the dividend announcement configs
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: false
+                minItems: 0
+                items:
+                  $ref: '#/components/schemas/DividendAnnouncementConfigRead'
+
+  /notifications/dividend-announcements/configs/{securityId}:
+    parameters:
+      - in: path
+        name: securityId
+        required: true
+        description: Identifies a security
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags:
+        - DividendAnnouncementConfig
+      operationId: getDividendAnnouncementConfig
+      responses:
+        '200':
+          description: Successfully returned the dividend announcement config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DividendAnnouncementConfigRead'
+        '404':
+          description: No dividend announcement config exists for the specified securityId
+    post:
+      tags:
+        - DividendAnnouncementConfig
+      operationId: createDividendAnnouncementConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DividendAnnouncementConfigCreate'
+      responses:
+        '201':
+          description: Successfully created the dividend announcement config
+          headers:
+            location:
+              required: true
+              schema:
+                type: string
+                nullable: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DividendAnnouncementConfigRead'
+        '400':
+          description: Passed invalid parameters
+        '404':
+          description: The security identified by securityId does not exist
+        '409':
+          description: A dividend announcement config exists already for the specified securityId
+    put:
+      tags:
+        - DividendAnnouncementConfig
+      operationId: updateDividendAnnouncementConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DividendAnnouncementConfigUpdate'
+      responses:
+        '200':
+          description: Successfully updated the dividend announcement config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DividendAnnouncementConfigRead'
+        '400':
+          description: Passed invalid parameters
+        '404':
+          description: No dividend announcement config exists for the specified securityId
+        '409':
+          description: Optimistic Lock failed
+    delete:
+      tags:
+        - DividendAnnouncementConfig
+      operationId: deleteDividendAnnouncementConfig
+      responses:
+        '204':
+          description: Successfully deleted the dividend announcement config
+        '404':
+          description: No dividend announcement config exists for the specified securityId
+
+  /notifications/dividend-announcements/data-sources:
+    post:
+      tags:
+        - DividendAnnouncementDataSource
+      operationId: createDividendAnnouncementDataSource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DividendAnnouncementDataSourceCreate'
+      responses:
+        '201':
+          description: Successfully created the dividend announcement data source
+          headers:
+            location:
+              required: true
+              schema:
+                type: string
+                nullable: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DividendAnnouncementDataSourceRead'
+        '400':
+          description: Passed invalid parameters
+        '409':
+          description: Another dividend announcement data source with the same name exists already
+    get:
+      tags:
+        - DividendAnnouncementDataSource
+      operationId: getDividendAnnouncementDataSources
+      responses:
+        '200':
+          description: Successfully returned the dividend announcement data sources
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: false
+                minItems: 0
+                items:
+                  $ref: '#/components/schemas/DividendAnnouncementDataSourceRead'
+
+  /notifications/dividend-announcements/data-sources/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: Identifies a dividend announcement data source
+        schema:
+          $ref: '#/components/schemas/Id'
+    put:
+      tags:
+        - DividendAnnouncementDataSource
+      operationId: updateDividendAnnouncementDataSource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DividendAnnouncementDataSourceUpdate'
+      responses:
+        '200':
+          description: Successfully updated the dividend announcement data source
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DividendAnnouncementDataSourceRead'
+        '400':
+          description: Passed invalid parameters
+        '404':
+          description: The dividend announcement data source to be updated does not exist
+        '409':
+          description: Optimistic Lock failed
+    delete:
+      tags:
+        - DividendAnnouncementDataSource
+      operationId: deleteDividendAnnouncementDataSource
+      responses:
+        '204':
+          description: Successfully deleted the dividend announcement data source
+        '400':
+          description: There are data (e.g. dividend announcement configs) referencing this dividend announcement data source or the data source may not be deleted for other reasons
+        '404':
+          description: The dividend announcement data source to be deleted does not exist
+
+components:
+  schemas:
+    Id:
+      type: integer
+      format: int64
+      nullable: false
+      minimum: 1
+      example: 1
+
+    Version:
+      description: Required for the optimistic locking mechanism
+      type: integer
+      format: int64
+      nullable: false
+      minimum: 0
+      example: 1
+
+    Currency:
+      type: string
+      nullable: false
+      pattern: ^[A-Z]{3}$
+      example: USD
+
+    Name:
+      type: string
+      nullable: false
+      minLength: 1
+      maxLength: 255
+      example: Some name
+
+    DividendAnnouncementUpdate:
+      type: object
+      nullable: false
+      required:
+        - isNew
+      properties:
+        isNew:
+          description: Determines if this notification item is new (unread)
+          type: boolean
+          nullable: false
+          example: true
+
+    DividendAnnouncementRead:
+      allOf:
+        - $ref: '#/components/schemas/DividendAnnouncementUpdate'
+        - type: object
+          nullable: false
+          required:
+            - id
+            - dataSourceId
+            - securityId
+            - payDate
+            - amountPerShare
+            - currency
+          properties:
+            id:
+              $ref: '#/components/schemas/Id'
+            dataSourceId:
+              $ref: '#/components/schemas/Id'
+            securityId:
+              $ref: '#/components/schemas/Id'
+            payDate:
+              type: string
+              format: date
+              nullable: false
+              example: 2024-09-26
+            amountPerShare:
+              type: number
+              nullable: false
+              example: 1.46
+            currency:
+              $ref: '#/components/schemas/Currency'
+
+    RequestHeader:
+      type: object
+      nullable: false
+      required:
+        - headerName
+        - headerValue
+      properties:
+        headerName:
+          type: string
+          nullable: false
+          minLength: 1
+          maxLength: 255
+          example: X-API-Key
+        headerValue:
+          type: string
+          nullable: false
+          minLength: 0
+          example: someSecreteApiKey
+
+    CurrencyMapping:
+      type: object
+      nullable: false
+      required:
+        - currencyKey
+        - mappedCurrencyCode
+      properties:
+        currencyKey:
+          type: string
+          nullable: false
+          minLength: 0
+          maxLength: 255
+          example: GBp
+        mappedCurrencyCode:
+          $ref: '#/components/schemas/Currency'
+        multiplier:
+          type: number
+          nullable: false
+          example: 0.01
+
+    DateFormat:
+      type: string
+      enum:
+        - TIMESTAMP_SECONDS
+        - TIMESTAMP_MILLISECONDS
+        - CUSTOM_STRING
+
+    DateConfiguration:
+      type: object
+      nullable: false
+      required:
+        - format
+      properties:
+        format:
+          $ref: '#/components/schemas/DateFormat'
+        customPattern:
+          type: string
+          nullable: false
+          minLength: 1
+          maxLength: 255
+          example: 'yyyy-MM-dd'
+
+    DividendAnnouncementDataSourceCreate:
+      type: object
+      nullable: false
+      required:
+        - name
+        - urlPattern
+        - requestHeaders
+        - jsonPathDate
+        - dateFormat
+        - jsonPathValue
+        - currencyMappings
+      properties:
+        name:
+          $ref: '#/components/schemas/Name'
+        urlPattern:
+          description: >
+            The string must contain at least one '#id()' part, into which the security's property will be inserted
+          type: string
+          nullable: false
+          minLength: 1
+          example: https://dividend.api/#id()/dividends
+        requestHeaders:
+          type: array
+          nullable: false
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/RequestHeader'
+        jsonPathDate:
+          type: string
+          minLength: 1
+          nullable: false
+          example: $.payments[*].date
+        dateFormat:
+          $ref: '#/components/schemas/DateConfiguration'
+        jsonPathValue:
+          type: string
+          minLength: 1
+          nullable: false
+          example: $.payments[*].dividendPayment
+        jsonPathCurrency:
+          description: When set, the currency will be read from the JSON response. Otherwise, it will be read from the external security ID.
+          type: string
+          minLength: 1
+          nullable: false
+          example: $.currency
+        regexCurrency:
+          type: string
+          minLength: 1
+          nullable: false
+          example: "^."
+        regexCurrencyGroup:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: false
+          example: 1
+        currencyMappings:
+          type: array
+          nullable: false
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/CurrencyMapping'
+
+    DividendAnnouncementDataSourceUpdate:
+      allOf:
+        - $ref: '#/components/schemas/DividendAnnouncementDataSourceCreate'
+        - type: object
+          nullable: false
+          required:
+            - version
+          properties:
+            version:
+              $ref: '#/components/schemas/Version'
+
+    DividendAnnouncementDataSourceRead:
+      allOf:
+        - $ref: '#/components/schemas/DividendAnnouncementDataSourceUpdate'
+        - type: object
+          nullable: false
+          required:
+            - id
+          properties:
+            id:
+              $ref: '#/components/schemas/Id'
+
+    DividendAnnouncementConfigCreate:
+      type: object
+      nullable: false
+      required:
+        - dataSourceId
+        - externalSecurityId
+        - isActive
+      properties:
+        dataSourceId:
+          $ref: '#/components/schemas/Id'
+        externalSecurityId:
+          description: identifies the security at the external data provider identified by dataSourceId
+          type: string
+          nullable: false
+          minLength: 1
+          maxLength: 255
+          example: US5949181045
+        isActive:
+          type: boolean
+          nullable: false
+          example: true
+
+    DividendAnnouncementConfigUpdate:
+      allOf:
+        - $ref: '#/components/schemas/DividendAnnouncementConfigCreate'
+        - type: object
+          nullable: false
+          required:
+            - version
+          properties:
+            version:
+              $ref: '#/components/schemas/Version'
+
+    DividendAnnouncementConfigRead:
+      allOf:
+        - $ref: '#/components/schemas/DividendAnnouncementConfigUpdate'
+        - type: object
+          nullable: false
+          required:
+            - securityId
+          properties:
+            securityId:
+              $ref: '#/components/schemas/Id'

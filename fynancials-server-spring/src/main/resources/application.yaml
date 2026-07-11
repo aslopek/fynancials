@@ -1,0 +1,44 @@
+spring:
+  threads:
+    virtual:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  datasource:
+    driver-class-name: org.h2.Driver
+    username: ${FY_DB_USER:admin}
+    password: ${FY_DB_FILE_PASSWORD:} ${FY_DB_USER_PASSWORD:admin}
+    url: jdbc:h2:file:${FY_DB_FILE_PATH:~/fynancials};CIPHER=AES;TRACE_LEVEL_FILE=0
+  liquibase:
+    change-log: classpath:db/liquibase.xml
+
+
+server:
+  address: 127.0.0.1
+  port: 23726
+  h2:
+    console:
+      enabled: true
+      port: 23727
+
+logging:
+  level:
+    root: ${FY_LOG_LEVEL:WARN}
+
+cors:
+  # "null" is the literal Origin header Chromium sends for file:// pages, i.e. the packaged Electron app.
+  allowed-origins: ${FY_CORS_ALLOWED_ORIGINS:http://localhost:4200,null}
+
+dividend-announcement:
+  remove-old:
+    enabled: true
+  update:
+    enabled: true
+exchange-rate:
+  update:
+    enabled: true
+historical-security-price:
+  update:
+    enabled: true

@@ -1,0 +1,279 @@
+databaseChangeLog:
+  - changeSet:
+      id: 9
+      author: Armin Slopek
+      changes:
+        - createTable:
+            tableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+            columns:
+              - column:
+                  name: ID
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: UPDATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: VERSION
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: NAME
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: URL_PATTERN
+                  type: CLOB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: JSON_PATH_PAY_DATE
+                  type: CLOB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: JSON_PATH_AMOUNT_PER_SHARE
+                  type: CLOB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: JSON_PATH_CURRENCY
+                  type: CLOB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: REGEX_CURRENCY
+                  type: CLOB
+                  constraints:
+                    nullable: true
+              - column:
+                  name: REGEX_CURRENCY_GROUP
+                  type: INTEGER
+                  constraints:
+                    nullable: true
+
+        - createTable:
+            tableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_HEADER
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: UPDATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: HEADER_NAME
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: HEADER_VALUE
+                  type: CLOB
+                  constraints:
+                    nullable: false
+
+        - addPrimaryKey:
+            columnNames: DATA_SOURCE_ID, HEADER_NAME
+            constraintName: PK_DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_HEADER
+            tableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_HEADER
+
+        - addForeignKeyConstraint:
+            constraintName: FK_DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_HEADER__DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+            baseTableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_HEADER
+            baseColumnNames: DATA_SOURCE_ID
+            referencedTableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+            referencedColumnNames: ID
+            onDelete: CASCADE
+
+        - createTable:
+            tableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: UPDATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: CURRENCY_KEY
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  type: VARCHAR(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: MULTIPLIER
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+
+        - addPrimaryKey:
+            columnNames: DATA_SOURCE_ID, CURRENCY_KEY
+            constraintName: PK_DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_CURRENCY_MAPPING
+            tableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_CURRENCY_MAPPING
+
+        - addForeignKeyConstraint:
+            constraintName: FK_DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_CURRENCY_MAPPING__DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+            baseTableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE_CURRENCY_MAPPING
+            baseColumnNames: DATA_SOURCE_ID
+            referencedTableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+            referencedColumnNames: ID
+            onDelete: CASCADE
+
+        - createTable:
+            tableName: DIVIDEND_ANNOUNCEMENT
+            columns:
+              - column:
+                  name: ID
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: DATA_SOURCE_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: SECURITY_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: IS_NEW
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: PAY_DATE
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: AMOUNT_PER_SHARE
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: CURRENCY
+                  type: VARCHAR(3)
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            constraintName: FK_DIVIDEND_ANNOUNCEMENT__DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+            baseTableName: DIVIDEND_ANNOUNCEMENT
+            baseColumnNames: DATA_SOURCE_ID
+            referencedTableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+            referencedColumnNames: ID
+            onDelete: CASCADE
+
+        - addForeignKeyConstraint:
+            constraintName: FK_DIVIDEND_ANNOUNCEMENT__SECURITY
+            baseTableName: DIVIDEND_ANNOUNCEMENT
+            baseColumnNames: SECURITY_ID
+            referencedTableName: SECURITY
+            referencedColumnNames: ID
+            onDelete: CASCADE
+
+        - addUniqueConstraint:
+            constraintName: UNIQUE_DIVIDEND_ANNOUNCEMENT
+            tableName: DIVIDEND_ANNOUNCEMENT
+            columnNames: SECURITY_ID, PAY_DATE, AMOUNT_PER_SHARE
+            validate: true
+
+        - createTable:
+            tableName: DIVIDEND_ANNOUNCEMENT_CONFIG
+            columns:
+              - column:
+                  name: SECURITY_ID
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: UPDATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: VERSION
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: DATA_SOURCE_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: EXTERNAL_SECURITY_ID
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: IS_ACTIVE
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            constraintName: FK_DIVIDEND_ANNOUNCEMENT_CONFIG__DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+            baseTableName: DIVIDEND_ANNOUNCEMENT_CONFIG
+            baseColumnNames: DATA_SOURCE_ID
+            referencedTableName: DIVIDEND_ANNOUNCEMENT_DATA_SOURCE
+            referencedColumnNames: ID
+            onDelete: CASCADE
+
+        - addForeignKeyConstraint:
+            constraintName: FK_DIVIDEND_ANNOUNCEMENT_CONFIG__SECURITY
+            baseTableName: DIVIDEND_ANNOUNCEMENT_CONFIG
+            baseColumnNames: SECURITY_ID
+            referencedTableName: SECURITY
+            referencedColumnNames: ID
+            onDelete: CASCADE

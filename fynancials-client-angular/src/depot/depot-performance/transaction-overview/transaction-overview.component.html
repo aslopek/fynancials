@@ -1,0 +1,5 @@
+<div>
+    @for (transactionGroup of transactionGroups(); track transactionGroup.date) {
+        <app-transaction-group [transactions]="transactionGroup.transactions"></app-transaction-group>
+    }
+</div>

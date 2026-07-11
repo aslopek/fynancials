@@ -1,0 +1,32 @@
+:host {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.depot-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 3.5rem;
+  height: 3.5rem;
+  max-height: 3.5rem;
+  max-width: 3.5rem;
+  min-height: 3.5rem;
+  min-width: 3.5rem;
+}
+
+.depot-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 25rem;
+}
+
+.margin-right {
+  margin-right: 1rem;
+}
+
+.hidden-input {
+  display: none;
+}

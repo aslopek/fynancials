@@ -1,0 +1,337 @@
+openapi: 3.0.3
+info:
+  title: Configuration API
+  description: The API definitions for reading and manipulation the application's configuration
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:23726'
+    description: Locally serving the API
+
+paths:
+  /config/clients/{clientId}:
+    parameters:
+      - $ref: '#/components/parameters/ClientId'
+    get:
+      parameters:
+        - $ref: '#/components/parameters/Prefix'
+      tags:
+        - Config
+      operationId: getClientConfig
+      responses:
+        '200':
+          description: Returns a map of string keys and values, representing the entire configuration for the client
+          content:
+            application/json:
+              schema:
+                type: object
+                nullable: false
+                additionalProperties:
+                  type: string
+                  nullable: false
+                  minLength: 0
+    delete:
+      tags:
+        - Config
+      operationId: deleteClientConfig
+      responses:
+        '204':
+          description: Successfully deleted the entire configuration for the client
+
+  /config/clients/{clientId}/{clientConfigKey}:
+    parameters:
+      - $ref: '#/components/parameters/ClientId'
+      - $ref: '#/components/parameters/ClientConfigKey'
+    get:
+      tags:
+        - Config
+      operationId: getClientConfigValue
+      responses:
+        '200':
+          description: Returns the value of the specified key in the client's configuration
+          content:
+            text/plain:
+              schema:
+                type: string
+                nullable: false
+                example: dark
+        '404':
+          description: The specified key does not exist in the client's configuration
+    put:
+      tags:
+        - Config
+      operationId: setClientConfigValue
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              nullable: false
+              example: dark
+      responses:
+        '204':
+          description: Successfully updated the value of the specified key in the client's configuration
+    delete:
+      tags:
+        - Config
+      operationId: deleteClientConfigValue
+      responses:
+        '204':
+          description: Successfully deleted the specified key from the client's configuration
+
+  /config/currency/default-currency:
+    get:
+      tags:
+        - Config
+      operationId: getDefaultCurrency
+      responses:
+        '200':
+          description: Returns the default currency for the application
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/Currency'
+
+  /config/currency/supported-currencies:
+    get:
+      tags:
+        - Config
+      operationId: getSupportedCurrencies
+      responses:
+        '200':
+          description: Returns a list of all supported currencies
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: false
+                minItems: 1
+                items:
+                  $ref: '#/components/schemas/Currency'
+
+  /config/database:
+    get:
+      tags:
+        - Config
+      operationId: getDatabaseConfig
+      responses:
+        '200':
+          description: Successfully retrieved the database configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseConfig'
+        '404':
+          description: The database has no accessible web interface
+
+  /config/backend-services:
+    get:
+      tags:
+        - Config
+      operationId: getBackendServicesInfo
+      responses:
+        '200':
+          description: Successfully retrieved the backend services information
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: false
+                items:
+                  $ref: '#/components/schemas/BackendServiceInfo'
+
+  /config/third-party-licenses:
+    get:
+      tags:
+        - Config
+      operationId: getThirdPartyLicenses
+      responses:
+        '200':
+          description: Returns license information for every third-party dependency shipped with the backend
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: false
+                minItems: 1
+                items:
+                  $ref: '#/components/schemas/ThirdPartyLicense'
+        '500':
+          description: The backend failed to read the license information from its third-party dependencies
+
+  /config/dev-mode:
+    get:
+      tags:
+        - Config
+      operationId: isDevModeActive
+      responses:
+        '200':
+          description: Returns whether the backend is currently in development mode
+          content:
+            text/plain:
+              schema:
+                type: string
+                pattern: ^true|false$
+                nullable: false
+                example: false
+    put:
+      tags:
+        - Config
+      operationId: setDevModeActive
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              pattern: ^true|false$
+              nullable: false
+              example: false
+      responses:
+        '204':
+          description: Successfully updated the development mode status
+        '400':
+          description: The request body did not contain a valid boolean value
+
+  /config/pid:
+    get:
+      tags:
+        - Config
+      operationId: getPid
+      responses:
+        '200':
+          description: Successfully retrieved the backend's PID
+          content:
+            text/plain:
+              schema:
+                type: string
+                pattern: ^[1-9][0-9]*$
+                nullable: false
+                example: 48936
+
+components:
+  parameters:
+    ClientId:
+      name: clientId
+      in: path
+      required: true
+      description: Identifies a client
+      schema:
+        type: string
+        nullable: false
+        minLength: 1
+        maxLength: 255
+        example: angular-material
+
+    ClientConfigKey:
+      name: clientConfigKey
+      in: path
+      required: true
+      description: Identifies a key in the client's configuration
+      schema:
+        type: string
+        nullable: false
+        minLength: 1
+        maxLength: 255
+        example: theme
+
+    Prefix:
+      name: prefix
+      in: query
+      required: false
+      description: Filter results based on the client config key prefix
+      schema:
+        type: string
+        nullable: false
+        minLength: 1
+        maxLength: 255
+        example: app-config
+
+  schemas:
+    Currency:
+      type: string
+      nullable: false
+      pattern: ^[A-Z]{3}$
+      example: USD
+
+    DatabaseConfig:
+      type: object
+      nullable: false
+      required:
+        - username
+        - password
+        - connectionString
+        - webInterfaceUrl
+      properties:
+        username:
+          type: string
+          nullable: false
+          example: admin
+        password:
+          type: string
+          nullable: false
+          example: admin
+        connectionString:
+          type: string
+          nullable: false
+          example: jdbc:h2:~/fynancials.db
+        webInterfaceUrl:
+          type: string
+          nullable: false
+          example: http://localhost:8080/h2-console
+        fileLocation:
+          type: string
+          nullable: false
+          example: /path/to/file
+
+    ThirdPartyLicense:
+      type: object
+      nullable: false
+      required:
+        - name
+        - version
+      properties:
+        name:
+          type: string
+          nullable: false
+          example: jackson-core
+        version:
+          type: string
+          nullable: false
+          example: 2.18.2
+        license:
+          type: string
+          nullable: false
+          example: Apache License 2.0
+        licenseText:
+          type: string
+          nullable: false
+          description: The verbatim license text (including copyright header) as shipped inside the library's artifact
+        noticeText:
+          type: string
+          nullable: false
+          description: The verbatim NOTICE file content, if the library ships one (relevant for Apache-2.0 attribution)
+
+    BackendServiceInfo:
+      type: object
+      nullable: false
+      required:
+        - name
+        - version
+        - implementedApis
+      properties:
+        name:
+          type: string
+          nullable: false
+          example: Spring Monolith
+        version:
+          type: string
+          nullable: false
+          example: 1.2.3
+        implementedApis:
+          type: array
+          nullable: false
+          items:
+            type: string
+            nullable: false
+            example: depot.yaml

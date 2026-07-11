@@ -1,0 +1,72 @@
+<div class="form-field">
+    <input #fileUpload
+           (change)="selectFile($event)"
+           accept="image/png"
+           class="file-input"
+           type="file">
+    <button (click)="fileUpload.click()"
+            class="file-upload-button"
+            color="primary"
+            mat-flat-button>
+        Select Logo
+    </button>
+    @let logoFile = logo();
+    @if (logoFile !== undefined) {
+        <div class="logo-preview-container">
+            <img [src]="logoFile | filePreview"
+                 class="logo-preview-img"/>
+        </div>
+    }
+</div>
+
+<form>
+    <mat-form-field class="form-field">
+        <mat-label>Name</mat-label>
+        <input [formField]="form.name"
+               matInput>
+    </mat-form-field>
+
+    <mat-form-field class="form-field">
+        <mat-label>ISIN</mat-label>
+        <input [formField]="form.isin"
+               matInput>
+    </mat-form-field>
+
+    <mat-form-field class="form-field">
+        <mat-label>Symbols</mat-label>
+        <mat-chip-grid #symbolChipGrid>
+            @for (symbol of form.symbols().value(); track $index) {
+                <mat-chip-row (removed)="removeSymbol(symbol)">
+                    {{ symbol }}
+                    <button matChipRemove>
+                        <mat-icon fontIcon="cancel"></mat-icon>
+                    </button>
+                </mat-chip-row>
+            }
+        </mat-chip-grid>
+        <input matInput
+               [matChipInputFor]="symbolChipGrid"
+               (matChipInputTokenEnd)="addSymbol($event)">
+    </mat-form-field>
+
+    <mat-form-field class="form-field">
+        <mat-label>WKN</mat-label>
+        <input [formField]="form.wkn"
+               matInput>
+    </mat-form-field>
+
+    <mat-form-field class="form-field">
+        <mat-label>Sector</mat-label>
+        <input [formField]="form.sector"
+               matInput>
+    </mat-form-field>
+
+    <mat-form-field class="form-field">
+        <mat-label>Type</mat-label>
+        <mat-select [formField]="form.securityType">
+            @for (securityType of securityTypes; track $index) {
+                <mat-option [value]="securityType">{{ securityType }}</mat-option>
+            }
+        </mat-select>
+    </mat-form-field>
+</form>

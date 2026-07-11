@@ -1,0 +1,24 @@
+<div class="search-field-container">
+    <mat-form-field class="search-field"
+                    subscriptSizing="dynamic">
+        <mat-label>Search</mat-label>
+        <input (keyup.enter)="onSearch()"
+               [(ngModel)]="searchString"
+               [disabled]="disabled"
+               matInput
+               type="text">
+        @if (searchString.length > 0) {
+            <button matSuffix
+                    mat-icon-button
+                    [disabled]="disabled"
+                    (click)="onClear()">
+                <mat-icon fontIcon="close"></mat-icon>
+            </button>
+        }
+    </mat-form-field>
+    <button (click)="onSearch()"
+            [disabled]="disabled"
+            mat-icon-button>
+        <mat-icon fontIcon="search"></mat-icon>
+    </button>
+</div>

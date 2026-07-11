@@ -1,0 +1,69 @@
+<div class="wrapper">
+    <div class="dividend-page-menu">
+        <mat-button-toggle-group class="dividend-page-menu-item"
+                                 hideSingleSelectionIndicator="true">
+            <mat-button-toggle (click)="selectView('barchart')"
+                               [checked]="selectedView() === 'barchart'"
+                               matTooltip="Bar Chart">
+                <mat-icon>bar_chart</mat-icon>
+            </mat-button-toggle>
+
+            <mat-button-toggle (click)="selectView('table')"
+                               [checked]="selectedView() === 'table'"
+                               matTooltip="Dividend Yields">
+                <mat-icon>table_chart</mat-icon>
+            </mat-button-toggle>
+        </mat-button-toggle-group>
+
+        <mat-checkbox class="dividend-page-menu-item"
+                      (change)="toggleUseGrossValues($event)"
+                      [checked]="useGrossValues()">
+            Use Gross Values
+        </mat-checkbox>
+
+        @if (showDiagramControls()) {
+            <mat-checkbox class="dividend-page-menu-item"
+                          (change)="toggleIncludeSpecialDividends($event)"
+                          [checked]="includeSpecialDividends()">
+                Include Special Dividends
+            </mat-checkbox>
+
+            <mat-button-toggle-group class="dividend-page-menu-item"
+                                     hideSingleSelectionIndicator="true">
+                <mat-button-toggle (click)="selectAggregationTimespan('month')"
+                                   [checked]="aggregationTimespan() === 'month'"
+                                   matTooltip="Aggregate by Month">
+                    M
+                </mat-button-toggle>
+
+                <mat-button-toggle (click)="selectAggregationTimespan('quarter')"
+                                   [checked]="aggregationTimespan() === 'quarter'"
+                                   matTooltip="Aggregate by Quarter">
+                    Q
+                </mat-button-toggle>
+
+                <mat-button-toggle (click)="selectAggregationTimespan('year')"
+                                   [checked]="aggregationTimespan() === 'year'"
+                                   matTooltip="Aggregate by Year">
+                    Y
+                </mat-button-toggle>
+            </mat-button-toggle-group>
+
+            <button class="dividend-page-menu-item"
+                    (click)="downloadImage()"
+                    [disabled]="selectedDepotIds().length === 0"
+                    mat-icon-button
+                    matTooltip="Download Chart as Image">
+                <mat-icon>file_download</mat-icon>
+            </button>
+        }
+    </div>
+
+    <div id="dividend-view-container">
+        @if (selectedView() === 'barchart') {
+            <app-dividend-bar-chart></app-dividend-bar-chart>
+        } @else if (selectedView() === 'table') {
+            <app-dividend-yield-table></app-dividend-yield-table>
+        }
+    </div>
+</div>

@@ -1,0 +1,18 @@
+<div class="dividend-announcement-container">
+    <div class="dividend-announcement-icon">
+        <fy-icon [src]="dividendAnnouncement().securityId | securityLogoUrl">
+        </fy-icon>
+    </div>
+
+    <div>
+        <span matListItemTitle>
+            {{ dividendAnnouncement().securityId | securityName }}
+        </span>
+        <span matListItemLine>
+            {{ dividendAnnouncement().payDate | fyDate }}
+        </span>
+        <span matListItemLine>
+            {{ dividendAnnouncement().amountPerShare | fyCurrency : dividendAnnouncement().currency : '1.2-5' }}&nbsp;per&nbsp;share
+        </span>
+    </div>
+</div>

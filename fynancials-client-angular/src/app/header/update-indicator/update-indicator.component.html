@@ -1,0 +1,7 @@
+@if (availableUpdate(); as update) {
+    <button (click)="openNewTab(update.html_url)"
+            mat-icon-button
+            [matTooltip]="'Update available: ' + update.tag_name">
+        <mat-icon fontIcon="system_update"></mat-icon>
+    </button>
+}

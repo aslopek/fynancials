@@ -1,0 +1,16 @@
+.spacer {
+  flex: 1 1 auto
+}
+
+.page-controls {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 40rem;
+  margin-left: 2rem;
+}
+
+.github-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: currentColor;
+}

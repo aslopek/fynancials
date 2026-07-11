@@ -1,0 +1,562 @@
+openapi: 3.0.3
+
+info:
+  title: Security API
+  description: The API definitions for managing securities (e.g. stocks or ETFs)
+  version: 1.0.0
+
+servers:
+  - url: 'http://localhost:23726'
+    description: Locally serving the API
+
+paths:
+  /securities:
+    post:
+      tags:
+        - Security
+      operationId: createSecurity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecurityCreate'
+      responses:
+        '201':
+          description: Successfully created the security
+          headers:
+            location:
+              required: true
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityRead'
+        '400':
+          description: Passed invalid parameters
+        '409':
+          description: Another security with the same ISIN or symbol exists already
+    get:
+      parameters:
+        - $ref: '#/components/parameters/PaginationPageNumber'
+        - $ref: '#/components/parameters/PaginationPageSize'
+        - $ref: '#/components/parameters/SortOrder'
+        - in: query
+          name: search
+          required: false
+          description: Query string
+          schema:
+            type: string
+            nullable: false
+            minLength: 1
+        - in: query
+          name: orderBy
+          required: false
+          description: Which property should be used to order the search results
+          schema:
+            $ref: '#/components/schemas/SecurityOrderProperty'
+      tags:
+        - Security
+      operationId: getSecurities
+      responses:
+        '200':
+          description: Successfully returned the securities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSecurityRead'
+        '204':
+          description: No securities to return
+        '400':
+          description: Pagination parameters are invalid
+
+  /securities/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: identifies the security
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags:
+        - Security
+      operationId: getSecurity
+      responses:
+        '200':
+          description: Successfully returned the security
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityRead'
+        '404':
+          description: No security with the given ID exists
+    put:
+      tags:
+        - Security
+      operationId: updateSecurity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecurityUpdate'
+      responses:
+        '200':
+          description: Successfully updated the security
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityRead'
+        '400':
+          description: Passed invalid parameters
+        '404':
+          description: No security with the given ID exist
+        '409':
+          description: Conflict while updating security (e.g. ISIN already in use, optimistic locking failed)
+    delete:
+      tags:
+        - Security
+      operationId: deleteSecurity
+      responses:
+        '204':
+          description: Successfully deleted the security
+        '404':
+          description: No security with the given ID exists
+
+  /securities/{id}/logo:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: identifies the security
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags:
+        - SecurityLogo
+      operationId: getLogo
+      responses:
+        '200':
+          description: Successfully returned the logo
+          content:
+            image/png:
+              schema:
+                type: string
+                format: file
+                nullable: false
+        '404':
+          description: Could not find a logo for the given security ID
+    put:
+      tags:
+        - SecurityLogo
+      operationId: setLogo
+      requestBody:
+        required: true
+        content:
+          image/png:
+            schema:
+              type: string
+              format: file
+              nullable: false
+      responses:
+        '204':
+          description: Successfully updated the logo
+        '400':
+          description: Could not update the logo, e.g. because no security for the given ID exists
+    delete:
+      tags:
+        - SecurityLogo
+      operationId: deleteLogo
+      responses:
+        '204':
+          description: Successfully deleted the logo, or there was no logo to delete
+
+  /securities/{id}/cagr:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: identifies the security
+        schema:
+          $ref: '#/components/schemas/Id'
+      - $ref: '#/components/parameters/StartDate'
+      - $ref: '#/components/parameters/EndDate'
+    get:
+      tags:
+        - Security
+      operationId: getCagr
+      responses:
+        '200':
+          description: Successfully returned the CAGR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cagr'
+        '400':
+          description: >
+            - startDate >= endDate
+            - startDate == null
+        '404':
+          description: No security with the given ID exists
+        '422':
+          description: Insufficient price data for the given security ID and time window
+
+  /securities/{id}/stock-splits:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: identifies the security
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags:
+        - StockSplit
+      operationId: getStockSplits
+      responses:
+        '200':
+          description: Successfully returned the stock splits
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: false
+                minItems: 1
+                items:
+                  $ref: '#/components/schemas/StockSplit'
+        '204':
+          description: No stock splits exist for the specified security
+        '404':
+          description: The specified security does not exist
+    post:
+      parameters:
+        - in: query
+          name: updateTransactions
+          required: true
+          schema:
+            type: boolean
+            nullable: false
+            example: true
+        - in: query
+          name: updateHistoricalPrices
+          required: true
+          schema:
+            type: boolean
+            nullable: false
+            example: true
+      tags:
+        - StockSplit
+      operationId: createStockSplit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockSplit'
+      responses:
+        '201':
+          description: Successfully created the stock split and updated associated data
+          headers:
+            location:
+              required: true
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockSplit'
+        '400':
+          description: '''
+            One of the following reasons may have occurred:
+            - The ex date is today or in the future (only ex dates in the past are allowed)
+            - Another stock split exists for the security, where the ex date is after the ex date of the
+              stock split to be created
+            '''
+        '404':
+          description: The specified security does not exist
+        '409':
+          description: A stock split for the specified security exists already on the given ex date
+
+components:
+  parameters:
+    EndDate:
+      name: startDate
+      description: Minimum date
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date
+        nullable: false
+        example: 2023-12-22
+    StartDate:
+      name: endDate
+      description: MaxDate - omitting the parameter is equivalent to sending today's date
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+        nullable: false
+        example: 2023-12-22
+    PaginationPageNumber:
+      name: page
+      description: The requested page number
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+    PaginationPageSize:
+      name: pageSize
+      description: Number of items per page
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+    SortOrder:
+      name: order
+      description: How the results should be ordered
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/SortOrder'
+
+  schemas:
+    SortOrder:
+      type: string
+      nullable: false
+      enum:
+        - ASC
+        - DESC
+
+    Id:
+      type: integer
+      format: int64
+      nullable: false
+      minimum: 1
+      example: 1
+
+    Version:
+      description: Required for the optimistic locking mechanism
+      type: integer
+      format: int64
+      nullable: false
+      minimum: 0
+      example: 1
+
+    Isin:
+      type: string
+      nullable: false
+      pattern: ^[A-Z]{2}[A-Z0-9]{10}$
+      example: US5949181045
+
+    Wkn:
+      type: string
+      nullable: false
+      pattern: ^[A-Z0-9]{6}$
+      example: 870747
+
+    SecurityType:
+      type: string
+      nullable: false
+      example: ETF
+      enum:
+        - Stock
+        - ETF
+        - Other
+
+    Currency:
+      type: string
+      nullable: false
+      pattern: ^[A-Z]{3}$
+      example: USD
+
+    Cagr:
+      description: Compound Annual Growth Rate denoted in percent per year (% p.a.). A value of 0.1 represents 10% p.a.
+      type: number
+      nullable: false
+      example: 0.1
+
+    SecurityCreate:
+      type: object
+      required:
+        - isin
+        - symbols
+        - name
+        - securityType
+      properties:
+        isin:
+          $ref: '#/components/schemas/Isin'
+        symbols:
+          type: array
+          nullable: false
+          minItems: 0
+          items:
+            type: string
+            nullable: false
+            minLength: 1
+            maxLength: 255
+            example: MSFT
+        name:
+          type: string
+          nullable: false
+          minLength: 1
+          maxLength: 255
+          example: Microsoft
+        wkn:
+          $ref: '#/components/schemas/Wkn'
+        sector:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 255
+          example: Technology
+        securityType:
+          $ref: '#/components/schemas/SecurityType'
+
+    SecurityUpdate:
+      allOf:
+        - $ref: '#/components/schemas/SecurityCreate'
+        - type: object
+          required:
+            - version
+          properties:
+            version:
+              $ref: '#/components/schemas/Version'
+
+    SecurityRead:
+      allOf:
+        - $ref: '#/components/schemas/SecurityUpdate'
+        - type: object
+          required:
+            - id
+            - _links
+          properties:
+            id:
+              $ref: '#/components/schemas/Id'
+            priceMetaInfo:
+              $ref: '#/components/schemas/PriceMetaInfo'
+            _links:
+              $ref: '#/components/schemas/SecurityLinks'
+
+    PaginatedSecurityRead:
+      type: object
+      required:
+        - total
+        - currentPage
+        - lastPage
+        - pageSize
+        - items
+      properties:
+        total:
+          description: Total number of items
+          nullable: false
+          type: integer
+          format: int64
+          minimum: 0
+        currentPage:
+          description: The current page number
+          nullable: false
+          type: integer
+          format: int32
+          minimum: 0
+        lastPage:
+          description: The last page number
+          nullable: false
+          type: integer
+          format: int32
+          minimum: 0
+        pageSize:
+          description: Items per page (last page may have less items)
+          nullable: false
+          type: integer
+          format: int32
+          minimum: 1
+        items:
+          description: The items contained in this page
+          nullable: false
+          type: array
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/SecurityRead'
+
+    PriceMetaInfo:
+      type: object
+      nullable: false
+      required:
+        - highTrailingTwelveMonths
+        - lowTrailingTwelveMonths
+        - latestPrice
+        - currency
+        - latestPriceDate
+      properties:
+        highTrailingTwelveMonths:
+          type: number
+          format: double
+          nullable: false
+          minimum: 0
+        lowTrailingTwelveMonths:
+          type: number
+          format: double
+          nullable: false
+          minimum: 0
+        latestPrice:
+          type: number
+          format: double
+          nullable: false
+          minimum: 0
+        currency:
+          $ref: '#/components/schemas/Currency'
+        latestPriceDate:
+          type: string
+          format: date
+          nullable: false
+          example: 2023-12-22
+
+    SecurityLinks:
+      type: object
+      nullable: false
+      properties:
+        logo:
+          description: Reference to fetch the security's logo. Present if and only if a logo exists.
+          type: string
+          nullable: false
+          pattern: ^\/securities\/[1-9][0-9]*\/logo$
+          example: /securities/1/logo
+
+    SecurityOrderProperty:
+      type: string
+      nullable: false
+      enum:
+        - NAME
+        - SECTOR
+
+    StockSplit:
+      type: object
+      nullable: false
+      required:
+        - exDate
+        - quantityOld
+        - quantityNew
+      properties:
+        exDate:
+          type: string
+          format: date
+          nullable: false
+          example: 2024-05-20
+        quantityOld:
+          type: integer
+          format: int64
+          nullable: false
+          example: 1
+        quantityNew:
+          type: integer
+          format: int64
+          nullable: false
+          example: 4

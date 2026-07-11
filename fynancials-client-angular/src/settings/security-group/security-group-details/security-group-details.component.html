@@ -1,0 +1,57 @@
+@if (selectedSecurityGroupId() !== null) {
+    <div class="security-group-details">
+        <mat-form-field>
+            <mat-label>Name</mat-label>
+            <input [formField]="form.name"
+                   matInput>
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>Members</mat-label>
+            <mat-chip-grid #chipGrid>
+                @for (memberId of form.members().value(); track memberId) {
+                    <mat-chip-row (removed)="removeMember(memberId)">
+                        {{ memberId | securityName }}
+                        <button matChipRemove>
+                            <mat-icon fontIcon="cancel"></mat-icon>
+                        </button>
+                    </mat-chip-row>
+                }
+            </mat-chip-grid>
+            <input [matChipInputFor]="chipGrid"
+                   [matAutocomplete]="autocompleteMembers"
+                   [value]="memberInput()"
+                   (input)="onMemberInput($event)"
+                   placeholder="Add security">
+            <mat-autocomplete #autocompleteMembers="matAutocomplete"
+                              (optionSelected)="selectOption($event)">
+                @for (option of filteredOptions(); track option.id) {
+                    <mat-option [value]="option.id">{{ option.name }}</mat-option>
+                }
+            </mat-autocomplete>
+        </mat-form-field>
+
+        @if (form.members().value().length < 2) {
+            <p class="hint">A group needs at least 2 securities</p>
+        }
+
+        @if (persistError() === 'conflict') {
+            <p class="error">A security group with this name already exists (or it was modified elsewhere - reload).</p>
+        } @else if (persistError() === 'bad-request') {
+            <p class="error">Invalid security group.</p>
+        }
+
+        <div class="button-group">
+            <button mat-flat-button
+                    color="primary"
+                    [disabled]="!canSave()"
+                    (click)="save()">
+                Save
+            </button>
+            <button mat-stroked-button
+                    (click)="cancel()">
+                Cancel
+            </button>
+        </div>
+    </div>
+}

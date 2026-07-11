@@ -1,0 +1,237 @@
+databaseChangeLog:
+  - changeSet:
+      id: 10
+      author: Armin Slopek
+      changes:
+        - createTable:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE
+            columns:
+              - column:
+                  name: ID
+                  type: BIGINT
+                  autoIncrement: true
+                  startWith: 101
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: UPDATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: VERSION
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: NAME
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: JSON_PATH_DATE
+                  type: CLOB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: DATE_FORMAT
+                  type: VARCHAR(255)
+              - column:
+                  name: JSON_PATH_VALUE
+                  type: CLOB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: JSON_PATH_CURRENCY
+                  type: CLOB
+                  constraints:
+                    nullable: true
+              - column:
+                  name: REGEX_CURRENCY
+                  type: CLOB
+                  constraints:
+                    nullable: true
+              - column:
+                  name: REGEX_CURRENCY_GROUP
+                  type: INTEGER
+                  constraints:
+                    nullable: true
+
+        - createTable:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_REQUEST_HEADER
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: HEADER_NAME
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: HEADER_VALUE
+                  type: CLOB
+                  constraints:
+                    nullable: false
+
+        - addPrimaryKey:
+            columnNames: DATA_SOURCE_ID, HEADER_NAME
+            constraintName: PK_HSP_DATA_SOURCE_HEADER
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_REQUEST_HEADER
+
+        - addForeignKeyConstraint:
+            constraintName: FK_HSP_DATA_SOURCE_HEADER__HSP_DATA_SOURCE
+            baseTableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_REQUEST_HEADER
+            baseColumnNames: DATA_SOURCE_ID
+            referencedTableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE
+            referencedColumnNames: ID
+            onDelete: CASCADE
+
+        - createTable:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: CURRENCY_KEY
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: MAPPED_CURRENCY_CODE
+                  type: VARCHAR(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: MULTIPLIER
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+
+        - addPrimaryKey:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            columnNames: DATA_SOURCE_ID, CURRENCY_KEY
+            constraintName: PK_HSP_DATA_SOURCE_CURRENCY_MAPPING
+
+        - addForeignKeyConstraint:
+            constraintName: FK_HSP_DATA_SOURCE_CURRENCY_MAPPING__HSP_DATA_SOURCE
+            baseTableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_CURRENCY_MAPPING
+            baseColumnNames: DATA_SOURCE_ID
+            referencedTableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE
+            referencedColumnNames: ID
+            onDelete: CASCADE
+
+        - createTable:
+            tableName: HISTORICAL_SECURITY_PRICE_MARKET_CLOSE_TIME
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: TIME_ZONE
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: TIME
+                  type: VARCHAR(8)
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            constraintName: FK_HSP_DATA_SOURCE_MARKET_CLOSE_TIME__HSP_DATA_SOURCE
+            baseTableName: HISTORICAL_SECURITY_PRICE_MARKET_CLOSE_TIME
+            baseColumnNames: DATA_SOURCE_ID
+            referencedTableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE
+            referencedColumnNames: ID
+            onDelete: CASCADE
+
+        - addUniqueConstraint:
+            constraintName: UK_HSP_MARKET_CLOSE_TIME
+            tableName: HISTORICAL_SECURITY_PRICE_MARKET_CLOSE_TIME
+            columnNames: DATA_SOURCE_ID, TIME_ZONE
+
+        - createTable:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_URL
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: TIMESPAN_IN_DAYS
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: URL_PATTERN
+                  type: CLOB
+                  constraints:
+                    nullable: false
+
+        - addPrimaryKey:
+            tableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_URL
+            columnNames: DATA_SOURCE_ID, TIMESPAN_IN_DAYS
+            constraintName: PK_HSP_DATA_SOURCE_URL
+
+        - addForeignKeyConstraint:
+            constraintName: FK_HSP_DATA_SOURCE_URL__HSP_DATA_SOURCE
+            baseTableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE_URL
+            baseColumnNames: DATA_SOURCE_ID
+            referencedTableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE
+            referencedColumnNames: ID
+            onDelete: CASCADE
+
+        - dropColumn:
+            tableName: HISTORICAL_SECURITY_PRICE
+            columnName: VERSION
+
+        - dropColumn:
+            tableName: HISTORICAL_SECURITY_PRICE
+            columnName: STOCK_EXCHANGE_ID
+
+        - dropColumn:
+            tableName: HISTORICAL_SECURITY_PRICE
+            columnName: DATA_PROVIDER
+
+        - delete:
+            tableName: HISTORICAL_SECURITY_PRICE_CONFIG
+
+        - dropColumn:
+            tableName: HISTORICAL_SECURITY_PRICE_CONFIG
+            columnName: DATA_PROVIDER
+
+        - dropColumn:
+            tableName: HISTORICAL_SECURITY_PRICE_CONFIG
+            columnName: PROVIDER_SPECIFIC_CONFIG_PARAMS
+
+        - addColumn:
+            tableName: HISTORICAL_SECURITY_PRICE_CONFIG
+            columns:
+              - column:
+                  name: DATA_SOURCE_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            constraintName: FK_HISTORICAL_SECURITY_PRICE_CONFIG__HSP_DATA_SOURCE
+            baseTableName: HISTORICAL_SECURITY_PRICE_CONFIG
+            baseColumnNames: DATA_SOURCE_ID
+            referencedTableName: HISTORICAL_SECURITY_PRICE_DATA_SOURCE
+            referencedColumnNames: ID

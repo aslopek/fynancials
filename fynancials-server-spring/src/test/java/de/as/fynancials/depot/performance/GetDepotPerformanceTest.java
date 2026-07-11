@@ -1,0 +1,247 @@
+package de.as.fynancials.depot.performance;
+
+import static integration.Accuracy.ACCURACY_ONE_THOUSANDTH;
+import static integration.DepotIds.EMPTY_DEPOT;
+import static integration.DepotIds.FIRST_DEPOT;
+import static integration.DepotIds.OTHER_DEPOT;
+import static integration.DepotIds.USD_DEPOT_1;
+import static integration.DepotIds.WEEKEND_FIRST_TRANSACTION_DEPOT;
+import static java.math.BigDecimal.ZERO;
+import static java.time.Month.DECEMBER;
+import static java.time.Month.FEBRUARY;
+import static java.time.Month.JANUARY;
+import static java.time.Month.JULY;
+import static java.time.Month.MARCH;
+import static java.time.Month.OCTOBER;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.context.jdbc.SqlMergeMode.MergeMode.MERGE;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.as.fynancials.depot.performance.api.model.DepotPerformanceDto;
+import de.as.fynancials.depot.performance.api.model.DepotValueDto;
+import integration.IntegrationTest;
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlMergeMode;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
+
+@IntegrationTest
+class GetDepotPerformanceTest {
+
+  private static final String ENDPOINT = "/depot-performance";
+
+  private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+
+  @Autowired
+  private MockMvc mockMvc;
+
+  @MockitoBean
+  private Clock clock;
+
+  @BeforeEach
+  void beforeEach() {
+    when(clock.instant()).thenReturn(Instant.parse("2024-01-01T16:37:08Z"));
+    when(clock.getZone()).thenReturn(ZoneId.of("Europe/Berlin"));
+  }
+
+  @Test
+  void getDepotPerformance_oneDepot_ok() throws Exception {
+    MvcResult mvcResult = getDepotPerformance(Set.of(OTHER_DEPOT)).andExpect(status().isOk()).andReturn();
+    DepotPerformanceDto responseBody = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), DepotPerformanceDto.class);
+    List<DepotValueDto> values = responseBody.getValues();
+
+    assertThat(responseBody.getExtendedInternalRateOfReturns()).isCloseTo(new BigDecimal("0.01497"), ACCURACY_ONE_THOUSANDTH);
+
+    // check length - 2024-01-01 itself is dropped: its value is identical to the day before (no transaction/price update since 2023-05-17),
+    // so it's treated as a duplicate "today" with no fresh closing price yet, and 2023-12-29 (Friday) becomes the new last entry
+    assertThat(values).hasSize(726);
+
+    // check first entry - no historical price exists yet for Hensoldt, so the BUY's own price (1269 / 100 shares) values the position
+    DepotValueDto depotValueDto = values.getFirst();
+    assertThat(depotValueDto.getDate()).isEqualTo(LocalDate.of(2021, MARCH, 19));
+    assertThat(depotValueDto.getInvestedCapital()).isCloseTo(new BigDecimal("1269"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getCashPosition()).isCloseTo(ZERO, ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getAbsoluteValue()).isCloseTo(new BigDecimal("1269"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getPerformanceAbsolute()).isCloseTo(ZERO, ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getPerformanceRelative()).isCloseTo(ZERO, ACCURACY_ONE_THOUSANDTH);
+
+    // check last entry - still no real historical price for Hensoldt/Nvidia, so both positions are valued at their latest BUY's implied price
+    depotValueDto = values.getLast();
+    assertThat(depotValueDto.getDate()).isEqualTo(LocalDate.of(2023, DECEMBER, 29));
+    assertThat(depotValueDto.getInvestedCapital()).isCloseTo(new BigDecimal("4130.12"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getCashPosition()).isCloseTo(new BigDecimal("137.67"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getAbsoluteValue()).isCloseTo(new BigDecimal("4134.28"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getPerformanceAbsolute()).isCloseTo(new BigDecimal("4.16"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getPerformanceRelative()).isCloseTo(new BigDecimal("0.000813"), ACCURACY_ONE_THOUSANDTH);
+  }
+
+  @Test
+  @SqlMergeMode(MERGE)
+  @Sql(statements = """
+        INSERT INTO HISTORICAL_SECURITY_PRICE (SECURITY_ID, PRICE, CURRENCY, DATE, CREATED_AT, UPDATED_AT)
+        VALUES ((SELECT ID FROM SECURITY WHERE NAME = 'Hensoldt'), 33.8, 'EUR', '2023-12-31', current_timestamp, current_timestamp),
+               ((SELECT ID FROM SECURITY WHERE NAME = 'Amazon'), 151.94, 'USD', '2023-12-31', current_timestamp, current_timestamp),
+               ((SELECT ID FROM SECURITY WHERE NAME = 'LVMH'), 614.6, 'EUR', '2023-12-31', current_timestamp, current_timestamp),
+               ((SELECT ID FROM SECURITY WHERE NAME = 'Nvidia'), 495.22, 'USD', '2023-12-31', current_timestamp, current_timestamp);
+      
+        INSERT INTO EXCHANGE_RATE (DATE, BASE_CURRENCY, TARGET_CURRENCY, EXCHANGE_RATE, CREATED_AT, UPDATED_AT, VERSION)
+        VALUES ('2023-12-31', 'EUR', 'USD', '1.1056', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0);
+      """)
+  void getDepotPerformance_twoDepots_ok() throws Exception {
+    MvcResult mvcResult = getDepotPerformance(Set.of(FIRST_DEPOT, OTHER_DEPOT)).andExpect(status().isOk()).andReturn();
+    DepotPerformanceDto responseBody = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), DepotPerformanceDto.class);
+    List<DepotValueDto> values = responseBody.getValues();
+
+    assertThat(responseBody.getExtendedInternalRateOfReturns()).isCloseTo(new BigDecimal("0.25235"), ACCURACY_ONE_THOUSANDTH);
+
+    // check length
+    assertThat(values).hasSize(906);
+
+    // check first entry - no historical price exists yet for Amazon, so the BUY's own price (3789.45 / 1.35 shares) values the position;
+    // the fee (10) isn't part of that price, but is part of investedCapital, hence the small negative performance on the purchase day itself
+    DepotValueDto depotValueDto = values.getFirst();
+    assertThat(depotValueDto.getDate()).isEqualTo(LocalDate.of(2020, JULY, 13));
+    assertThat(depotValueDto.getInvestedCapital()).isCloseTo(new BigDecimal("3799.45"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getCashPosition()).isCloseTo(new BigDecimal("0"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getAbsoluteValue()).isCloseTo(new BigDecimal("3789.45"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getPerformanceAbsolute()).isCloseTo(new BigDecimal("-10"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getPerformanceRelative()).isCloseTo(new BigDecimal("-0.00263"), ACCURACY_ONE_THOUSANDTH);
+
+    // check last entry
+    depotValueDto = values.getLast();
+    assertThat(depotValueDto.getDate()).isEqualTo(LocalDate.of(2024, JANUARY, 1));
+    assertThat(depotValueDto.getInvestedCapital()).isCloseTo(new BigDecimal("17559.28"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getCashPosition()).isCloseTo(new BigDecimal("33.49"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getAbsoluteValue()).isCloseTo(new BigDecimal("30621.76599"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getPerformanceAbsolute()).isCloseTo(new BigDecimal("13062.48599"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(depotValueDto.getPerformanceRelative()).isCloseTo(new BigDecimal("0.74391"), ACCURACY_ONE_THOUSANDTH);
+  }
+
+  @Test
+  @SqlMergeMode(MERGE)
+  @Sql(statements = """
+        INSERT INTO HISTORICAL_SECURITY_PRICE (SECURITY_ID, PRICE, CURRENCY, DATE, CREATED_AT, UPDATED_AT)
+        VALUES ((SELECT ID FROM SECURITY WHERE NAME = 'Hensoldt'), 33.8, 'EUR', '2024-01-01', current_timestamp, current_timestamp);
+      """)
+  void getDepotPerformance_lastDayHasFreshPrice_notRemoved() throws Exception {
+    // unlike getDepotPerformance_oneDepot_ok, "today" (2024-01-01) now has its own real closing price, so its value differs from the
+    // day before and it must be kept as the last entry rather than dropped as a stale duplicate
+    MvcResult mvcResult = getDepotPerformance(Set.of(OTHER_DEPOT)).andExpect(status().isOk()).andReturn();
+    DepotPerformanceDto responseBody = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), DepotPerformanceDto.class);
+    List<DepotValueDto> values = responseBody.getValues();
+
+    assertThat(values).hasSize(727);
+
+    DepotValueDto depotValueDto = values.getLast();
+    assertThat(depotValueDto.getDate()).isEqualTo(LocalDate.of(2024, JANUARY, 1));
+    assertThat(depotValueDto.getAbsoluteValue()).isCloseTo(new BigDecimal("9434.28"), ACCURACY_ONE_THOUSANDTH);
+  }
+
+  /**
+   * "My other depot" (only Hensoldt/Nvidia, no historical prices in the base fixtures) buys Hensoldt on 2021-03-19 and again on
+   * 2022-01-19, and buys Nvidia on 2021-09-28. This adds one real Hensoldt quote in between the two buys, and one real Nvidia quote on
+   * the exact same day as the Nvidia buy, to verify: a real quote is used over a stale BUY-implied price when it's more recent (Hensoldt,
+   * 2021-07-01), a real quote wins a same-day tie against a BUY (Nvidia, 2021-09-28), and a later BUY's own implied price takes over again
+   * once it is more recent than the last real quote (Hensoldt, 2022-02-01).
+   */
+  @Test
+  @SqlMergeMode(MERGE)
+  @Sql(statements = """
+        INSERT INTO HISTORICAL_SECURITY_PRICE (SECURITY_ID, PRICE, CURRENCY, DATE, CREATED_AT, UPDATED_AT)
+        VALUES ((SELECT ID FROM SECURITY WHERE NAME = 'Hensoldt'), 13.00, 'EUR', '2021-06-01', current_timestamp, current_timestamp),
+               ((SELECT ID FROM SECURITY WHERE NAME = 'Nvidia'), 200.00, 'EUR', '2021-09-28', current_timestamp, current_timestamp);
+      """)
+  void getDepotPerformance_transactionPricesFillGapsButNeverReplaceARealPrice_ok() throws Exception {
+    MvcResult mvcResult = getDepotPerformance(Set.of(OTHER_DEPOT)).andExpect(status().isOk()).andReturn();
+    DepotPerformanceDto responseBody = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), DepotPerformanceDto.class);
+    List<DepotValueDto> values = responseBody.getValues();
+
+    // Hensoldt-only holding; the 2021-06-01 real quote (13.00) is more recent than the 2021-03-19 BUY's implied price (12.69) and wins
+    assertThat(findByDate(values, LocalDate.of(2021, JULY, 1)).getAbsoluteValue())
+        .isCloseTo(new BigDecimal("1300"), ACCURACY_ONE_THOUSANDTH);
+
+    // Nvidia's real quote (200.00) lands on the same day as its only BUY (implied price 178.96) - the real quote must win the tie:
+    // 100 * 13.00 (Hensoldt, unchanged) + 5.5 * 200.00 (Nvidia) = 2400
+    assertThat(findByDate(values, LocalDate.of(2021, OCTOBER, 1)).getAbsoluteValue())
+        .isCloseTo(new BigDecimal("2400"), ACCURACY_ONE_THOUSANDTH);
+
+    // the 2022-01-19 Hensoldt BUY (150 @ 1890, i.e. 12.6/share) has no real quote of its own, but is more recent than the 2021-06-01
+    // real quote, so it now values the whole Hensoldt position: 250 * 12.6 (Hensoldt) + 5.5 * 200.00 (Nvidia, unchanged) = 4250
+    assertThat(findByDate(values, LocalDate.of(2022, FEBRUARY, 1)).getAbsoluteValue())
+        .isCloseTo(new BigDecimal("4250"), ACCURACY_ONE_THOUSANDTH);
+  }
+
+  @Test
+  void getDepotPerformance_noTransactions_ok() throws Exception {
+    MvcResult mvcResult = getDepotPerformance(Set.of(EMPTY_DEPOT)).andExpect(status().isOk()).andReturn();
+    DepotPerformanceDto responseBody = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), DepotPerformanceDto.class);
+    List<DepotValueDto> values = responseBody.getValues();
+    assertThat(responseBody.getExtendedInternalRateOfReturns()).isZero();
+    assertThat(values).isEmpty();
+  }
+
+  /**
+   * First and only transaction is on Saturday, June 1st 2024. When calculating performance on Sunday, June 2nd 2024, a valid result shall be
+   */
+  @Test
+  void getDepotPerformance_firstTransactionOnWeekendWithNoTradingDayYet_ok() throws Exception {
+    // first (and only) transaction is on Saturday 2024-06-01; "now" is still within the same weekend (Sunday)
+    when(clock.instant()).thenReturn(Instant.parse("2024-06-02T10:00:00Z"));
+    MvcResult mvcResult = getDepotPerformance(Set.of(WEEKEND_FIRST_TRANSACTION_DEPOT)).andExpect(status().isOk()).andReturn();
+  }
+
+  @Test
+  void getDepotPerformance_differentCurrencies_badRequest() throws Exception {
+    MvcResult mvcResult = getDepotPerformance(Set.of(FIRST_DEPOT, USD_DEPOT_1)).andExpect(status().isBadRequest()).andReturn();
+    assertThat(mvcResult.getResponse().getContentLength()).isZero();
+  }
+
+  @Test
+  void getDepotPerformance_emptyDepotIds_badRequest() throws Exception {
+    MvcResult mvcResult = getDepotPerformance(Set.of()).andExpect(status().isBadRequest()).andReturn();
+    assertThat(mvcResult.getResponse().getContentLength()).isZero();
+  }
+
+  @Test
+  void getDepotPerformance_noDepotIdsQueryParam_badRequest() throws Exception {
+    MvcResult mvcResult = mockMvc.perform(get(ENDPOINT)).andExpect(status().isBadRequest()).andReturn();
+    assertThat(mvcResult.getResponse().getContentLength()).isZero();
+  }
+
+  @Test
+  void getDepotPerformance_oneDepotIdDoesNotExist_notFound() throws Exception {
+    MvcResult mvcResult = getDepotPerformance(Set.of(FIRST_DEPOT, 999L)).andExpect(status().isNotFound()).andReturn();
+    assertThat(mvcResult.getResponse().getContentLength()).isZero();
+  }
+
+  private ResultActions getDepotPerformance(Set<Long> depotIds) throws Exception {
+    StringBuilder urlBuilder = new StringBuilder(ENDPOINT).append("?depotIds=");
+    for (Long depotId : depotIds) {
+      urlBuilder.append(depotId).append(",");
+    }
+    urlBuilder.deleteCharAt(urlBuilder.length() - 1); // remove last comma
+
+    String url = urlBuilder.toString();
+    return mockMvc.perform(get(url));
+  }
+
+  private DepotValueDto findByDate(List<DepotValueDto> values, LocalDate date) {
+    return values.stream().filter(value -> value.getDate().equals(date)).findFirst()
+        .orElseThrow(() -> new AssertionError("No DepotValue found for date " + date));
+  }
+}

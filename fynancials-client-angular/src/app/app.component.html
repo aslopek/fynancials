@@ -1,0 +1,53 @@
+@if (backendAvailable()) {
+<app-header class="app-header"></app-header>
+    <mat-drawer-container class="app-body">
+        <mat-drawer #drawer
+                    [opened]="sideMenuOpen$ | async"
+                    mode="side">
+            <div class="menu-item"
+                 [class.selected]="(openPage$ | async) === 'securities'"
+                 (click)="selectPage('securities')"
+                 routerLink="/securities">
+                <mat-icon fontIcon="description"
+                          class="menu-item-icon">
+                </mat-icon>
+                Securities
+            </div>
+
+            <div class="menu-item"
+                 [class.selected]="(openPage$ | async) === 'dividends'"
+                 (click)="selectPage('dividends')"
+                 routerLink="/dividends">
+                <mat-icon fontIcon="payments"
+                          class="menu-item-icon">
+                </mat-icon>
+                Dividends
+            </div>
+
+            <div class="menu-item"
+                 [class.selected]="(openPage$ | async) === 'depots'"
+                 (click)="selectPage('depots')"
+                 routerLink="/depots">
+                <mat-icon fontIcon="trending_up"
+                          class="menu-item-icon">
+                </mat-icon>
+                Depots
+            </div>
+
+            <div class="menu-item"
+                 [class.selected]="(openPage$ | async) === 'settings'"
+                 (click)="selectPage('settings')"
+                 routerLink="settings">
+                <mat-icon fontIcon="settings"
+                          class="menu-item-icon">
+                </mat-icon>
+                Settings
+            </div>
+        </mat-drawer>
+        <mat-drawer-content class="page-content">
+            <router-outlet></router-outlet>
+        </mat-drawer-content>
+    </mat-drawer-container>
+} @else {
+    <app-splash-screen></app-splash-screen>
+}

@@ -1,0 +1,22 @@
+@let depots = selectedDepots();
+@if (depots.length > 0) {
+    <div class="depot-logo margin-right"
+         matTooltip="Change logo for {{ depots[0].name }}"
+         (click)="depotLogoInput.click()">
+        <input #depotLogoInput
+               (change)="updateLogo($event)"
+               accept="image/png"
+               class="hidden-input"
+               type="file">
+        @if (depots[0]._links.logo != null) {
+            <fy-icon [src]="depots[0].id | depotLogoUrl">
+            </fy-icon>
+        } @else {
+            <mat-icon color="accent">photo</mat-icon>
+        }
+    </div>
+}
+
+<div class="depot-select">
+    <app-depot-select></app-depot-select>
+</div>

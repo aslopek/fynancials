@@ -1,0 +1,257 @@
+openapi: 3.0.3
+
+info:
+  title: Depot API
+  description: The API definitions for querying depot positions
+  version: 1.0.0
+
+servers:
+  - url: 'http://localhost:23726'
+    description: Locally serving the API
+
+paths:
+  /depot-positions:
+    get:
+      tags:
+        - DepotPosition
+      parameters:
+        - in: query
+          name: depots
+          required: true
+          schema:
+            type: array
+            nullable: false
+            minItems: 1
+            items:
+              $ref: '#/components/schemas/Id'
+      operationId: getDepotPositions
+      responses:
+        '200':
+          description: Successfully returned the dividends
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepotComposition'
+        '400':
+          description: '''
+            - passed invalid query parameters
+            - not all depots have the same currency
+            '''
+
+  /depots/{depotId}/securities/{securityId}/lots:
+    parameters:
+      - in: path
+        name: depotId
+        required: true
+        description: identifies the depot
+        schema:
+          $ref: '#/components/schemas/Id'
+      - in: path
+        name: securityId
+        required: true
+        description: identifies a security
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags:
+        - DepotPosition
+      operationId: getLots
+      responses:
+        '200':
+          description: Successfully returned the lots of the given security in the given depot
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: false
+                minItems: 0
+                items:
+                  $ref: '#/components/schemas/Lot'
+        '400':
+          description: Invalid path parameters
+        '404':
+          description: No depot with the given ID or no security with the given ID exist
+
+components:
+  schemas:
+    Id:
+      type: integer
+      format: int64
+      nullable: false
+      minimum: 1
+      example: 1
+
+    Currency:
+      type: string
+      nullable: false
+      pattern: ^[A-Z]{3}$
+      example: USD
+
+    DepotComposition:
+      type: object
+      nullable: false
+      required:
+        - currency
+        - buyInAbsolute
+        - currentSizeAbsolute
+        - absolutePerformance
+        - positions
+      properties:
+        currency:
+          $ref: '#/components/schemas/Currency'
+        buyInAbsolute:
+          type: number
+          format: double
+          nullable: false
+        currentSizeAbsolute:
+          type: number
+          format: double
+          nullable: false
+        absolutePerformance:
+          type: number
+          format: double
+          nullable: false
+        relativePerformance:
+          description: Percentage (100 meaning 100% or 1.0)
+          type: number
+          format: double
+          nullable: false
+        positions:
+          type: array
+          nullable: false
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/DepotPosition'
+
+    DepotPosition:
+      type: object
+      nullable: false
+      required:
+        - securityIds
+        - displayName
+        - count
+        - buyInAbsolute
+        - buyInRelative
+        - currentSizeAbsolute
+        - currentSizeRelative
+        - absolutePerformance
+        - relativePerformance
+      properties:
+        securityIds:
+          description: '''Contains the security IDs associated to this position. If more than one ID is provided,
+                          the securityGroupId is provided as well.'''
+          type: array
+          nullable: false
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Id'
+        displayName:
+          description: '''Suggested display name for the position. If exactly one security matches this position, it is
+                          the security name. Otherwise, it is the security group name.'''
+          type: string
+          nullable: false
+          minLength: 1
+          maxLength: 255
+        securityGroupId:
+          $ref: '#/components/schemas/Id'
+        count:
+          type: number
+          format: double
+          nullable: false
+        buyInAbsolute:
+          type: number
+          format: double
+          nullable: false
+        buyInRelative:
+          description: Percentage (100 meaning 100% or 1.0)
+          type: number
+          format: double
+          nullable: false
+        currentSizeAbsolute:
+          type: number
+          format: double
+          nullable: false
+        currentSizeRelative:
+          description: Percentage (100 meaning 100% or 1.0)
+          type: number
+          format: double
+          nullable: false
+        absolutePerformance:
+          type: number
+          format: double
+          nullable: false
+        relativePerformance:
+          description: Percentage (100 meaning 100% or 1.0)
+          type: number
+          format: double
+          nullable: false
+
+    Time:
+      description: Time including hours, minutes, seconds
+      type: string
+      nullable: false
+      pattern: ^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$
+      example: 15:47:23
+
+    Lot:
+      type: object
+      nullable: false
+      required:
+        - depotId
+        - securityId
+        - currency
+        - date
+        - time
+        - holdingPeriodInDays
+        - count
+        - buyInAbsolute
+        - fee
+        - tax
+        - currentSizeAbsolute
+        - absolutePerformance
+        - relativePerformance
+        - cagr
+      properties:
+        depotId:
+          $ref: '#/components/schemas/Id'
+        securityId:
+          $ref: '#/components/schemas/Id'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        date:
+          type: string
+          format: date
+          nullable: false
+          example: 2023-12-22
+        time:
+          $ref: '#/components/schemas/Time'
+        holdingPeriodInDays:
+          type: integer
+          format: int64
+          nullable: false
+        count:
+          type: number
+          nullable: false
+        buyInAbsolute:
+          type: number
+          nullable: false
+        fee:
+          type: number
+          nullable: false
+        tax:
+          type: number
+          nullable: false
+        currentSizeAbsolute:
+          type: number
+          nullable: false
+        absolutePerformance:
+          type: number
+          nullable: false
+        relativePerformance:
+          description: Percentage (e.g. 0.1 meaning 10%)
+          type: number
+          nullable: false
+        cagr:
+          description: Compound Annual Growth Rage, denoted as a percentage per year (e.g. 0.1 meaning 10% p.a.)
+          type: number
+          nullable: false

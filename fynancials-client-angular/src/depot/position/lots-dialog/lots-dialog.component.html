@@ -1,0 +1,11 @@
+<div class="container">
+    <app-title-toolbar (onClose)="close()"
+                       title="Lots"
+                       class="title-bar">
+    </app-title-toolbar>
+
+    <app-lot-view [depotIds]="dialogData.depotIds"
+                      [securityIds]="dialogData.securityIds"
+                  class="lots">
+    </app-lot-view>
+</div>

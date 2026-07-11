@@ -1,0 +1,42 @@
+@use '../../../styles' as styles;
+
+.logo-background {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: styles.$color-surface-card;
+  border-radius: 20%;
+  overflow: clip;
+
+  &--medium {
+    width: 3.5rem;
+    height: 3.5rem;
+    max-height: 3.5rem;
+    max-width: 3.5rem;
+  }
+
+  &--small {
+    width: 1.5rem;
+    height: 1.5rem;
+    max-height: 1.5rem;
+    max-width: 1.5rem;
+  }
+}
+
+.logo {
+  display: inline-block;
+  object-fit: contain;
+  width: auto;
+
+  &--medium {
+    height: 2.5rem;
+    max-width: 2.5rem;
+  }
+
+  &--small {
+    height: 1.1rem;
+    max-width: 1.3rem;
+  }
+}

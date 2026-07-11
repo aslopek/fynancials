@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /fynancials-client-angular
+    schedule:
+      interval: weekly
+    groups:
+      client-dependencies:
+        patterns:
+          - '*'
+  - package-ecosystem: npm
+    directory: /fynancials-api
+    schedule:
+      interval: weekly
+    groups:
+      api-dependencies:
+        patterns:
+          - '*'
+  - package-ecosystem: maven
+    directory: /fynancials-server-spring
+    schedule:
+      interval: weekly
+    groups:
+      server-dependencies:
+        patterns:
+          - '*'
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

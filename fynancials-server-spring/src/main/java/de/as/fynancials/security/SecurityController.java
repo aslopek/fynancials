@@ -1,0 +1,84 @@
+package de.as.fynancials.security;
+
+import static de.as.fynancials.common.pagination.PaginationUtils.getPageNumber;
+import static de.as.fynancials.common.pagination.PaginationUtils.getPageSize;
+
+import de.as.fynancials.common.pagination.PageContainer;
+import de.as.fynancials.security.api.controller.SecurityApiDelegate;
+import de.as.fynancials.security.api.model.PaginatedSecurityReadDto;
+import de.as.fynancials.security.api.model.SecurityCreateDto;
+import de.as.fynancials.security.api.model.SecurityOrderPropertyDto;
+import de.as.fynancials.security.api.model.SecurityReadDto;
+import de.as.fynancials.security.api.model.SecurityUpdateDto;
+import de.as.fynancials.security.api.model.SortOrderDto;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.time.LocalDate;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+
+@Controller
+@RequiredArgsConstructor
+class SecurityController implements SecurityApiDelegate {
+
+  private static final String SECURITY_URI_PATTERN = "/securities/%d";
+  private static final String SECURITY_LOGO_URI_PATTERN = "/securities/%d/logo";
+
+  private final SecurityMapper securityMapper;
+  private final SecurityService securityService;
+
+  @Override
+  public ResponseEntity<SecurityReadDto> createSecurity(SecurityCreateDto securityCreateDto) {
+    Security security = securityMapper.fromCreateDto(securityCreateDto);
+    security = securityService.createSecurity(security);
+    SecurityReadDto responseBody = securityMapper.toDto(security);
+    URI locationHeader = URI.create(String.format(SECURITY_URI_PATTERN, security.getId()));
+    return ResponseEntity.created(locationHeader).body(responseBody);
+  }
+
+  @Override
+  public ResponseEntity<Void> deleteSecurity(Long id) {
+    securityService.deleteSecurity(id);
+    return ResponseEntity.noContent().build();
+  }
+
+  @Override
+  public ResponseEntity<BigDecimal> getCagr(Long id, LocalDate startDate, LocalDate endDate) {
+    BigDecimal cagr = securityService.getCagr(id, startDate, endDate);
+    return ResponseEntity.ok(cagr);
+  }
+
+  @Override
+  public ResponseEntity<PaginatedSecurityReadDto> getSecurities(Integer page, Integer pageSize, SortOrderDto order,
+                                                                String search, SecurityOrderPropertyDto orderBy) {
+    PageContainer<Security> securities =
+        securityService.getSecurities(getPageNumber(page), getPageSize(pageSize), search, orderBy, order);
+    PaginatedSecurityReadDto responseBody = securityMapper.toPageDto(securities);
+    for (SecurityReadDto security : responseBody.getItems()) {
+      if (securityService.hasLogo(security.getId())) {
+        security.getLinks().setLogo(String.format(SECURITY_LOGO_URI_PATTERN, security.getId()));
+      }
+    }
+    return ResponseEntity.ok(responseBody);
+  }
+
+  @Override
+  public ResponseEntity<SecurityReadDto> getSecurity(Long id) {
+    Security security = securityService.getSecurity(id);
+    SecurityReadDto responseBody = securityMapper.toDto(security);
+    if (securityService.hasLogo(id)) {
+      responseBody.getLinks().setLogo(String.format(SECURITY_LOGO_URI_PATTERN, id));
+    }
+    return ResponseEntity.ok(responseBody);
+  }
+
+  @Override
+  public ResponseEntity<SecurityReadDto> updateSecurity(Long id, SecurityUpdateDto securityUpdateDto) {
+    Security security = securityMapper.fromUpdateDto(securityUpdateDto);
+    security.setId(id);
+    security = securityService.updateSecurity(security);
+    SecurityReadDto responseBody = securityMapper.toDto(security);
+    return ResponseEntity.ok(responseBody);
+  }
+}

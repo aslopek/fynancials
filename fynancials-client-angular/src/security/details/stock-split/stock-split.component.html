@@ -1,0 +1,56 @@
+<div class="wrapper">
+    @for (stockSplit of stockSplitStore.stockSplits(); track stockSplit) {
+        <div class="row stock-split-item">
+            <p style="width: 40%;">{{ stockSplit.exDate | fyDate }}</p>
+            <p style="width: 40%;">{{ stockSplit.quantityNew | fyDecimal:'1.0-3' }}&nbsp;for&nbsp;{{ stockSplit.quantityOld | fyDecimal:'1.0-3' }}</p>
+            <p style="width: 20%;">x{{ stockSplit.multiplier | fyDecimal:'1.0-3' }}</p>
+        </div>
+    }
+    <div class="row">
+        <mat-form-field class="margin-right clickable"
+                        style="width: 40%">
+            <mat-label>Date</mat-label>
+            <input (click)="picker.open()"
+                   [matDatepicker]="picker"
+                   [formField]="stockSplitForm.exDate"
+                   class="clickable"
+                   matInput
+                   readonly>
+            <mat-datepicker-toggle [for]="picker"
+                                   matIconSuffix></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field class="margin-right"
+                        style="width: 20%;">
+            <mat-label>Quantity old</mat-label>
+            <input matInput
+                   type="number"
+                   [formField]="stockSplitForm.quantityOld">
+        </mat-form-field>
+
+        <mat-form-field class="margin-right"
+                        style="width: 20%;">
+            <mat-label>Quantity new</mat-label>
+            <input matInput
+                   type="number"
+                   [formField]="stockSplitForm.quantityNew">
+        </mat-form-field>
+
+        <h2 style="width: 10%;">
+            x{{ stockSplitStore.multiplier() | fyDecimal:'1.0-3' }}
+        </h2>
+
+        <mat-checkbox [formField]="stockSplitForm.updateRelatedData">
+            Update transactions and historical prices
+        </mat-checkbox>
+
+        <button mat-icon-button
+                class="margin-right"
+                matTooltip="Create"
+                [disabled]="!stockSplitStore.creationParamsValid()"
+                (click)="stockSplitStore.addStockSplit()">
+            <mat-icon>save</mat-icon>
+        </button>
+    </div>
+</div>

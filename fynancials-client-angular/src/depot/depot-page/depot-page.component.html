@@ -1,0 +1,36 @@
+@let depots = selectedDepots();
+@if (depots.length > 0) {
+    <mat-tab-group [selectedIndex]="selectedTab().index"
+                   (selectedIndexChange)="onTabSelect($event)"
+                   (animationDone)="onAnimationDone()">
+        <mat-tab label="Positions"
+                 [disabled]="!selectableTabs().positions">
+            @if (renderTabContent() && selectedTab().tab === 'positions') {
+                <app-position-page></app-position-page>
+            }
+        </mat-tab>
+
+        <mat-tab label="Dividends"
+                 [disabled]="!selectableTabs().dividends">
+            @if (renderTabContent() && selectedTab().tab === 'dividends') {
+                <app-dividend-page></app-dividend-page>
+            }
+        </mat-tab>
+
+        <mat-tab label="Performance"
+                 [disabled]="!selectableTabs().performance">
+            @if (renderTabContent() && selectedTab().tab === 'performance') {
+                <app-depot-performance></app-depot-performance>
+            }
+        </mat-tab>
+
+        <mat-tab label="Transactions"
+                 [disabled]="!selectableTabs().transactions">
+            @if (renderTabContent() && selectedTab().tab === 'transactions') {
+                <app-transaction-page></app-transaction-page>
+            }
+        </mat-tab>
+    </mat-tab-group>
+} @else {
+    <h1>Begin by creating a depot!</h1>
+}

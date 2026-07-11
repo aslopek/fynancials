@@ -1,0 +1,340 @@
+openapi: 3.0.3
+
+info:
+  title: Depot Transaction API
+  description: The API definitions for managing transactions within depots
+  version: 1.0.0
+
+servers:
+  - url: 'http://localhost:23726'
+    description: Locally serving the API
+
+paths:
+  /depots/{depotId}/transactions:
+    parameters:
+      - $ref: '#/components/parameters/DepotId'
+    post:
+      tags:
+        - Transaction
+      operationId: createTransaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionCreate'
+      responses:
+        '201':
+          description: Successfully created the transaction
+          headers:
+            location:
+              required: true
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionRead'
+        '400':
+          description: Passed invalid parameters (e.g. no depot with the specified ID exists)
+    get:
+      tags:
+        - Transaction
+      operationId: getTransactions
+      parameters:
+        - $ref: '#/components/parameters/PaginationPageNumber'
+        - $ref: '#/components/parameters/PaginationPageSize'
+        - in: query
+          name: transactionTypes
+          description: Filter transactions by type
+          required: false
+          schema:
+            type: array
+            nullable: false
+            minItems: 1
+            items:
+              $ref: '#/components/schemas/TransactionType'
+        - in: query
+          name: orderByTime
+          description: Order transactions by time
+          required: false
+          schema:
+            $ref: '#/components/schemas/SortOrder'
+        - in: query
+          name: minDate
+          description: Filter transactions by minimum date (inclusive)
+          required: false
+          schema:
+            type: string
+            nullable: false
+            format: date
+            example: 2023-12-22
+        - in: query
+          name: maxDate
+          description: Filter transactions by maximum date (inclusive)
+          required: false
+          schema:
+            type: string
+            nullable: false
+            format: date
+            example: 2024-12-22
+        - in: query
+          name: securityIds
+          description: Filter transactions by security IDs
+          required: false
+          schema:
+            type: array
+            nullable: false
+            minItems: 1
+            items:
+              $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: Successfully returned the transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTransactionRead'
+        '204':
+          description: No transactions to return
+        '400':
+          description: Pagination or filtering parameters are invalid
+
+  /depots/{depotId}/transactions/{transactionId}:
+    parameters:
+      - $ref: '#/components/parameters/DepotId'
+      - $ref: '#/components/parameters/TransactionId'
+    get:
+      tags:
+        - Transaction
+      operationId: getTransaction
+      responses:
+        '200':
+          description: Successfully returned the transaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionRead'
+        '404':
+          description: No transaction with the given ID exists, or it is not associated to the specified depot ID
+    put:
+      tags:
+        - Transaction
+      operationId: updateTransaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionUpdate'
+      responses:
+        '200':
+          description: Successfully updated the depot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionRead'
+        '400':
+          description: Passed invalid parameters
+        '404':
+          description: No transaction with the given ID exists, or it is not associated to the specified depot ID
+        '409':
+          description: Conflict while updating transaction (e.g. optimistic locking failed)
+    delete:
+      tags:
+        - Transaction
+      operationId: deleteTransaction
+      responses:
+        '204':
+          description: Successfully deleted the transaction
+        '404':
+          description: No transaction with the given ID exists, or it is not associated to the specified depot ID
+
+components:
+  parameters:
+    DepotId:
+      name: depotId
+      description: Identifies a depot
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+
+    TransactionId:
+      name: transactionId
+      description: Identifies a transaction
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+
+    PaginationPageNumber:
+      name: page
+      description: The requested page number
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+
+    PaginationPageSize:
+      name: pageSize
+      description: Number of items per page
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+
+  schemas:
+    SortOrder:
+      type: string
+      nullable: false
+      enum:
+        - ASC
+        - DESC
+    Id:
+      type: integer
+      format: int64
+      nullable: false
+      minimum: 1
+      example: 1
+
+    Version:
+      description: Required for the optimistic locking mechanism
+      type: integer
+      format: int64
+      nullable: false
+      minimum: 0
+      example: 1
+
+    Time:
+      description: Time including hours, minutes, seconds
+      type: string
+      nullable: false
+      pattern: ^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$
+      example: 15:47:23
+
+    TransactionType:
+      type: string
+      nullable: false
+      example: BUY
+      enum:
+        - BUY
+        - SELL
+        - DIVIDEND
+        - SPECIAL_DIVIDEND
+        - TAX
+
+    TransactionCreate:
+      type: object
+      nullable: false
+      required:
+        - date
+        - securityId
+        - transactionType
+        - securityCountOriginal
+        - grossValue
+      properties:
+        date:
+          type: string
+          format: date
+          nullable: false
+          example: 2023-12-22
+        time:
+          $ref: '#/components/schemas/Time'
+        securityId:
+          $ref: '#/components/schemas/Id'
+        transactionType:
+          $ref: '#/components/schemas/TransactionType'
+        securityCountOriginal:
+          type: number
+          format: double
+          nullable: false
+        securityCountSplitAdjusted:
+          type: number
+          format: double
+          nullable: false
+        grossValue:
+          type: number
+          format: double
+          nullable: false
+        tax:
+          type: number
+          format: double
+          nullable: false
+        fee:
+          type: number
+          format: double
+          nullable: false
+
+    TransactionUpdate:
+      allOf:
+        - $ref: '#/components/schemas/TransactionCreate'
+        - type: object
+          nullable: false
+          required:
+            - version
+          properties:
+            version:
+              $ref: '#/components/schemas/Version'
+
+    TransactionRead:
+      allOf:
+        - $ref: '#/components/schemas/TransactionUpdate'
+        - type: object
+          nullable: false
+          required:
+            - id
+            - netValue
+          properties:
+            id:
+              $ref: '#/components/schemas/Id'
+            netValue:
+              type: number
+              format: double
+              nullable: false
+
+    PaginatedTransactionRead:
+      type: object
+      nullable: false
+      required:
+        - total
+        - currentPage
+        - lastPage
+        - pageSize
+        - items
+      properties:
+        total:
+          description: Total number of items
+          nullable: false
+          type: integer
+          format: int64
+          minimum: 0
+        currentPage:
+          description: The current page number
+          nullable: false
+          type: integer
+          format: int32
+          minimum: 0
+        lastPage:
+          description: The last page number
+          nullable: false
+          type: integer
+          format: int32
+          minimum: 0
+        pageSize:
+          description: Items per page (last page may have less items)
+          nullable: false
+          type: integer
+          format: int32
+          minimum: 1
+        items:
+          description: The items contained in this page
+          nullable: false
+          type: array
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/TransactionRead'

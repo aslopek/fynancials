@@ -1,0 +1,32 @@
+spring:
+  threads:
+    virtual:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  datasource:
+    driver-class-name: org.h2.Driver
+    password: test-password
+    username: test-user
+    url: jdbc:h2:mem:fynancials
+  liquibase:
+    change-log: classpath:db/liquibase.xml
+  h2:
+    console:
+      enabled: false
+
+server:
+  port: 8081
+  h2:
+    console:
+      enabled: false
+      port: 8083
+
+logging:
+  level:
+    root: ${LOG_LEVEL:WARN}
+
+cors:
+  allowed-origins: http://localhost:1234,https://localhost:1235

@@ -1,0 +1,155 @@
+databaseChangeLog:
+  - changeSet:
+      id: 5
+      author: Armin Slopek
+      changes:
+        - createTable:
+            tableName: DEPOT
+            columns:
+              - column:
+                  name: ID
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: UPDATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: VERSION
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: NAME
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: CURRENCY
+                  type: VARCHAR(3)
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: DEPOT_LOGO
+            columns:
+              - column:
+                  name: ID
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: UPDATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: LOGO
+                  type: BLOB
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            constraintName: FK_DEPOT_LOGO
+            baseTableName: DEPOT_LOGO
+            baseColumnNames: ID
+            referencedTableName: DEPOT
+            referencedColumnNames: ID
+            onDelete: CASCADE
+
+        - createTable:
+            tableName: TRANSACTION
+            columns:
+              - column:
+                  name: ID
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: CREATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: UPDATED_AT
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: VERSION
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: DATE
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: TIME
+                  type: TIME
+              - column:
+                  name: DEPOT_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: SECURITY_ID
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: FK_TRANSACTION_SECURITY
+                    referencedTableName: SECURITY
+                    referencedColumnNames:
+                      - ID
+              - column:
+                  name: TRANSACTION_TYPE
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: SECURITY_COUNT_ORIGINAL
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: SECURITY_COUNT_SPLIT_ADJUSTED
+                  type: VARCHAR(255)
+              - column:
+                  name: GROSS_VALUE
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: TAX
+                  type: VARCHAR(255)
+              - column:
+                  name: FEE
+                  type: VARCHAR(255)
+
+        - addForeignKeyConstraint:
+            constraintName: FK_TRANSACTION_DEPOT
+            baseTableName: TRANSACTION
+            baseColumnNames: DEPOT_ID
+            referencedTableName: DEPOT
+            referencedColumnNames: ID
+            onDelete: CASCADE

@@ -1,0 +1,7 @@
+<div class="logo-background"
+     [ngClass]="'logo-background--' + (size() ?? 'medium')">
+    <img alt=""
+         class="logo"
+         [ngClass]="'logo--' + (size() ?? 'medium')"
+         src="{{src()}}">
+</div>

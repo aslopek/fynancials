@@ -1,0 +1,23 @@
+@let ds = dataSource();
+<div class="data-source-entry"
+     [class.selected]="isSelected()"
+     (click)="clickDataSource()">
+    <div class="data-source-name">
+        @if (ds === 'new') {
+            Add new Data Source
+        } @else {
+            {{ ds.name }}
+        }
+    </div>
+    <div class="side-button"
+         [class.disabled]="sideButtonDisabled()"
+         (click)="clickSideButton($event)"
+         mat-ripple
+         [matRippleDisabled]="sideButtonDisabled()">
+        @if (ds === 'new') {
+            <mat-icon fontIcon="add"></mat-icon>
+        } @else {
+            <mat-icon fontIcon="delete"></mat-icon>
+        }
+    </div>
+</div>

@@ -1,0 +1,27 @@
+<div class="content">
+    <input #fileUpload
+           (change)="selectFile($event)"
+           accept=".csv,text/csv"
+           class="file-input"
+           type="file">
+    <button (click)="fileUpload.click()"
+            color="primary"
+            mat-flat-button>
+        Select File
+    </button>
+
+    @if (transactionImportStore.fileName(); as fileName) {
+        <p>File: {{ fileName }}</p>
+        <p>Parsed Rows: {{ transactionImportStore.rows().length }}</p>
+        @if (transactionImportStore.separator() === null) {
+            <p class="error">Could not detect a column separator. Please check the file format.</p>
+        }
+    }
+
+    <button [disabled]="!canProceed()"
+            class="next-button"
+            mat-button
+            matStepperNext>
+        Next
+    </button>
+</div>

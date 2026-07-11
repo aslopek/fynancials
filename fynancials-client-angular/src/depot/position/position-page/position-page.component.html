@@ -1,0 +1,42 @@
+<div class="wrapper">
+    <div class="position-page-menu">
+        <mat-button-toggle-group class="position-page-menu-item"
+                                 hideSingleSelectionIndicator="true">
+            <mat-button-toggle (click)="selectView('donut')"
+                               [checked]="selectedView() === 'donut'"
+                               matTooltip="Donut Chart">
+                <mat-icon>donut_large</mat-icon>
+            </mat-button-toggle>
+
+            <mat-button-toggle (click)="selectView('list')"
+                               [checked]="selectedView() === 'list'"
+                               matTooltip="List">
+                <mat-icon>format_list_bulleted</mat-icon>
+            </mat-button-toggle>
+        </mat-button-toggle-group>
+
+        <mat-checkbox (click)="toggleUseBuyIn()"
+                      [checked]="useBuyIn()"
+                      class="position-page-menu-item">
+            Use Buy-In Values
+        </mat-checkbox>
+
+        <button (click)="downloadImage()"
+                [disabled]="selectedDepots().length === 0"
+                mat-icon-button
+                matTooltip="Download Chart as Image"
+                class="position-page-menu-item">
+            <mat-icon>file_download</mat-icon>
+        </button>
+
+    </div>
+    @if (selectedDepots().length > 0) {
+        <div id="position-view-container">
+            @if (selectedView() === 'donut') {
+                <app-position-pie-chart></app-position-pie-chart>
+            } @else if (selectedView() === 'list') {
+                <app-position-list></app-position-list>
+            }
+        </div>
+    }
+</div>

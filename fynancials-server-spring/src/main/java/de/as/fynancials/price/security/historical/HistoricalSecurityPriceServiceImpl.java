@@ -1,0 +1,349 @@
+package de.as.fynancials.price.security.historical;
+
+import static de.as.fynancials.price.security.historical.api.model.DateFormatDto.TIMESTAMP_MILLISECONDS;
+import static de.as.fynancials.price.security.historical.api.model.DateFormatDto.TIMESTAMP_SECONDS;
+import static java.lang.Double.parseDouble;
+import static java.time.temporal.ChronoUnit.DAYS;
+import static org.springframework.http.HttpMethod.GET;
+
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
+import de.as.fynancials.common.arithmetic.BigDecimalParser;
+import de.as.fynancials.common.error.BadRequestException;
+import de.as.fynancials.common.error.ConflictException;
+import de.as.fynancials.common.error.InternalServerErrorException;
+import de.as.fynancials.common.error.NotFoundException;
+import de.as.fynancials.common.util.FormattedValue;
+import de.as.fynancials.common.util.ValueFormatService;
+import de.as.fynancials.exchangerates.ExchangeRateService;
+import de.as.fynancials.exchangerates.OutdatedExchangeRateException;
+import de.as.fynancials.price.security.historical.datasource.HistoricalSecurityPriceDataSource;
+import de.as.fynancials.price.security.historical.datasource.HistoricalSecurityPriceDataSourceService;
+import de.as.fynancials.price.security.historical.datasource.HistoricalSecurityPriceMarketCloseTime;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+class HistoricalSecurityPriceServiceImpl implements HistoricalSecurityPriceService {
+
+  private final HistoricalSecurityPriceMapper priceMapper;
+  private final HistoricalSecurityPriceConfigMapper configMapper;
+  private final HistoricalSecurityPriceRepository priceRepository;
+  private final HistoricalSecurityPriceConfigRepository configRepository;
+  private final ExchangeRateService exchangeRateService;
+  private final HistoricalSecurityPriceDataSourceService dataSourceService;
+  private final ValueFormatService valueFormatService;
+  private final RestTemplate restTemplate;
+  private final MathContext mathContext;
+  private final Clock clock;
+  private final BigDecimalParser bigDecimalParser = new BigDecimalParser();
+
+  @Override
+  public List<HistoricalSecurityPrice> getPrices(long securityId, LocalDate startDate)
+      throws BadRequestException, NotFoundException {
+    LocalDate date = startDate != null ? startDate : LocalDate.EPOCH;
+    List<HistoricalSecurityPriceEntity> prices =
+        priceRepository.findAllBySecurityIdAndDateGreaterThanEqualOrderByDateAsc(securityId, date);
+    if (prices.isEmpty()) {
+      log.warn("Could not find historical security prices for security {} starting at {}", securityId, date);
+      throw new NotFoundException();
+    }
+    return prices.stream().map(priceMapper::fromEntity).toList();
+  }
+
+  @Override
+  public List<HistoricalSecurityPrice> getPrices(long securityId, LocalDate startDate, String currency)
+      throws BadRequestException, NotFoundException, OutdatedExchangeRateException {
+    return getPrices(securityId, startDate).stream().peek(price -> {
+      if (!price.getCurrency().equals(currency)) {
+        BigDecimal converted =
+            exchangeRateService.convert(price.getPrice(), price.getCurrency(), currency, price.getDate());
+        price.setPrice(converted);
+        price.setCurrency(currency);
+      }
+    }).toList();
+  }
+
+  @Override
+  public HistoricalSecurityPrice getLatestPrice(long securityId, String currency) throws NotFoundException {
+    Optional<HistoricalSecurityPriceEntity> latestPrice =
+        priceRepository.findFirstBySecurityIdOrderByDateDesc(securityId);
+    if (latestPrice.isEmpty()) {
+      throw new NotFoundException();
+    }
+    HistoricalSecurityPrice price = priceMapper.fromEntity(latestPrice.get());
+    if (!price.getCurrency().equals(currency)) {
+      BigDecimal converted =
+          exchangeRateService.convert(price.getPrice(), price.getCurrency(), currency, price.getDate());
+      price.setPrice(converted);
+      price.setCurrency(currency);
+    }
+    return price;
+  }
+
+  @Override
+  public void splitAdjustment(Long securityId, BigDecimal multiplier, LocalDate exDate) {
+    priceRepository.findAllBySecurityIdAndDateLessThanOrderByDateDesc(securityId, exDate).forEach(price -> {
+      BigDecimal adjustedPrice = price.getPrice().divide(multiplier, mathContext);
+      price.setPrice(adjustedPrice);
+      priceRepository.save(price);
+    });
+    priceRepository.flush();
+  }
+
+  @Override
+  public HistoricalSecurityPriceConfig getConfig(long securityId) throws NotFoundException {
+    HistoricalSecurityPriceConfigEntity config =
+        configRepository.findBySecurityId(securityId).orElseThrow(NotFoundException::new);
+    return configMapper.fromEntity(config);
+  }
+
+  @Override
+  public HistoricalSecurityPriceConfig setConfig(HistoricalSecurityPriceConfig config)
+      throws BadRequestException, ConflictException {
+    HistoricalSecurityPriceConfigEntity updatedValues = configMapper.toEntity(config);
+    Optional<HistoricalSecurityPriceConfigEntity> fromDb = configRepository.findBySecurityId(config.getSecurityId());
+    if (fromDb.isPresent()) {
+      updatedValues.setId(fromDb.get().getId());
+    }
+
+    HistoricalSecurityPriceConfigEntity saved;
+    try {
+      saved = configRepository.saveAndFlush(updatedValues);
+    } catch (ObjectOptimisticLockingFailureException e) {
+      throw new ConflictException();
+    } catch (DataIntegrityViolationException e) {
+      throw new BadRequestException();
+    }
+
+    if (fromDb.isEmpty() && config.isActive()) {
+      updatePrices(config.getSecurityId());
+    }
+
+    return configMapper.fromEntity(saved);
+  }
+
+  List<HistoricalSecurityPriceConfig> getActiveConfigs() {
+    return configRepository.findAllByActiveIsTrue().stream().map(configMapper::fromEntity).toList();
+  }
+
+  void deletePrices(long securityId) {
+    priceRepository.deleteAllBySecurityId(securityId);
+  }
+
+  void updatePrices(long securityId) throws InternalServerErrorException, NotFoundException {
+    HistoricalSecurityPriceConfigEntity config = configRepository.findBySecurityId(securityId).orElseThrow(NotFoundException::new);
+    HistoricalSecurityPriceDataSource dataSource = dataSourceService.getDataSource(config.getDataSourceId());
+    Optional<HistoricalSecurityPriceEntity> latestPrice = priceRepository.findFirstBySecurityIdOrderByDateDesc(securityId);
+    LocalDate today = LocalDate.now(clock);
+    Long missingDays = null;
+    if (latestPrice.isPresent()) {
+      LocalDate latestPriceDate = latestPrice.get().getDate();
+      missingDays = DAYS.between(latestPriceDate, today);
+      if (missingDays <= 0) {
+        return;
+      }
+    }
+
+    Map<Integer, String> urlPatterns = dataSource.getUrlPatterns();
+    List<Integer> sortedKeys = new ArrayList<>(urlPatterns.keySet().stream().toList());
+    List<Integer> keysToCall = new ArrayList<>(sortedKeys.size());
+    sortedKeys.sort(Integer::compareTo);
+
+    if (missingDays == null) {
+      keysToCall = sortedKeys;
+    } else {
+      for (int key : sortedKeys) {
+        keysToCall.add(key);
+        if (key >= missingDays) {
+          break;
+        }
+      }
+    }
+
+    List<HistoricalSecurityPrice> response;
+    Map<LocalDate, HistoricalSecurityPrice> newPrices = new HashMap<>();
+    for (int key : keysToCall) {
+      response = loadPricesFromDataSource(urlPatterns.get(key), securityId, config.getExternalSecurityId(), dataSource);
+      for (HistoricalSecurityPrice price : response) {
+        if (!newPrices.containsKey(price.getDate())) {
+          newPrices.put(price.getDate(), price);
+        }
+      }
+    }
+
+    List<HistoricalSecurityPriceEntity> entities = newPrices.values().stream()
+        .filter(e -> acceptDate(e.getDate(), dataSource))
+        .filter(e -> latestPrice.isEmpty() || e.getDate().isAfter(latestPrice.get().getDate()))
+        .map(priceMapper::toEntity)
+        .toList();
+    priceRepository.saveAll(entities);
+    priceRepository.flush();
+  }
+
+  private List<HistoricalSecurityPrice> loadPricesFromDataSource(String urlPattern, long securityId, String externalSecurityId,
+                                                                 HistoricalSecurityPriceDataSource dataSource) {
+    HttpHeaders headers = new HttpHeaders();
+    for (Map.Entry<String, String> header : dataSource.getRequestHeaders().entrySet()) {
+      String formattedValue = valueFormatService.formatValue(header.getValue(), externalSecurityId).getFormattedValue();
+      headers.add(header.getKey(), formattedValue);
+    }
+    HttpEntity<String> httpEntity = new HttpEntity<>(headers);
+
+    FormattedValue url = valueFormatService.formatValue(urlPattern, externalSecurityId);
+    ResponseEntity<String> response = restTemplate.exchange(url.getFormattedValue(), GET, httpEntity, String.class);
+    log.info("Received {} from {} headers: {}", response.getStatusCode(), url, headers);
+    if (!response.getStatusCode().is2xxSuccessful()) {
+      log.error("Error while requesting prices for security {} using URL {}: {} {}", securityId, url, response.getStatusCode(), response.getBody());
+      return List.of();
+    }
+
+    DocumentContext json = JsonPath.parse(response.getBody());
+    List<Object> rawDates = json.read(dataSource.getJsonPathDate());
+    List<Object> rawPrices = json.read(dataSource.getJsonPathValue());
+    List<String> currency = parseCurrency(json, rawDates.size(), externalSecurityId, dataSource);
+
+    if (rawDates.size() != rawPrices.size() || rawPrices.size() != currency.size()) {
+      log.error("Received {} dates and {} prices and {} currencies from {} (securityId = {})",
+          rawDates.size(), rawPrices.size(), currency.size(), url, securityId);
+      return List.of();
+    }
+
+    List<HistoricalSecurityPrice> result = new LinkedList<>();
+    HistoricalSecurityPrice historicalSecurityPrice;
+    String mappedCurrencyCode;
+    BigDecimal currencyMultiplier;
+    for (int i = 0; i < rawPrices.size(); i++) {
+      if (rawDates.get(i) == null || rawPrices.get(i) == null || currency.get(i) == null) {
+        continue;
+      }
+      historicalSecurityPrice = new HistoricalSecurityPrice();
+      historicalSecurityPrice.setSecurityId(securityId);
+      historicalSecurityPrice.setDate(parseDate(rawDates.get(i).toString(), dataSource.getDateFormat()));
+      historicalSecurityPrice.setPrice(bigDecimalParser.apply(rawPrices.get(i)));
+      historicalSecurityPrice.setCurrency(currency.get(i));
+
+      mappedCurrencyCode = dataSource.getMappedCurrencyCode(currency.get(i));
+      currencyMultiplier = dataSource.getMultiplier(currency.get(i));
+      if (mappedCurrencyCode != null) {
+        historicalSecurityPrice.setCurrency(mappedCurrencyCode);
+      }
+      if (currencyMultiplier != null) {
+        historicalSecurityPrice.setPrice(historicalSecurityPrice.getPrice().multiply(currencyMultiplier, mathContext));
+      }
+
+      result.add(historicalSecurityPrice);
+    }
+    return result;
+  }
+
+  private LocalDate parseDate(String dateStr, String format) {
+    if (TIMESTAMP_SECONDS.getValue().equals(format)) {
+      long seconds = (long) parseDouble(dateStr);
+      return Instant.ofEpochSecond(seconds).atZone(clock.getZone()).toLocalDate();
+    } else if (TIMESTAMP_MILLISECONDS.getValue().equals(format)) {
+      long milliseconds = (long) parseDouble(dateStr);
+      return Instant.ofEpochMilli(milliseconds).atZone(clock.getZone()).toLocalDate();
+    } else {
+      DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
+      return LocalDate.parse(dateStr, formatter);
+    }
+  }
+
+  private List<String> parseCurrency(DocumentContext json, int requiredSize, String externalSecurityId,
+                                     HistoricalSecurityPriceDataSource dataSource) {
+    String regex = dataSource.getRegexCurrency();
+    Integer group = dataSource.getRegexCurrencyGroup();
+    Object rawCurrency;
+    List<String> result;
+
+    if (dataSource.getJsonPathCurrency() == null) {
+      rawCurrency = externalSecurityId;
+    } else {
+      rawCurrency = json.read(dataSource.getJsonPathCurrency());
+    }
+
+    if (rawCurrency instanceof List) {
+      result = new ArrayList<>(((List<?>) rawCurrency).stream().map(Object::toString).toList());
+    } else {
+      result = new ArrayList<>(requiredSize);
+      for (int i = 0; i < requiredSize; i++) {
+        result.add(rawCurrency.toString());
+      }
+    }
+
+    if (regex == null) {
+      return result;
+    }
+
+    Pattern pattern = Pattern.compile(regex);
+    Matcher matcher;
+    String matchedGroup;
+
+    for (int i = 0; i < result.size(); i++) {
+      matcher = pattern.matcher(result.get(i));
+      if (matcher.find()) {
+        matchedGroup = matcher.group(group == null ? 0 : group);
+        result.set(i, matchedGroup == null ? "" : matchedGroup);
+      }
+    }
+
+    return result;
+  }
+
+  private boolean acceptDate(LocalDate localDate, HistoricalSecurityPriceDataSource dataSource) {
+    Set<HistoricalSecurityPriceMarketCloseTime> marketCloseTimes = dataSource.getMarketCloseTimes();
+    ZonedDateTime now = ZonedDateTime.now(clock);
+    LocalDate today = now.toLocalDate();
+
+    if (marketCloseTimes.isEmpty()) {
+      return localDate.isBefore(today);
+    }
+
+    if (localDate.isAfter(now.toLocalDate())) {
+      return false;
+    }
+
+    if (localDate.isBefore(today)) {
+      return true;
+    }
+
+    ZoneId marketZone;
+    ZonedDateTime marketCloseToday;
+    for (HistoricalSecurityPriceMarketCloseTime marketCloseTime : marketCloseTimes) {
+      marketZone = ZoneId.of(marketCloseTime.getTimeZone());
+      marketCloseToday = ZonedDateTime.of(today, LocalTime.parse(marketCloseTime.getTime()), marketZone);
+      if (now.isBefore(marketCloseToday)) {
+        return false;
+      }
+    }
+    return true;
+  }
+}

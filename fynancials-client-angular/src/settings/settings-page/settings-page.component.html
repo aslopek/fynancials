@@ -1,0 +1,51 @@
+<mat-accordion multi="false">
+    <mat-expansion-panel expanded="true">
+        <mat-expansion-panel-header>
+            <mat-panel-title>
+                <mat-icon fontIcon="brush"
+                          class="icon">
+                </mat-icon>
+                Appearance
+            </mat-panel-title>
+        </mat-expansion-panel-header>
+        <app-appearance></app-appearance>
+    </mat-expansion-panel>
+
+    <mat-expansion-panel>
+        <mat-expansion-panel-header>
+            <mat-icon class="icon">
+                dns
+            </mat-icon>
+            Historical Security Prices
+        </mat-expansion-panel-header>
+        <app-data-source-page dataSourceVariant="historical-security-price"
+                              [dataSources]="historicalSecurityPriceDataSources()">
+        </app-data-source-page>
+    </mat-expansion-panel>
+
+    <mat-expansion-panel>
+        <mat-expansion-panel-header>
+            <mat-panel-title>
+                <mat-icon class="icon">
+                    dns
+                </mat-icon>
+                Dividend Announcements
+            </mat-panel-title>
+        </mat-expansion-panel-header>
+        <app-data-source-page dataSourceVariant="dividend-announcement"
+                              [dataSources]="dividendAnnouncementDataSources()">
+        </app-data-source-page>
+    </mat-expansion-panel>
+
+    <mat-expansion-panel>
+        <mat-expansion-panel-header>
+            <mat-panel-title>
+                <mat-icon fontIcon="workspaces"
+                          class="icon">
+                </mat-icon>
+                Security Groups
+            </mat-panel-title>
+        </mat-expansion-panel-header>
+        <app-security-group-page></app-security-group-page>
+    </mat-expansion-panel>
+</mat-accordion>

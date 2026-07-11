@@ -1,0 +1,69 @@
+<div class="wrapper">
+    <mat-form-field class="search-field"
+                    subscriptSizing="dynamic">
+        <mat-label>Depot</mat-label>
+        <mat-select [disabled]="selectionDisabled()"
+                    [value]="selectedDepotIds()"
+                    multiple>
+            @if (selectedDepots().length > 0) {
+                <mat-select-trigger>
+                    {{ selectedDepots()[0].name }}
+                    @if (selectedDepots().length > 1) {
+                        <span class="selected-count">
+                            +{{ selectedDepots().length - 1 }} {{ selectedDepots().length === 2 ? 'other' : 'others' }}
+                        </span>
+                    }
+                </mat-select-trigger>
+            }
+            @if (availableCurrencies().length > 1) {
+                @for (currency of availableCurrencies(); track currency) {
+                    <mat-optgroup label="{{currency | fyCurrencySymbol}} {{currency}}">
+                        @for (depot of allDepotsByCurrency()[currency]; track depot.id) {
+                            <mat-option (click)="onDepotClick(depot)"
+                                        [value]="depot.id">
+                                <div class="depot-option">
+                                    @if (depot._links.logo != null) {
+                                        <img alt=""
+                                             class="logo"
+                                             [src]="depot.id | depotLogoUrl"/>
+                                    }
+                                    {{ depot.name }}
+                                </div>
+                            </mat-option>
+                        }
+                    </mat-optgroup>
+                }
+            } @else {
+                @for (depot of allDepots(); track depot.id) {
+                    <mat-option (click)="onDepotClick(depot)"
+                                [value]="depot.id">
+                        <div class="depot-option">
+                            @if (depot._links.logo != null) {
+                                <img alt=""
+                                     class="logo"
+                                     [src]="depot.id | depotLogoUrl"/>
+                            }
+                            {{ depot.name }}
+                        </div>
+                    </mat-option>
+                }
+            }
+        </mat-select>
+    </mat-form-field>
+
+    <div class="margin-right">
+        <button (click)="createDepot()"
+                mat-icon-button
+                matTooltip="Add a new depot">
+            <mat-icon>add</mat-icon>
+        </button>
+    </div>
+
+    <button (click)="deleteDepot()"
+            [disabled]="selectedDepots().length === 0"
+            class="margin-right"
+            mat-icon-button
+            matTooltip="{{selectedDepots().length > 0 ? 'Delete ' + selectedDepots()[0].name : ''}}">
+        <mat-icon>delete</mat-icon>
+    </button>
+</div>

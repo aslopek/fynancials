@@ -1,0 +1,24 @@
+.wrapper {
+  padding-right: 1.8rem;
+}
+.control-panel {
+  width: 100%;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+
+  button {
+    margin-right: 1rem;
+    height: auto;
+  }
+
+  mat-button-toggle-group {
+    flex: 1;
+    display: flex;
+
+    mat-button-toggle {
+      flex: 1;
+    }
+  }
+}

@@ -1,0 +1,80 @@
+<div class="content">
+    <mat-form-field>
+        <mat-label>Separator</mat-label>
+        <mat-select [value]="transactionImportStore.separator()"
+                    (selectionChange)="transactionImportStore.setSeparator($event.value)">
+            @for (separator of separatorOptions; track separator.value) {
+                <mat-option [value]="separator.value">{{ separator.label }}</mat-option>
+            }
+        </mat-select>
+    </mat-form-field>
+
+    <div [class.disabled]="transactionImportStore.separator() === null">
+        <h3>Column Mapping</h3>
+        @for (config of fieldConfigs; track config.field) {
+            <mat-form-field class="field">
+                <mat-label>{{ config.label }}{{ config.required ? ' *' : '' }}</mat-label>
+                <mat-select [disabled]="transactionImportStore.separator() === null"
+                            [value]="columnMappingValue(config.field)"
+                            (selectionChange)="setColumnMapping(config.field, $event.value)">
+                    <mat-option [value]="null">Not mapped</mat-option>
+                    @for (columnName of transactionImportStore.header(); track $index) {
+                        <mat-option [value]="$index">{{ columnName }}</mat-option>
+                    }
+                </mat-select>
+            </mat-form-field>
+        }
+        <p class="hint">At least one of ISIN, Name or Symbol must be mapped, in order to identify securities.</p>
+
+        <div [class.disabled]="transactionImportStore.columnMapping().transactionType === undefined">
+            <h3>Transaction Type Mapping</h3>
+            @for (value of transactionImportStore.distinctTypeValues(); track value) {
+                <div class="type-mapping-row">
+                    <span class="type-mapping-value">{{ value }}</span>
+                    <mat-form-field class="field">
+                        <mat-label>Maps to</mat-label>
+                        <mat-select [disabled]="transactionImportStore.columnMapping().transactionType === undefined"
+                                    [value]="typeMappingValue(value)"
+                                    (selectionChange)="transactionImportStore.setTransactionTypeMapping(value, $event.value)">
+                            @for (transactionType of transactionTypes; track transactionType) {
+                                <mat-option [value]="transactionType">{{ transactionType | transactionTypeDisplayName }}</mat-option>
+                            }
+                            <mat-option [value]="null">Skip these rows</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </div>
+            }
+        </div>
+
+        <h3>Date Format</h3>
+        <mat-form-field class="field">
+            <mat-label>Date Format</mat-label>
+            <mat-select [disabled]="transactionImportStore.separator() === null"
+                        [value]="transactionImportStore.dateFormat()"
+                        (selectionChange)="transactionImportStore.setDateFormat($event.value)">
+                @for (dateFormat of dateFormatOptions; track dateFormat) {
+                    <mat-option [value]="dateFormat">{{ dateFormat }}</mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+
+        <h3>Decimal Separator</h3>
+        <mat-button-toggle-group>
+            <mat-button-toggle (click)="transactionImportStore.setDecimalSeparator(',')"
+                               [checked]="transactionImportStore.decimalSeparator() === ','">
+                , (comma)
+            </mat-button-toggle>
+            <mat-button-toggle (click)="transactionImportStore.setDecimalSeparator('.')"
+                               [checked]="transactionImportStore.decimalSeparator() === '.'">
+                . (dot)
+            </mat-button-toggle>
+        </mat-button-toggle-group>
+    </div>
+
+    <button [disabled]="!transactionImportStore.mappingOk()"
+            class="next-button"
+            mat-button
+            matStepperNext>
+        Next
+    </button>
+</div>

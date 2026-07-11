@@ -1,0 +1,86 @@
+<app-title-toolbar (onClose)="close()"
+                   title="About">
+</app-title-toolbar>
+
+<div class="wrapper">
+    <h2 [matTooltip]="'Backend Version: ' + beVersion()">
+        <b>Fynancials {{ feVersion() }}</b>
+    </h2>
+
+    <app-license class="license"></app-license>
+
+    <h3>
+        <b>This software includes the following third-party software:</b>
+    </h3>
+    <p class="attribution-hint">
+        Click an entry to read its license text and copyright notice.
+    </p>
+
+    <h4>Frontend &amp; desktop shell</h4>
+    @if (frontendLicenses().length === 0) {
+        <p class="error-hint">
+            The frontend license information could not be loaded. Run "npm run licenses:generate" after a build to
+            create assets/third-party-licenses.json.
+        </p>
+    }
+    @for (entry of frontendLicenses(); track entry.name) {
+        <div class="dependency">
+            <div (click)="toggleLicenseText('frontend', entry.name)"
+                 class="row clickable">
+                <mat-icon [fontIcon]="expandedEntry() === (entry.name | licenseEntryKey:'frontend') ? 'expand_more' : 'chevron_right'"
+                          class="expand-icon">
+                </mat-icon>
+                <p>{{ entry.name }}: {{ entry.version }}</p>
+                @if (entry.license !== null) {
+                    <p class="margin-left license-name">{{ entry.license }}</p>
+                }
+                @if (entry.source !== 'runtime-note') {
+                    <mat-icon (click)="openNpm(entry.name, $event)"
+                              class="open-link-button"
+                              fontIcon="open_in_new">
+                    </mat-icon>
+                }
+            </div>
+            @if (expandedEntry() === (entry.name | licenseEntryKey:'frontend')) {
+                <pre class="license-text">{{ entry.licenseText }}</pre>
+                @if (entry.noticeText !== null) {
+                    <pre class="license-text">{{ entry.noticeText }}</pre>
+                }
+            }
+        </div>
+    }
+
+    <h4>Backend</h4>
+    @if (backendLicenses().length === 0) {
+        <p class="error-hint">
+            The backend license information could not be loaded from the backend service.
+        </p>
+    }
+    @for (entry of backendLicenses(); track entry.name) {
+        <div class="dependency">
+            <div (click)="toggleLicenseText('backend', entry.name)"
+                 class="row clickable">
+                <mat-icon [fontIcon]="expandedEntry() === (entry.name | licenseEntryKey:'backend') ? 'expand_more' : 'chevron_right'"
+                          class="expand-icon">
+                </mat-icon>
+                <p>{{ entry.name }}: {{ entry.version }}</p>
+                @if (entry.license != null) {
+                    <p class="margin-left license-name">{{ entry.license }}</p>
+                }
+            </div>
+            @if (expandedEntry() === (entry.name | licenseEntryKey:'backend')) {
+                @if (entry.licenseText != null) {
+                    <pre class="license-text">{{ entry.licenseText }}</pre>
+                } @else {
+                    <p class="license-text">
+                        This library does not embed its license text in the artifact. Please refer to the project's
+                        website for the license and copyright notice.
+                    </p>
+                }
+                @if (entry.noticeText != null) {
+                    <pre class="license-text">{{ entry.noticeText }}</pre>
+                }
+            }
+        </div>
+    }
+</div>

@@ -1,0 +1,33 @@
+@let group = securityGroup();
+<div class="security-group-entry"
+     [class.selected]="isSelected()"
+     (click)="clickSecurityGroup()">
+    @if (group !== 'new' && group.securities.length > 0) {
+        <security-logo class="group-logo"
+                       [securityId]="group.securities[0]">
+        </security-logo>
+    }
+    <div class="security-group-info">
+        <div class="security-group-name">
+            @if (group === 'new') {
+                Add new Security Group
+            } @else {
+                {{ group.name }}
+            }
+        </div>
+        @if (group !== 'new') {
+            <div class="security-group-count">
+                {{ group.securities.length }} securities
+            </div>
+        }
+    </div>
+    <div class="side-button"
+         (click)="clickSideButton($event)"
+         mat-ripple>
+        @if (group === 'new') {
+            <mat-icon fontIcon="add"></mat-icon>
+        } @else {
+            <mat-icon fontIcon="delete"></mat-icon>
+        }
+    </div>
+</div>

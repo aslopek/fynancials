@@ -1,0 +1,22 @@
+.row {
+  display: flex;
+  flex-direction: row;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  width: 20%;
+}
+
+.margin-right {
+  margin-right: 1rem;
+}
+
+.list-item {
+  margin-top: 1rem;
+}
+
+.hidden-list {
+  visibility: hidden;
+}

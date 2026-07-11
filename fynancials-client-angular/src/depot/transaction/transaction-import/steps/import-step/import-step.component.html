@@ -1,0 +1,29 @@
+<div class="content">
+    @if (transactionImportStore.phase() === 'importing') {
+        <p>Importing... ({{ transactionImportStore.requestsSent() }} / {{ transactionImportStore.requestsTotal() }})</p>
+        <mat-progress-bar color="accent"
+                          mode="determinate"
+                          [value]="progress()">
+        </mat-progress-bar>
+    }
+
+    @if (transactionImportStore.phase() === 'done') {
+        <p>{{ transactionImportStore.securitiesCreated() }} of {{ transactionImportStore.securitiesAttempted() }} securities created</p>
+        <p>{{ transactionImportStore.transactionsCreated() }} of {{ transactionImportStore.transactionsAttempted() }} transactions created</p>
+
+        @if (transactionImportStore.failedRowIndices().length > 0) {
+            <p>{{ transactionImportStore.failedRowIndices().length }} row(s) could not be imported.</p>
+            <button (click)="downloadFailedCsv()"
+                    mat-stroked-button>
+                Download Failed Rows
+            </button>
+        }
+
+        <button (click)="closeDialog()"
+                class="close-button"
+                color="primary"
+                mat-flat-button>
+            Close
+        </button>
+    }
+</div>

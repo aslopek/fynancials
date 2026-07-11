@@ -1,0 +1,64 @@
+@use '../../styles' as styles;
+
+.wrapper {
+  padding-left: 0.5rem;
+  padding-top: 0.5rem;
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+
+.row {
+  margin-top: 0.1rem;
+  display: flex;
+  flex-direction: row;
+  align-content: center;
+}
+
+.open-link-button {
+  cursor: pointer;
+  transform: scale(0.75);
+  margin-left: 0.1rem;
+}
+
+.margin-left {
+  margin-left: 0.5rem;
+}
+
+.license {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.attribution-hint {
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.error-hint {
+  color: styles.$color-negative;
+  font-size: 0.9rem;
+}
+
+.clickable {
+  cursor: pointer;
+  align-items: center;
+}
+
+.expand-icon {
+  transform: scale(0.75);
+}
+
+.license-name {
+  opacity: 0.7;
+}
+
+.license-text {
+  margin: 0.25rem 0.5rem 0.75rem 2rem;
+  padding: 0.75rem;
+  max-height: 20rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: 0.375rem;
+}

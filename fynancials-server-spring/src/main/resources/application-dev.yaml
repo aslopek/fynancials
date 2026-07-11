@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:fynancials
+    username: admin
+    password: admin
+  liquibase:
+    change-log: classpath:db/liquibase-dev.xml
+
+dividend-announcement:
+  remove-old:
+    enabled: false
+  update:
+    enabled: false

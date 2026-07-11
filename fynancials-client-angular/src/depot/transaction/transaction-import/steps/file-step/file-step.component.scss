@@ -1,0 +1,17 @@
+@use '../../../../../styles' as styles;
+
+.content {
+  padding: 1rem;
+}
+
+.file-input {
+  display: none;
+}
+
+.error {
+  color: styles.$color-error;
+}
+
+.next-button {
+  cursor: pointer;
+}

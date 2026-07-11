@@ -1,0 +1,471 @@
+openapi: 3.0.3
+
+info:
+  title: Security API
+  description: The API definitions for managing securities (e.g. stocks or ETFs)
+  version: 1.0.0
+
+servers:
+  - url: 'http://localhost:23726'
+    description: Locally serving the API
+
+paths:
+  /historicalprices/data-sources:
+    post:
+      tags:
+        - HistoricalSecurityPriceDataSource
+      operationId: createHistoricalSecurityPriceDataSource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HistoricalSecurityPriceDataSourceCreate'
+      responses:
+        '201':
+          description: Successfully created the dividend announcement data source
+          headers:
+            location:
+              required: true
+              schema:
+                type: string
+                nullable: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoricalSecurityPriceDataSourceRead'
+        '400':
+          description: Passed invalid parameters
+        '409':
+          description: Another historical security price data source with the same name exists already
+    get:
+      tags:
+        - HistoricalSecurityPriceDataSource
+      operationId: getHistoricalSecurityPriceDataSources
+      responses:
+        '200':
+          description: Successfully returned the historical security price data sources
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: false
+                minItems: 0
+                items:
+                  $ref: '#/components/schemas/HistoricalSecurityPriceDataSourceRead'
+
+  /historicalprices/data-sources/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: Identifies a historical security price data source
+        schema:
+          $ref: '#/components/schemas/Id'
+    put:
+      tags:
+        - HistoricalSecurityPriceDataSource
+      operationId: updateHistoricalSecurityPriceDataSource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HistoricalSecurityPriceDataSourceUpdate'
+      responses:
+        '200':
+          description: Successfully updated the historical security price data source
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoricalSecurityPriceDataSourceRead'
+        '400':
+          description: Passed invalid parameters
+        '404':
+          description: The historical security price data source to be updated does not exist
+        '409':
+          description: Optimistic Lock failed
+    delete:
+      tags:
+        - HistoricalSecurityPriceDataSource
+      operationId: deleteHistoricalSecurityPriceDataSource
+      responses:
+        '204':
+          description: Successfully deleted the historical security price data source
+        '400':
+          description: There are data (e.g. historical security prices) referencing this historical security price data source or the data source may not be deleted for other reasons
+        '404':
+          description: The historical security price data source to be deleted does not exist
+
+  /securities/{securityId}/historicalprices:
+    parameters:
+      - in: path
+        name: securityId
+        required: true
+        description: identifies the security
+        schema:
+          $ref: '#/components/schemas/Id'
+      - in: query
+        name: startDate
+        required: false
+        description: Date of the oldest historical price
+        schema:
+          type: string
+          format: date
+          nullable: false
+          example: 2021-01-01
+      - in: query
+        name: currency
+        required: false
+        description: Currency in which the prices are requested
+        schema:
+          $ref: '#/components/schemas/Currency'
+    get:
+      tags:
+        - HistoricalSecurityPrice
+      operationId: getHistoricalPrices
+      responses:
+        '200':
+          description: Successfully returned the security's historical prices
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: false
+                minItems: 1
+                items:
+                  $ref: '#/components/schemas/HistoricalSecurityPrice'
+        '400':
+          description: One or more of the parameters are syntactically or semantically incorrect
+        '404':
+          description: |
+            One of these errors may have occurred:
+            - the given security does not exist
+            - the given security has no historical prices
+            - there is no foreign exchange rate available to convert the prices to the requested currency
+
+  /securities/{securityId}/historicalprices/config:
+    parameters:
+      - in: path
+        name: securityId
+        required: true
+        description: identifies the security
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags:
+        - HistoricalSecurityPrice
+      operationId: getHistoricalPriceConfig
+      responses:
+        '200':
+          description: Successfully returned the security's historical price config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoricalSecurityPriceConfig'
+        '404':
+          description: No historical security price config has been created yet, or the given security does not exist
+    put:
+      parameters:
+        - in: query
+          name: removeExistingPrices
+          required: false
+          description: >
+            If true, will remove the existing prices. In case the configuration is deactivated, no new prices will be
+            loaded. Otherwise, the existing prices will be replaced with whatever the new config yields.
+          schema:
+            type: boolean
+            nullable: false
+            example: true
+      tags:
+        - HistoricalSecurityPrice
+      operationId: setHistoricalPriceConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HistoricalSecurityPriceConfig'
+      responses:
+        '200':
+          description: Successfully set the security's historical price config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoricalSecurityPriceConfig'
+        '400':
+          description: Request body invalid or no security with the given ID exists
+        '409':
+          description: Conflict while updating security, e.g. optimistic locking failed
+
+components:
+  schemas:
+    Id:
+      type: integer
+      format: int64
+      nullable: false
+      minimum: 1
+      example: 1
+
+    Version:
+      description: Required for the optimistic locking mechanism
+      type: integer
+      format: int64
+      nullable: false
+      minimum: 0
+      example: 1
+
+    Currency:
+      type: string
+      nullable: false
+      pattern: ^[A-Z]{3}$
+      example: USD
+
+    HistoricalSecurityPrice:
+      type: object
+      nullable: false
+      required:
+        - securityId
+        - price
+        - currency
+        - date
+      properties:
+        securityId:
+          $ref: '#/components/schemas/Id'
+        price:
+          type: number
+          format: double
+          nullable: false
+          minimum: 0
+        currency:
+          $ref: '#/components/schemas/Currency'
+        date:
+          type: string
+          format: date
+          nullable: false
+          example: 2023-12-22
+
+    HistoricalSecurityPriceConfig:
+      type: object
+      nullable: false
+      required:
+        - dataSourceId
+        - externalSecurityId
+        - isActive
+        - version
+      properties:
+        dataSourceId:
+          $ref: '#/components/schemas/Id'
+        externalSecurityId:
+          description: identifies the security at the external data provider
+          type: string
+          nullable: false
+          minLength: 1
+          maxLength: 255
+          example: MSF
+        isActive:
+          type: boolean
+          nullable: false
+          example: true
+        version:
+          $ref: '#/components/schemas/Version'
+
+    CurrencyMapping:
+      type: object
+      nullable: false
+      required:
+        - currencyKey
+        - mappedCurrencyCode
+      properties:
+        currencyKey:
+          type: string
+          nullable: false
+          minLength: 0
+          maxLength: 255
+          example: GBp
+        mappedCurrencyCode:
+          $ref: '#/components/schemas/Currency'
+        multiplier:
+          type: number
+          nullable: false
+          example: 0.01
+
+    Name:
+      type: string
+      nullable: false
+      minLength: 1
+      maxLength: 255
+      example: Some name
+
+    RequestHeader:
+      type: object
+      nullable: false
+      required:
+        - headerName
+        - headerValue
+      properties:
+        headerName:
+          type: string
+          nullable: false
+          minLength: 1
+          maxLength: 255
+          example: X-API-Key
+        headerValue:
+          type: string
+          nullable: false
+          minLength: 0
+          example: someSecreteApiKey
+
+    DateFormat:
+      type: string
+      enum:
+        - TIMESTAMP_SECONDS
+        - TIMESTAMP_MILLISECONDS
+        - CUSTOM_STRING
+
+    DateConfiguration:
+      type: object
+      nullable: false
+      required:
+        - format
+      properties:
+        format:
+          $ref: '#/components/schemas/DateFormat'
+        customPattern:
+          type: string
+          nullable: false
+          minLength: 1
+          maxLength: 255
+          example: 'yyyy-MM-dd'
+
+    HistoricalSecurityPriceUrlPatterns:
+      type: object
+      nullable: false
+      required:
+        - timespanInDays
+        - urlPattern
+      properties:
+        timespanInDays:
+          description: Determines for how many days in the past this URL will return historical prices.
+          type: integer
+          format: int32
+          nullable: false
+          minimum: 1
+        urlPattern:
+          description: >
+            The string must contain at least one one '#id()' part, into which the security's property will be inserted
+          type: string
+          nullable: false
+          minLength: 1
+          example: https://stock.api/#id()/prices
+
+    ZonedTime:
+      type: object
+      nullable: false
+      required:
+        - time
+        - timeZone
+      properties:
+        time:
+          type: string
+          nullable: false
+          pattern: ^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$
+          example: 17:30:00
+        timeZone:
+          description: Timezone ID as per IANA time zone database
+          type: string
+          nullable: false
+          minLength: 1
+          maxLength: 255
+          example: America/New_York
+
+    HistoricalSecurityPriceDataSourceCreate:
+      type: object
+      nullable: false
+      required:
+        - name
+        - urlPatterns
+        - requestHeaders
+        - jsonPathDate
+        - dateFormat
+        - jsonPathValue
+        - currencyMappings
+        - marketCloseTimes
+      properties:
+        name:
+          $ref: '#/components/schemas/Name'
+        urlPatterns:
+          type: array
+          nullable: false
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/HistoricalSecurityPriceUrlPatterns'
+        requestHeaders:
+          type: array
+          nullable: false
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/RequestHeader'
+        jsonPathDate:
+          type: string
+          minLength: 1
+          nullable: false
+          example: $.prices[*].date
+        dateFormat:
+          $ref: '#/components/schemas/DateConfiguration'
+        jsonPathValue:
+          type: string
+          minLength: 1
+          nullable: false
+          example: $.prices[*].dividendPayment
+        jsonPathCurrency:
+          description: When set, the currency will be read from the JSON response. Otherwise, it will be read from the external security ID.
+          type: string
+          minLength: 1
+          nullable: false
+          example: $.currency
+        regexCurrency:
+          type: string
+          minLength: 1
+          nullable: false
+          example: "^."
+        regexCurrencyGroup:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: false
+          example: 1
+        currencyMappings:
+          type: array
+          nullable: false
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/CurrencyMapping'
+        marketCloseTimes:
+          type: array
+          nullable: false
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/ZonedTime'
+
+    HistoricalSecurityPriceDataSourceUpdate:
+      allOf:
+        - $ref: '#/components/schemas/HistoricalSecurityPriceDataSourceCreate'
+        - type: object
+          nullable: false
+          required:
+            - version
+          properties:
+            version:
+              $ref: '#/components/schemas/Version'
+
+    HistoricalSecurityPriceDataSourceRead:
+      allOf:
+        - $ref: '#/components/schemas/HistoricalSecurityPriceDataSourceUpdate'
+        - type: object
+          nullable: false
+          required:
+            - id
+          properties:
+            id:
+              $ref: '#/components/schemas/Id'

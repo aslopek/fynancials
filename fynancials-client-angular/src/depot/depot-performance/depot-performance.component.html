@@ -1,0 +1,15 @@
+<div class="wrapper">
+    <app-data-range-selection class="margin-bottom"></app-data-range-selection>
+    <app-depot-performance-kpis class="margin-bottom"></app-depot-performance-kpis>
+    <div class="container-flex">
+        <div class="left-column">
+            <app-depot-performance-chart class="margin-bottom"></app-depot-performance-chart>
+            <app-benchmark></app-benchmark>
+        </div>
+        @if (!hideAbsoluteValues()) {
+            <div class="right-column">
+                <app-transaction-overview></app-transaction-overview>
+            </div>
+        }
+    </div>
+</div>

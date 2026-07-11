@@ -1,0 +1,202 @@
+openapi: 3.0.3
+
+info:
+  title: Depot API
+  description: The API definitions for querying performance information
+  version: 1.0.0
+
+servers:
+  - url: 'http://localhost:23726'
+    description: Locally serving the API
+
+paths:
+  /depot-performance:
+    parameters:
+      - $ref: '#/components/parameters/DepotIds'
+    get:
+      tags:
+        - DepotPerformance
+      operationId: getDepotPerformance
+      responses:
+        '200':
+          description: Successfully returned the depot values for the specified time window
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepotPerformance'
+        '400':
+          description: Specified depot IDs reference depots with different currencies or syntactically malformed query parameters
+        '404':
+          description: At least one of the specified depot IDs does not exist
+
+  /depot-performance/income:
+    get:
+      parameters:
+        - in: query
+          name: depots
+          required: true
+          schema:
+            type: array
+            nullable: false
+            minItems: 1
+            items:
+              $ref: '#/components/schemas/Id'
+        - in: query
+          name: securities
+          required: true
+          schema:
+            type: array
+            nullable: false
+            minItems: 1
+            items:
+              $ref: '#/components/schemas/Id'
+        - in: query
+          name: incomeTypes
+          required: true
+          schema:
+            type: array
+            nullable: false
+            minItems: 1
+            items:
+              $ref: '#/components/schemas/IncomeType'
+      tags:
+        - DepotPerformanceIncome
+      operationId: getIncome
+      responses:
+        '200':
+          description: Successfully returned the income
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: false
+                minItems: 1
+                items:
+                  $ref: '#/components/schemas/Performance'
+        '204':
+          description: No income exists for the specified input parameters
+        '400':
+          description: '''
+            - passed invalid query parameters
+            - not all depots have the same currency
+            '''
+
+components:
+  parameters:
+    DepotIds:
+      in: query
+      name: depotIds
+      required: true
+      description: identifies the depots
+      schema:
+        type: array
+        nullable: false
+        minItems: 1
+        items:
+          $ref: '#/components/schemas/Id'
+  schemas:
+    Id:
+      type: integer
+      format: int64
+      nullable: false
+      minimum: 1
+      example: 1
+
+    IncomeType:
+      type: string
+      enum:
+        - DIVIDEND
+        - SELL
+        - OTHER
+
+    Performance:
+      type: object
+      nullable: false
+      required:
+        - securityIds
+        - transactions
+        - absoluteValueGross
+        - absoluteValueNet
+      properties:
+        securityIds:
+          type: array
+          nullable: false
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Id'
+        transactions:
+          type: array
+          nullable: false
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/TransactionReference'
+        absoluteValueGross:
+          type: number
+          format: double
+          nullable: false
+        absoluteValueNet:
+          type: number
+          format: double
+          nullable: false
+
+    TransactionReference:
+      type: object
+      nullable: false
+      properties:
+        depotId:
+          $ref: '#/components/schemas/Id'
+        transactionId:
+          $ref: '#/components/schemas/Id'
+
+    DepotPerformance:
+      type: object
+      nullable: false
+      required:
+        - values
+        - extendedInternalRateOfReturns
+      properties:
+        values:
+          type: array
+          nullable: false
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/DepotValue'
+        extendedInternalRateOfReturns:
+          description: 'Extended Internal Rate of Return (XIRR). Example: 10% XIRR is represented by value 0.1'
+          type: number
+          nullable: false
+          example: 0.1
+
+    DepotValue:
+      type: object
+      nullable: false
+      required:
+        - date
+        - investedCapital
+        - cashPosition
+        - absoluteValue
+        - performanceAbsolute
+        - performanceRelative
+      properties:
+        date:
+          type: string
+          format: date
+          nullable: false
+          example: 2023-12-22
+        investedCapital:
+          type: number
+          nullable: false
+        cashPosition:
+          type: number
+          nullable: false
+        absoluteValue:
+          type: number
+          nullable: false
+        performanceAbsolute:
+          description: absoluteValue - investedCapital
+          type: number
+          nullable: false
+        performanceRelative:
+          description: performanceAbsolute / investedCapital
+          type: number
+          nullable: false
