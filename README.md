@@ -31,6 +31,8 @@ data from sources you configure yourself.
 
 Users: see the [user manual](./USER_MANUAL.md) for installation, database setup, and a feature walkthrough.
 
+You can download Fynancials from the [GitHub Releases page](https://github.com/aslopek/fynancials/releases).
+
 ### Build from source
 
 Prerequisites: Java 25, Maven 3.9+, Node.js 24.
@@ -112,9 +114,7 @@ companion process of the desktop app.
 
 ## Changelog
 
-See [CHANGELOG.md](./CHANGELOG.md) for notable changes, or the
-[GitHub Releases page](https://github.com/aslopek/fynancials/releases) for downloadable builds
-and release notes.
+See [CHANGELOG.md](./CHANGELOG.md) for notable changes.
 
 ## Contributing
 
