@@ -4,8 +4,9 @@ Thanks for your interest in Fynancials!
 
 **Feature requests and bug reports are very welcome** — please open a GitHub issue. For bugs,
 include what you did, what you expected, and what happened instead; the log file
-(`fynancials.log`, next to the application) often helps. For security-related findings, please
-use GitHub's private vulnerability reporting instead of a public issue.
+(`fynancials.log`, next to the application) often helps.
+
+Please refer to [SECURITY.md](./SECURITY.md) for guidance on how to report vulnerabilities.
 
 **Pull requests, however, are not accepted.** This is a deliberate choice, not a lack of
 appreciation: Fynancials doubles as a showcase of my personal work, so I want every line in

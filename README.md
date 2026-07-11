@@ -120,6 +120,8 @@ See [CHANGELOG.md](./CHANGELOG.md) for notable changes.
 
 Feature requests and bug reports are welcome as GitHub issues; pull requests are not accepted — see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
+Please refer to [SECURITY.md](./SECURITY.md) for guidance on how to report vulnerabilities.
+
 ## License
 
 MIT — see [LICENSE](./LICENSE). The "Fynancials" name and logo are excluded from the license;
