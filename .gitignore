@@ -7,3 +7,4 @@ openapigen
 **/out
 *.tgz
 release-notes.md
+*.iml
