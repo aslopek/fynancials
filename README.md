@@ -27,6 +27,29 @@ data from sources you configure yourself.
 - **Privacy by design** — password-protected, AES-encrypted local database; a "hide absolute
   values" mode for sharing your screen without sharing your net worth.
 
+## Getting started
+
+Users: see the [user manual](./USER_MANUAL.md) for installation, database setup, and a feature walkthrough.
+
+### Build from source
+
+Prerequisites: Java 25, Maven 3.9+, Node.js 24.
+
+```shell
+git clone https://github.com/aslopek/fynancials.git
+cd fynancials/fynancials-server-spring
+mvn clean package
+cd ../fynancials-client-angular
+npm ci
+npm run build
+npm run electron:pack
+```
+
+For development, run the backend directly (`mvn spring-boot:run -Dspring-boot.run.profiles=dev`)
+and the frontend via `npm run serve` on `http://localhost:4200`. API changes start in
+`fynancials-api`; both sides regenerate their clients/delegates from the specs
+(`npm run generate` / `mvn generate-sources`). See `LLM.md` for the full development workflow.
+
 ## How it's built
 
 An OpenAPI-first monorepo with three parts:
@@ -69,29 +92,6 @@ and real payloads, not mocks standing in for the components that matter.
 Frontend tests are a known gap — there are currently no `*.spec.ts` files. The priority so far
 has been the backend, where the actual portfolio calculations live; component and store tests
 are the next area to invest in.
-
-## Getting started
-
-Users: see the [user manual](./USER_MANUAL.md) for installation, database setup, and a feature walkthrough.
-
-### Build from source
-
-Prerequisites: Java 25, Maven 3.9+, Node.js 24.
-
-```shell
-git clone https://github.com/aslopek/fynancials.git
-cd fynancials/fynancials-server-spring
-mvn clean package
-cd ../fynancials-client-angular
-npm ci
-npm run build
-npm run electron:pack
-```
-
-For development, run the backend directly (`mvn spring-boot:run -Dspring-boot.run.profiles=dev`)
-and the frontend via `npm run serve` on `http://localhost:4200`. API changes start in
-`fynancials-api`; both sides regenerate their clients/delegates from the specs
-(`npm run generate` / `mvn generate-sources`). See `LLM.md` for the full development workflow.
 
 ## Security model
 
