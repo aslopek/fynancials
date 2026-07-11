@@ -13,4 +13,4 @@ this repository to be my own — and accepting outside code would also raise cop
 licensing questions I'd rather avoid entirely.
 
 The best way to influence the project is a well-described issue. Also, at any given time you may fork this repo in accordance with the
-[LICENSE](./LICENSE)).
+[LICENSE](./LICENSE).
