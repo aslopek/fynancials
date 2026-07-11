@@ -39,7 +39,7 @@ jobs:
             fynancials-server-spring/pom.xml
           git commit -m "Release v${{ steps.bump.outputs.version }}" --allow-empty
           git tag "v${{ steps.bump.outputs.version }}"
-          git push origin main --follow-tags
+          git push origin main "v${{ steps.bump.outputs.version }}"
       - uses: actions/upload-artifact@v7
         with:
           name: release-notes
