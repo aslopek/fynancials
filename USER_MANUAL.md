@@ -17,6 +17,18 @@ the app. If Java is already installed, that installation is used.
 On first launch you are asked for a password. **This one prompt decides how your database is protected**, so read the next section before
 typing anything.
 
+### macOS: "app is damaged" / won't open on first launch
+
+Since the app isn't notarized by Apple, macOS Gatekeeper quarantines it after download and may
+refuse to open it at all (or report it as "damaged"). Fix this once from a terminal:
+
+```shell
+xattr -cr <path-to-Fynancials.app>
+```
+
+This clears the quarantine attribute. It may require admin privileges depending on where the app is installed — if the command fails, try
+again with `sudo` before the command. Once done, Fynancials starts normally and no admin rights are needed for any subsequent launch.
+
 ## Your database
 
 Everything you enter is stored in a single, AES-encrypted [H2](https://h2database.com) database file. By default it is created in your home
