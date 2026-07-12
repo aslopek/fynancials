@@ -1,6 +1,6 @@
 package de.as.fynancials.exchangerates;
 
-import java.time.LocalDate;
+import java.util.List;
 import java.util.stream.Stream;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -11,6 +11,6 @@ interface ExchangeRateRepository extends JpaRepository<ExchangeRateEntity, Long>
   Stream<ExchangeRateEntity> findAllByBaseCurrencyAndTargetCurrencyOrderByDateDesc(String baseCurrency,
                                                                                    String targetCurrency);
 
-  Stream<ExchangeRateEntity> findAllByBaseCurrencyAndTargetCurrencyAndDateLessThanEqualOrderByDateDesc(
-      String baseCurrency, String targetCurrency, LocalDate date);
+  List<ExchangeRateEntity> findAllByBaseCurrencyAndTargetCurrencyOrderByDateAsc(String baseCurrency,
+                                                                                String targetCurrency);
 }

@@ -6,11 +6,13 @@ import static java.time.Month.DECEMBER;
 import static java.time.Month.OCTOBER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.as.fynancials.exchangerates.CurrencyConversionRequest;
 import de.as.fynancials.exchangerates.ExchangeRateService;
 import de.as.fynancials.price.security.historical.api.model.HistoricalSecurityPriceConfigDto;
 import integration.IntegrationTest;
@@ -77,7 +79,10 @@ class UpdateHistoricalSecurityPriceConfigTest {
     when(clock.instant()).thenReturn(Instant.parse("2024-01-01T16:37:08Z"));
     when(clock.getZone()).thenReturn(ZoneId.of("Europe/Berlin"));
 
-    when(exchangeRateServiceMock.convert(any(), any(), any(), any())).thenAnswer(invocation -> invocation.<BigDecimal>getArgument(0));
+    when(exchangeRateServiceMock.convert(anyList(), any(), any())).thenAnswer(invocation -> {
+      List<CurrencyConversionRequest> items = invocation.getArgument(0);
+      return items.stream().map(CurrencyConversionRequest::getValue).toList();
+    });
 
     amznDataSource101 = new HistoricalSecurityPriceConfigDto();
     amznDataSource101.setDataSourceId(101L);

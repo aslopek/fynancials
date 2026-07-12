@@ -8,10 +8,12 @@ import static java.time.Month.JANUARY;
 import static java.time.Month.NOVEMBER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.context.jdbc.SqlMergeMode.MergeMode.MERGE;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 
+import de.as.fynancials.exchangerates.CurrencyConversionRequest;
 import de.as.fynancials.exchangerates.ExchangeRateService;
 import integration.IntegrationTest;
 import integration.SecurityIds;
@@ -60,8 +62,10 @@ class HistoricalSecurityPriceUpdaterTest {
     subject = new HistoricalSecurityPriceUpdater(historicalSecurityPriceService);
     when(clock.instant()).thenReturn(Instant.parse("2024-01-01T16:37:08Z"));
     when(clock.getZone()).thenReturn(ZoneId.of("Europe/Berlin"));
-    when(exchangeRateServiceMock.convert(any(), any(), any(), any())).thenAnswer(
-        invocation -> invocation.<BigDecimal>getArgument(0));
+    when(exchangeRateServiceMock.convert(anyList(), any(), any())).thenAnswer(invocation -> {
+      List<CurrencyConversionRequest> items = invocation.getArgument(0);
+      return items.stream().map(CurrencyConversionRequest::getValue).toList();
+    });
   }
 
   @AfterEach
