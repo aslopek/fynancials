@@ -8,11 +8,11 @@
         <mat-tab>
             <ng-template mat-tab-label>
                 Master Data
-                @if (updateSecurityStore.masterDataTouched()) {
-                    @if (updateSecurityStore.masterDataValid()) {
-                        <mat-icon>fiber_manual_record</mat-icon>
-                    } @else {
+                @if (updateSecurityStore.masterDataTouched() || updateSecurityStore.logoTouched()) {
+                    @if (updateSecurityStore.masterDataTouched() && !updateSecurityStore.masterDataValid()) {
                         <mat-icon>warning</mat-icon>
+                    } @else {
+                        <mat-icon>fiber_manual_record</mat-icon>
                     }
                 }
             </ng-template>

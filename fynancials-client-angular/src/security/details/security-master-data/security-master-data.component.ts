@@ -11,6 +11,7 @@ import {MatIcon} from "@angular/material/icon";
 import {MatOption, MatSelect} from "@angular/material/select";
 import {MatButton} from "@angular/material/button";
 import {FilePreviewPipe} from "../../../common/pipe/file-preview.pipe";
+import {SecurityLogoUrlPipe} from "../../../common/pipe/security-logo-url.pipe";
 
 type FormModel = {
   isin: string;
@@ -37,6 +38,7 @@ type FormModel = {
     MatButton,
     FormField,
     FilePreviewPipe,
+    SecurityLogoUrlPipe,
   ],
   templateUrl: "./security-master-data.component.html",
   styleUrl: "./security-master-data.component.scss",
@@ -47,9 +49,8 @@ export class SecurityMasterDataComponent {
     output<SecurityCreate>();
   readonly logoChanged: OutputEmitterRef<File> = output<File>();
 
-  protected readonly logo: WritableSignal<File | undefined> = signal<
-    File | undefined
-  >(undefined);
+  protected readonly logo: WritableSignal<File | undefined> = signal<File | undefined>(undefined);
+  protected readonly hasExistingLogo: WritableSignal<boolean> = signal<boolean>(false);
   protected readonly securityTypes = [
     SecurityType.STOCK,
     SecurityType.ETF,
@@ -107,6 +108,7 @@ export class SecurityMasterDataComponent {
         this.form.wkn().value.set(security.wkn ?? "");
         this.form.sector().value.set(security.sector ?? "");
         this.form.securityType().value.set(security.securityType);
+        this.hasExistingLogo.set(security._links.logo != null);
       });
 
     effect((): void => {
