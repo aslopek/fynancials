@@ -6,6 +6,8 @@ own machine. No account, no cloud, no telemetry: the only network traffic is fet
 data from sources you configure yourself. And a request to GitHub itself on application startup
 to check for available updates.
 
+![Depot performance view: value over time, invested capital, XIRR and KPI tiles](./doc-assets/depot-performance.png)
+
 ## Features
 
 - **Depots & transactions** — track any number of depots; record buys, sells, dividends,
@@ -26,6 +28,15 @@ to check for available updates.
   converted with daily precision.
 - **Privacy by design** — password-protected, AES-encrypted local database; a "hide absolute
   values" mode for sharing your screen without sharing your net worth.
+
+<p>
+  <img src="./doc-assets/depot-positions-list.png" alt="Positions with per-holding returns and income" width="49%">
+  <img src="./doc-assets/depot-positions-allocation.png" alt="Allocation donut chart" width="49%">
+</p>
+<p>
+  <img src="./doc-assets/depot-dividends.png" alt="Dividend history bar chart" width="49%">
+  <img src="./doc-assets/security-detail.png" alt="Historical price chart of a security" width="49%">
+</p>
 
 ## Getting started
 

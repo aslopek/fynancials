@@ -163,6 +163,8 @@ external ID in that source), and an optional dividend announcement configuration
 configurations can be changed later in the security's detail view, where you can also record
 stock splits and view the historical price chart.
 
+![The add-security wizard: master data, historical prices, dividend announcements, summary](./doc-assets/add-security-wizard.png)
+
 Alternatively, if you have a lot of securities, you may choose to do the CSV import (next
 recommended step) before and apply any changes after the automatic import.
 
@@ -173,6 +175,8 @@ special dividends, and taxes. You can add them manually or import a CSV file exp
 broker — the import wizard lets you map the CSV columns to transaction fields, review the
 parsed rows, and afterwards download any rows that could not be imported as a separate CSV to
 fix and retry.
+
+![The Transactions tab with the full transaction history](./doc-assets/depot-transactions.png)
 
 The CSV import also has a best-effort mechanism to automatically create unknown securities
 referenced by the transactions.
@@ -195,6 +199,14 @@ the header):
   [Understanding your depot performance numbers](#understanding-your-depot-performance-numbers).
 - **Transactions** — the full transaction history: add, delete, import.
 
+![Positions tab: current holdings with per-position returns and income](./doc-assets/depot-positions-list.png)
+
+![Positions tab: allocation donut chart](./doc-assets/depot-positions-allocation.png)
+
+![Dividends tab: received dividends per month, grouped by year](./doc-assets/depot-dividends.png)
+
+![Performance tab: depot value over time with KPI tiles](./doc-assets/depot-performance.png)
+
 The Transaction tab is available if one depot is selected for disambiguity. If you select
 multiple depots at once, the Transactions tab becomes unavailable.
 
@@ -206,9 +218,15 @@ one depot (merge). Merging depots of different currencies is not possible.
 The master list of everything you track: add securities, edit master data, manage stock splits,
 configure price/announcement data sources, and inspect historical price charts.
 
+![The Securities page with the master list](./doc-assets/securities-list.png)
+
+![A security's historical price chart, opened from the list](./doc-assets/security-detail.png)
+
 ### Dividends
 
 Upcoming dividend announcements, grouped by week. New announcements also show up under the notification bell in the header.
+
+![Upcoming dividend announcements grouped by week](./doc-assets/dividends-upcoming.png)
 
 ### Settings
 
@@ -218,6 +236,8 @@ Upcoming dividend announcements, grouped by week. New announcements also show up
 - **Historical Security Prices / Dividend Announcements** — manage your data sources.
 - **Security Groups** — organize your securities into named groups. This can be used to group
   ADR and non-ADR shares of the same company or group shares of dual class listings.
+
+![Settings — Appearance: formats, Hide Absolute Values, Dev Mode](./doc-assets/settings.png)
 
 ## Understanding your depot performance numbers
 
@@ -264,6 +284,8 @@ works out to roughly 17.5% effective annual — so don't be surprised if the ben
 visually matches your depot curve differs from your XIRR by about a percentage point. Neither
 number is wrong; they're just different conventions.
 
+![A running Fixed Interest benchmark (orange) next to the depot value curve](./doc-assets/depot-performance-benchmark.png)
+
 There are two variants of the Fixed Interest Benchmark: **Cashflow-based** lets you compare
 "what if I'd put the same money into a fixed-interest account instead?". **Regular Investments**
 lets you compare against a monthly savings plan with either a fixed monthly contribution or
@@ -282,6 +304,8 @@ dividend, special dividend and tax transactions.
 
 Clicking on a position lets you further drill down into each lot you currently hold. This
 includes a CAGR for each lot.
+
+![The lot drill-down of a position, with holding period, CAGR and performance per lot](./doc-assets/depot-position-lots.png)
 
 ## Dev mode & direct database access
 
