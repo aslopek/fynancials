@@ -65,7 +65,8 @@ export const securityPageStore = signalStore(
         ofType(
           SecurityActions.updateSecuritySuccess,
           SecurityActions.createSecuritySuccess,
-          SecurityActions.updateSecurityLogoDone
+          SecurityActions.updateSecurityLogoDone,
+          SecurityActions.updateHistoricalSecurityPriceConfigDone
         ),
         takeUntilDestroyed(destroyRef)
       ).subscribe((): void => {
