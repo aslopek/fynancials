@@ -8,3 +8,4 @@ openapigen
 *.tgz
 release-notes.md
 *.iml
+.scratchpad
