@@ -9,6 +9,7 @@ import integration.IntegrationTest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -22,7 +23,7 @@ class ExchangeRateServiceTest {
   void convertCurrency_directExchangeRate_sameDate() {
     BigDecimal eur = new BigDecimal("1000");
     BigDecimal expectedUsd = new BigDecimal("1077.1");
-    BigDecimal usd = subject.convert(eur, "EUR", "USD", LocalDate.of(2023, Month.DECEMBER, 7));
+    BigDecimal usd = convert(eur, "EUR", "USD", LocalDate.of(2023, Month.DECEMBER, 7));
     assertThat(usd).isEqualByComparingTo(expectedUsd);
   }
 
@@ -30,7 +31,7 @@ class ExchangeRateServiceTest {
   void convertCurrency_invertedExchangeRate_sameDay() {
     BigDecimal usd = new BigDecimal("1000");
     BigDecimal expectedEur = new BigDecimal("928.4189");
-    BigDecimal eur = subject.convert(usd, "USD", "EUR", LocalDate.of(2023, Month.DECEMBER, 7));
+    BigDecimal eur = convert(usd, "USD", "EUR", LocalDate.of(2023, Month.DECEMBER, 7));
     assertThat(eur).isCloseTo(expectedEur, ACCURACY_ONE_THOUSANDTH);
   }
 
@@ -41,7 +42,7 @@ class ExchangeRateServiceTest {
     BigDecimal usd;
 
     for (int i = 9; i <= 15; i++) {
-      usd = subject.convert(eur, "EUR", "USD", LocalDate.of(2023, Month.DECEMBER, i));
+      usd = convert(eur, "EUR", "USD", LocalDate.of(2023, Month.DECEMBER, i));
       assertThat(usd).isEqualByComparingTo(expectedUsd);
     }
   }
@@ -53,7 +54,7 @@ class ExchangeRateServiceTest {
     BigDecimal eur;
 
     for (int i = 9; i <= 15; i++) {
-      eur = subject.convert(usd, "USD", "EUR", LocalDate.of(2023, Month.DECEMBER, i));
+      eur = convert(usd, "USD", "EUR", LocalDate.of(2023, Month.DECEMBER, i));
       assertThat(eur).isCloseTo(expectedEur, ACCURACY_ONE_THOUSANDTH);
     }
   }
@@ -65,7 +66,7 @@ class ExchangeRateServiceTest {
     boolean caughtException = false;
 
     try {
-      subject.convert(eur, "EUR", "USD", LocalDate.of(2023, Month.DECEMBER, 16));
+      convert(eur, "EUR", "USD", LocalDate.of(2023, Month.DECEMBER, 16));
     } catch (OutdatedExchangeRateException e) {
       caughtException = true;
       assertThat(e.getDate()).isEqualTo(LocalDate.of(2023, Month.DECEMBER, 8));
@@ -85,7 +86,7 @@ class ExchangeRateServiceTest {
     boolean caughtException = false;
 
     try {
-      subject.convert(usd, "USD", "EUR", LocalDate.of(2023, Month.DECEMBER, 16));
+      convert(usd, "USD", "EUR", LocalDate.of(2023, Month.DECEMBER, 16));
     } catch (OutdatedExchangeRateException e) {
       caughtException = true;
       assertThat(e.getDate()).isEqualTo(LocalDate.of(2023, Month.DECEMBER, 8));
@@ -102,12 +103,17 @@ class ExchangeRateServiceTest {
   @Test
   void convertCurrency_noPreviousExchangeRateAvailable() {
     assertThatExceptionOfType(NotFoundException.class).isThrownBy(
-        () -> subject.convert(BigDecimal.ONE, "EUR", "USD", LocalDate.of(2023, Month.NOVEMBER, 28)));
+        () -> convert(BigDecimal.ONE, "EUR", "USD", LocalDate.of(2023, Month.NOVEMBER, 28)));
   }
 
   @Test
   void convertCurrency_noExchangeRateAvailableAtAll() {
     assertThatExceptionOfType(NotFoundException.class).isThrownBy(
-        () -> subject.convert(BigDecimal.ONE, "EUR", "XYZ", LocalDate.of(2023, Month.DECEMBER, 7)));
+        () -> convert(BigDecimal.ONE, "EUR", "XYZ", LocalDate.of(2023, Month.DECEMBER, 7)));
+  }
+
+  private BigDecimal convert(BigDecimal value, String baseCurrency, String targetCurrency, LocalDate date) {
+    CurrencyConversionRequest request = new CurrencyConversionRequest(value, date);
+    return subject.convert(List.of(request), baseCurrency, targetCurrency).getFirst();
   }
 }
