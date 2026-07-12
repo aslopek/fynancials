@@ -22,6 +22,7 @@ export function enableOkAndApply(signalStore: ReadableSignalStore<UpdateSecurity
 
   // enable if everything that was touched is valid AND at least one section is touched
   return signalStore.masterDataTouched()
+    || signalStore.logoTouched()
     || signalStore.historicalSecurityPriceConfigTouched()
     || signalStore.dividendAnnouncementConfigTouched();
 }

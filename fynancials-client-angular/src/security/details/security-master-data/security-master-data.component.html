@@ -1,21 +1,29 @@
-<div class="form-field">
+<div class="form-field logo-section">
     <input #fileUpload
            (change)="selectFile($event)"
            accept="image/png"
            class="file-input"
            type="file">
-    <button (click)="fileUpload.click()"
-            class="file-upload-button"
-            color="primary"
-            mat-flat-button>
-        Select Logo
-    </button>
     @let logoFile = logo();
+    @let securityIdValue = securityId();
     @if (logoFile !== undefined) {
-        <div class="logo-preview-container">
+        <div (click)="fileUpload.click()"
+             class="logo-preview-container">
             <img [src]="logoFile | filePreview"
                  class="logo-preview-img"/>
         </div>
+    } @else if (hasExistingLogo() && securityIdValue !== undefined) {
+        <div (click)="fileUpload.click()"
+             class="logo-preview-container">
+            <img [src]="securityIdValue | securityLogoUrl"
+                 class="logo-preview-img"/>
+        </div>
+    } @else {
+        <button (click)="fileUpload.click()"
+                color="primary"
+                mat-flat-button>
+            Select Logo
+        </button>
     }
 </div>
 
