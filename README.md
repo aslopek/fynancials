@@ -8,10 +8,9 @@ data from sources you configure yourself.
 ## Features
 
 - **Depots & transactions** — track any number of depots; record buys, sells, dividends,
-  special dividends, and taxes manually or through a CSV import wizard with configurable column
-  mapping.
+  special dividends, and taxes manually or through a CSV import wizard.
 - **Performance analysis** — depot value over time, invested capital, XIRR (annualized
-  money-weighted return), and a configurable benchmarks: "what if I had put the same money into
+  money-weighted return), and configurable benchmarks: "what if I had put the same money into
   another financial instrument instead?"
 - **Positions** — per-holding returns, drill-down into individual purchase lots, allocation
   chart.

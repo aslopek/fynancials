@@ -13,6 +13,15 @@ Older releases are not supported.
 **Describe the bug**
 A clear and concise description of what the bug is.
 
+Preferably in behavior driven acceptance criteria:
+
+**AC1: <Title>**
+**GIVEN:** <Precondition>
+**AND:** <Other Precondition>
+**WHEN:** <Action>
+**THEN:** <Postcondition>
+**AND:** <Other Postcondition>
+
 **To Reproduce**
 Steps to reproduce the behavior:
 1. Go to '...'
