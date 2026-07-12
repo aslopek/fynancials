@@ -1,5 +1,6 @@
 import {DepotState} from '../depot.state';
 import {SetDepotsSliceActionArgs} from '../depot.actions';
+import {DepotRead} from '../../../gen/api/depot';
 
 export function setDepotSliceReducer(state: Readonly<DepotState>, actionArgs: SetDepotsSliceActionArgs): DepotState {
   let {
@@ -7,12 +8,9 @@ export function setDepotSliceReducer(state: Readonly<DepotState>, actionArgs: Se
     selectedDepotIds,
   } = actionArgs;
 
-  let selectedDepotCurrency: string = state.selectedDepotCurrency;
-
   // if depots exist but none are selected, select the first depot
   if (depots.length > 0 && selectedDepotIds.length === 0) {
     selectedDepotIds = [depots[0].id];
-    selectedDepotCurrency = depots[0].currency;
   }
 
   let selectionIsValid: boolean = true;
@@ -25,9 +23,10 @@ export function setDepotSliceReducer(state: Readonly<DepotState>, actionArgs: Se
   }
 
   if (selectionIsValid) {
+    selectedDepotIds = restrictToSingleCurrency(depots, selectedDepotIds);
     return {
       ...actionArgs,
-      selectedDepotCurrency,
+      selectedDepotCurrency: getSelectedDepotCurrency(depots, selectedDepotIds, state.selectedDepotCurrency),
       selectedDepotIds
     };
   }
@@ -35,7 +34,7 @@ export function setDepotSliceReducer(state: Readonly<DepotState>, actionArgs: Se
   if (depots.length === 0) {
     return {
       ...actionArgs,
-      selectedDepotCurrency,
+      selectedDepotCurrency: state.selectedDepotCurrency,
       selectedDepotIds: []
     };
   }
@@ -45,4 +44,13 @@ export function setDepotSliceReducer(state: Readonly<DepotState>, actionArgs: Se
     selectedDepotCurrency: depots[0].currency,
     selectedDepotIds: [depots[0].id]
   };
+}
+
+function getSelectedDepotCurrency(depots: DepotRead[], selectedDepotIds: number[], fallback: string): string {
+  return depots.find(depot => selectedDepotIds.includes(depot.id))?.currency ?? fallback;
+}
+
+function restrictToSingleCurrency(depots: DepotRead[], selectedDepotIds: number[]): number[] {
+  const firstCurrency: string | undefined = depots.find(depot => depot.id === selectedDepotIds[0])?.currency;
+  return selectedDepotIds.filter(id => depots.find(depot => depot.id === id)?.currency === firstCurrency);
 }
