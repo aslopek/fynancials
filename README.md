@@ -3,7 +3,8 @@
 Local-first portfolio tracking for the desktop. Fynancials keeps your complete investment
 history — depots, transactions, dividends, performance — in an AES-encrypted database on your
 own machine. No account, no cloud, no telemetry: the only network traffic is fetching market
-data from sources you configure yourself.
+data from sources you configure yourself. And a request to GitHub itself on application startup
+to check for available updates.
 
 ## Features
 
@@ -123,6 +124,6 @@ Please refer to [SECURITY.md](./SECURITY.md) for guidance on how to report vulne
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). The "Fynancials" name and logo are excluded from the license;
+MIT — see [LICENSE](./LICENSE). The "Fynancials" name and logo files are excluded from the license;
 see the exception note in the LICENSE file. Third-party attributions are shown in the app's
 About dialog.
