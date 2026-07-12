@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-07-12
+
 ### Changed
 
 - Loading the Performance tab is significantly faster when prices need to be converted from a
