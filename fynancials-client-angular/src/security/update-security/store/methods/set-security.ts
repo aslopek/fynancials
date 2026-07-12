@@ -19,6 +19,7 @@ export function setSecurity(signalStore: WritableSignalStore<UpdateSecurityState
     masterData: security,
     logo: null,
     masterDataTouched: false,
+    logoTouched: false,
     historicalSecurityPriceConfig: null,
     historicalSecurityPriceConfigTouched: false,
     dividendAnnouncementConfig: null,
