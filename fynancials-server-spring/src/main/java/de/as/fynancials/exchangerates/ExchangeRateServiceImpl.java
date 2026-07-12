@@ -1,13 +1,15 @@
 package de.as.fynancials.exchangerates;
 
+import static java.math.BigDecimal.ONE;
+import static java.time.temporal.ChronoUnit.DAYS;
+
 import de.as.fynancials.common.config.ArithmeticConfig;
 import de.as.fynancials.common.error.NotFoundException;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -41,51 +43,80 @@ class ExchangeRateServiceImpl implements ExchangeRateService {
     if (!exchangeRateEntities.isEmpty()) {
       exchangeRateRepository.saveAll(exchangeRateEntities);
       log.info("Added {} new exchange rates between {} and {}", exchangeRateEntities.size(),
-          exchangeRateEntities.get(0).getDate(), exchangeRateEntities.get(exchangeRateEntities.size() - 1).getDate());
+          exchangeRateEntities.getFirst().getDate(), exchangeRateEntities.getLast().getDate());
     }
   }
 
   @Override
   @Transactional
-  public BigDecimal convert(BigDecimal value, String baseCurrency, String targetCurrency, LocalDate date)
+  public List<BigDecimal> convert(List<CurrencyConversionRequest> items, String baseCurrency, String targetCurrency)
       throws NotFoundException, OutdatedExchangeRateException {
+    if (items.isEmpty()) {
+      return List.of();
+    }
     if (baseCurrency.equals(targetCurrency)) {
-      return value;
+      return items.stream().map(CurrencyConversionRequest::getValue).toList();
     }
-    Optional<ExchangeRateEntity> exchangeRate;
-    try (Stream<ExchangeRateEntity> exchangeRates =
-        exchangeRateRepository.findAllByBaseCurrencyAndTargetCurrencyAndDateLessThanEqualOrderByDateDesc(baseCurrency,
-            targetCurrency, date)) {
-      exchangeRate = exchangeRates.findFirst();
-    }
+
+    List<ExchangeRateEntity> forwardRates = exchangeRateRepository
+        .findAllByBaseCurrencyAndTargetCurrencyOrderByDateAsc(baseCurrency, targetCurrency);
+    List<ExchangeRateEntity> reverseRates = exchangeRateRepository
+        .findAllByBaseCurrencyAndTargetCurrencyOrderByDateAsc(targetCurrency, baseCurrency);
+
+    MathContext mathContext = arithmeticConfig.mathContext();
+    return items.stream()
+        .map(item -> convertUsingCachedRates(item, forwardRates, reverseRates, baseCurrency, targetCurrency, mathContext))
+        .toList();
+  }
+
+  private BigDecimal convertUsingCachedRates(CurrencyConversionRequest item, List<ExchangeRateEntity> forwardRates,
+                                             List<ExchangeRateEntity> reverseRates, String baseCurrency,
+                                             String targetCurrency, MathContext mathContext) {
+    ExchangeRateEntity entity = findRateOnOrBefore(forwardRates, item.getDate());
     BigDecimal multiplier;
 
-    if (exchangeRate.isPresent()) {
-      multiplier = exchangeRate.get().getExchangeRate();
+    if (entity != null) {
+      multiplier = entity.getExchangeRate();
     } else {
-      try (Stream<ExchangeRateEntity> exchangeRates =
-               exchangeRateRepository.findAllByBaseCurrencyAndTargetCurrencyAndDateLessThanEqualOrderByDateDesc(
-                   targetCurrency, baseCurrency, date)) {
-        exchangeRate = exchangeRates.findFirst();
-      }
-
-      if (exchangeRate.isPresent()) {
-        multiplier = BigDecimal.ONE.divide(exchangeRate.get().getExchangeRate(), arithmeticConfig.mathContext());
-      } else {
-        log.error("No exchange rate found for {} to {} at {}", baseCurrency, targetCurrency, date);
+      entity = findRateOnOrBefore(reverseRates, item.getDate());
+      if (entity == null) {
+        log.error("No exchange rate found for {} to {} at {}", baseCurrency, targetCurrency, item.getDate());
         throw new NotFoundException();
       }
+      multiplier = ONE.divide(entity.getExchangeRate(), mathContext);
     }
 
-    long exchangeRateAgeInDays = ChronoUnit.DAYS.between(date, exchangeRate.get().getDate());
-    BigDecimal result = value.multiply(multiplier, arithmeticConfig.mathContext());
+    long exchangeRateAgeInDays = DAYS.between(item.getDate(), entity.getDate());
+    BigDecimal result = item.getValue().multiply(multiplier, mathContext);
     if (Math.abs(exchangeRateAgeInDays) <= MAX_AGE) {
       return result;
     } else {
-      ExchangeRateEntity entity = exchangeRate.get();
       throw OutdatedExchangeRateException.builder().date(entity.getDate()).baseCurrency(entity.getBaseCurrency())
           .targetCurrency(entity.getTargetCurrency()).exchangeRate(entity.getExchangeRate()).conversionResult(result)
           .build();
     }
+  }
+
+  /**
+   * Binary search for the latest entity whose date is on or before {@code date} in a list sorted ascending by date
+   * (each date occurs at most once, per {@code UNIQUE_EXCHANGE_RATE}).
+   */
+  private ExchangeRateEntity findRateOnOrBefore(List<ExchangeRateEntity> ratesSortedByDateAsc, LocalDate date) {
+    int low = 0;
+    int high = ratesSortedByDateAsc.size() - 1;
+    ExchangeRateEntity result = null;
+
+    while (low <= high) {
+      int mid = (low + high) >>> 1;
+      ExchangeRateEntity candidate = ratesSortedByDateAsc.get(mid);
+      if (!candidate.getDate().isAfter(date)) {
+        result = candidate;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+
+    return result;
   }
 }

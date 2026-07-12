@@ -6,7 +6,19 @@ import static integration.DepotIds.FIRST_DEPOT;
 import static integration.DepotIds.OTHER_DEPOT;
 import static integration.DepotIds.USD_DEPOT_1;
 import static integration.DepotIds.WEEKEND_FIRST_TRANSACTION_DEPOT;
+import static integration.SecurityIds.AAPL;
+import static integration.SecurityIds.ASML;
+import static integration.SecurityIds.CRM;
+import static integration.SecurityIds.DHR;
+import static integration.SecurityIds.HAG;
+import static integration.SecurityIds.MAIN;
+import static integration.SecurityIds.MSFT;
+import static integration.SecurityIds.NVDA;
+import static integration.SecurityIds.QCOM;
+import static integration.SecurityIds.VNGGF;
 import static java.math.BigDecimal.ZERO;
+import static java.time.DayOfWeek.SATURDAY;
+import static java.time.DayOfWeek.SUNDAY;
 import static java.time.Month.DECEMBER;
 import static java.time.Month.FEBRUARY;
 import static java.time.Month.JANUARY;
@@ -24,11 +36,16 @@ import de.as.fynancials.depot.performance.api.model.DepotPerformanceDto;
 import de.as.fynancials.depot.performance.api.model.DepotValueDto;
 import integration.IntegrationTest;
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -193,6 +210,69 @@ class GetDepotPerformanceTest {
     List<DepotValueDto> values = responseBody.getValues();
     assertThat(responseBody.getExtendedInternalRateOfReturns()).isZero();
     assertThat(values).isEmpty();
+  }
+
+  @Test
+  @SqlMergeMode(MERGE)
+  @Sql(statements = "DELETE FROM EXCHANGE_RATE;")
+  void getDepotPerformance_tenYearsOfForeignCurrencyPrices_respondsWithinAcceptableTime() throws Exception {
+    List<Long> securityIds = List.of(MSFT, AAPL, HAG, VNGGF, ASML, NVDA, DHR, CRM, MAIN, QCOM);
+    // one distinct, non-EUR currency per security (see ServerConfigurationServiceImpl.SUPPORTED_CURRENCIES) - every
+    // single price row now needs its own currency pair's exchange rate, instead of all 10 sharing one
+    List<String> currencies = List.of("USD", "JPY", "GBP", "CHF", "SEK", "NOK", "DKK", "PLN", "AUD", "CAD");
+    LocalDate firstDate = LocalDate.of(2014, JANUARY, 1);
+    LocalDate lastPriceDate = LocalDate.of(2023, DECEMBER, 29);
+    Random random = new Random();
+
+    try (Connection connection = DriverManager.getConnection("jdbc:h2:mem:fynancials", "test-user", "test-password")) {
+      PreparedStatement priceStatement = connection.prepareStatement("""
+          INSERT INTO HISTORICAL_SECURITY_PRICE (SECURITY_ID, PRICE, CURRENCY, DATE, CREATED_AT, UPDATED_AT)
+          VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          """);
+      PreparedStatement exchangeRateStatement = connection.prepareStatement("""
+          INSERT INTO EXCHANGE_RATE (DATE, BASE_CURRENCY, TARGET_CURRENCY, EXCHANGE_RATE, CREATED_AT, UPDATED_AT, VERSION)
+          VALUES (?, 'EUR', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
+          """);
+
+      for (LocalDate date = firstDate; !date.isAfter(lastPriceDate); date = date.plusDays(1)) {
+        if (date.getDayOfWeek() == SATURDAY || date.getDayOfWeek() == SUNDAY) {
+          continue;
+        }
+
+        for (String currency : currencies) {
+          exchangeRateStatement.setDate(1, Date.valueOf(date));
+          exchangeRateStatement.setString(2, currency);
+          exchangeRateStatement.setBigDecimal(3, BigDecimal.valueOf(1 + random.nextDouble()));
+          exchangeRateStatement.addBatch();
+        }
+
+        for (int i = 0; i < securityIds.size(); i++) {
+          priceStatement.setLong(1, securityIds.get(i));
+          priceStatement.setBigDecimal(2, BigDecimal.valueOf(1 + random.nextDouble() * 500));
+          priceStatement.setString(3, currencies.get(i));
+          priceStatement.setDate(4, Date.valueOf(date));
+          priceStatement.addBatch();
+        }
+      }
+      exchangeRateStatement.executeBatch();
+      priceStatement.executeBatch();
+
+      PreparedStatement transactionStatement = connection.prepareStatement("""
+          INSERT INTO TRANSACTION (DATE, DEPOT_ID, SECURITY_ID, TRANSACTION_TYPE, SECURITY_COUNT_ORIGINAL, GROSS_VALUE, CREATED_AT, UPDATED_AT, VERSION)
+          VALUES ('2014-01-01', ?, ?, 'BUY', '10', '1000', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
+          """);
+      for (long securityId : securityIds) {
+        transactionStatement.setLong(1, EMPTY_DEPOT);
+        transactionStatement.setLong(2, securityId);
+        transactionStatement.addBatch();
+      }
+      transactionStatement.executeBatch();
+    }
+
+    long start = System.currentTimeMillis();
+    getDepotPerformance(Set.of(EMPTY_DEPOT)).andExpect(status().isOk());
+    long elapsed = System.currentTimeMillis() - start;
+    assertThat(elapsed).isLessThan(3000);
   }
 
   /**

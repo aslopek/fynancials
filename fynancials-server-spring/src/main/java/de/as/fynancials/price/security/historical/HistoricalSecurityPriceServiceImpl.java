@@ -15,6 +15,7 @@ import de.as.fynancials.common.error.InternalServerErrorException;
 import de.as.fynancials.common.error.NotFoundException;
 import de.as.fynancials.common.util.FormattedValue;
 import de.as.fynancials.common.util.ValueFormatService;
+import de.as.fynancials.exchangerates.CurrencyConversionRequest;
 import de.as.fynancials.exchangerates.ExchangeRateService;
 import de.as.fynancials.exchangerates.OutdatedExchangeRateException;
 import de.as.fynancials.price.security.historical.datasource.HistoricalSecurityPriceDataSource;
@@ -38,6 +39,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -81,14 +84,26 @@ class HistoricalSecurityPriceServiceImpl implements HistoricalSecurityPriceServi
   @Override
   public List<HistoricalSecurityPrice> getPrices(long securityId, LocalDate startDate, String currency)
       throws BadRequestException, NotFoundException, OutdatedExchangeRateException {
-    return getPrices(securityId, startDate).stream().peek(price -> {
-      if (!price.getCurrency().equals(currency)) {
-        BigDecimal converted =
-            exchangeRateService.convert(price.getPrice(), price.getCurrency(), currency, price.getDate());
-        price.setPrice(converted);
-        price.setCurrency(currency);
-      }
-    }).toList();
+    List<HistoricalSecurityPrice> prices = getPrices(securityId, startDate);
+
+    // group by source currency and convert each group in one batch call, rather than once per price row
+    Map<String, List<HistoricalSecurityPrice>> pricesToConvertByCurrency = prices.stream()
+        .filter(price -> !price.getCurrency().equals(currency))
+        .collect(Collectors.groupingBy(HistoricalSecurityPrice::getCurrency));
+
+    pricesToConvertByCurrency.forEach((sourceCurrency, pricesToConvert) -> {
+      List<CurrencyConversionRequest> conversionRequests = pricesToConvert.stream()
+          .map(price -> new CurrencyConversionRequest(price.getPrice(), price.getDate()))
+          .toList();
+      List<BigDecimal> converted = exchangeRateService.convert(conversionRequests, sourceCurrency, currency);
+
+      IntStream.range(0, pricesToConvert.size()).forEach(i -> {
+        pricesToConvert.get(i).setPrice(converted.get(i));
+        pricesToConvert.get(i).setCurrency(currency);
+      });
+    });
+
+    return prices;
   }
 
   @Override
@@ -100,8 +115,8 @@ class HistoricalSecurityPriceServiceImpl implements HistoricalSecurityPriceServi
     }
     HistoricalSecurityPrice price = priceMapper.fromEntity(latestPrice.get());
     if (!price.getCurrency().equals(currency)) {
-      BigDecimal converted =
-          exchangeRateService.convert(price.getPrice(), price.getCurrency(), currency, price.getDate());
+      CurrencyConversionRequest conversionRequest = new CurrencyConversionRequest(price.getPrice(), price.getDate());
+      BigDecimal converted = exchangeRateService.convert(List.of(conversionRequest), price.getCurrency(), currency).getFirst();
       price.setPrice(converted);
       price.setCurrency(currency);
     }
