@@ -6,7 +6,7 @@ own machine. No account, no cloud, no telemetry: the only network traffic is fet
 data from sources you configure yourself. And a request to GitHub itself on application startup
 to check for available updates.
 
-![Depot performance view: value over time, invested capital, XIRR and KPI tiles](./doc-assets/depot-performance.png)
+![Fynancials — local-first portfolio tracking for the desktop](./doc-assets/social-preview.png)
 
 ## Features
 
