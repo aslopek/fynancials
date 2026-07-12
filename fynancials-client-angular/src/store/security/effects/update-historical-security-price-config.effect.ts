@@ -21,6 +21,7 @@ import {
   Actions,
   ofType
 } from '@ngrx/effects';
+import {DepotActions} from '../../depot/depot.actions';
 
 export type UpdateHistoricalSecurityPriceConfigEffectArgs = {
   store: Store<AppState>
@@ -54,7 +55,8 @@ async function updateHistoricalSecurityPriceConfigEffectHelper(effectArgs: Updat
     const result: HistoricalSecurityPriceConfig = await firstValueFrom(historicalSecurityPriceApi.setHistoricalPriceConfig(securityId, {
       ...historicalSecurityPriceConfig,
       version: existingConfig?.version ?? 0
-    }));
+    }, true));
+    store.dispatch(DepotActions.reloadDepots());
     return SecurityActions.updateHistoricalSecurityPriceConfigDone({
       securityId,
       historicalSecurityPriceConfig: result
