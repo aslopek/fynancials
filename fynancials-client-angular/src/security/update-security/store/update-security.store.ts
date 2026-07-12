@@ -41,6 +41,7 @@ export type UpdateSecurityState = {
   masterData: SecurityCreate | null
   logo: File | null
   masterDataTouched: boolean
+  logoTouched: boolean
   historicalSecurityPriceConfig: Omit<HistoricalSecurityPriceConfig, 'version'> | null
   historicalSecurityPriceConfigTouched: boolean
   dividendAnnouncementConfig: DividendAnnouncementConfigChangedEvent | null
@@ -52,6 +53,7 @@ const initialState: UpdateSecurityState = {
   masterData: null,
   logo: null,
   masterDataTouched: false,
+  logoTouched: false,
   historicalSecurityPriceConfig: null,
   historicalSecurityPriceConfigTouched: false,
   dividendAnnouncementConfig: null,
