@@ -20,6 +20,14 @@ Steps to reproduce the behavior:
 3. Scroll down to '....'
 4. See error
 
+**Screenshots or logs**
+
+If applicable, add screenshots or a log fil to help explain your problem.
+
+CAUTION: Remember to disable the displaying of absolute values in the appearance settings before taking a screenshot!
+
+CAUTION: When submitting a log file, also ensure no sensitive information are contained therein.
+
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
@@ -31,14 +39,6 @@ Preferably in behavior driven acceptance criteria:
 **WHEN:** <Action>
 **THEN:** <Postcondition>
 **AND:** <Other Postcondition>
-
-**Screenshots or logs**
-
-If applicable, add screenshots or a log fil to help explain your problem.
-
-CAUTION: Remember to disable the displaying of absolute values in the appearance settings before taking a screenshot! 
-
-CAUTION: When submitting a log file, also ensure no sensitive information are contained therein.
 
 **Additional context**
 Add any other context about the problem here.
