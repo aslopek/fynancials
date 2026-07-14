@@ -1,27 +1,10 @@
-import {
-  HistoricalSecurityPriceApi,
-  HistoricalSecurityPriceConfig
-} from '../../../gen/api/historical-security-price';
-import {
-  Action,
-  Store
-} from '@ngrx/store';
+import {HistoricalSecurityPriceApi, HistoricalSecurityPriceConfig} from '../../../gen/api/historical-security-price';
+import {Action, Store} from '@ngrx/store';
 import {AppState} from '../../app.state';
-import {
-  SecurityActions,
-  UpdateHistoricalSecurityPriceConfigActionArgs
-} from '../security.actions';
+import {SecurityActions, UpdateHistoricalSecurityPriceConfigActionArgs} from '../security.actions';
 import {getHistoricalSecurityPriceConfig} from '../security.selector';
-import {
-  concatMap,
-  firstValueFrom,
-  Observable
-} from 'rxjs';
-import {
-  Actions,
-  ofType
-} from '@ngrx/effects';
-import {DepotActions} from '../../depot/depot.actions';
+import {concatMap, firstValueFrom, Observable} from 'rxjs';
+import {Actions, ofType} from '@ngrx/effects';
 
 export type UpdateHistoricalSecurityPriceConfigEffectArgs = {
   store: Store<AppState>
@@ -56,7 +39,6 @@ async function updateHistoricalSecurityPriceConfigEffectHelper(effectArgs: Updat
       ...historicalSecurityPriceConfig,
       version: existingConfig?.version ?? 0
     }, true));
-    store.dispatch(DepotActions.reloadDepots());
     return SecurityActions.updateHistoricalSecurityPriceConfigDone({
       securityId,
       historicalSecurityPriceConfig: result
