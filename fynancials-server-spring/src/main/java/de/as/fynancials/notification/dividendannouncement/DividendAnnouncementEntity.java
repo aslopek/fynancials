@@ -11,10 +11,12 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "dividend_announcement")
 class DividendAnnouncementEntity {

@@ -72,14 +72,17 @@ Each domain has its own `execution` block in the `openapi-generator-maven-plugin
   violation will surface as a misleading 409.
 - **Default entity properties**: `Long id` (primary key), `Long version` (`@Version` annotated for optimistic locking),
   `OffsetDateTime createdAt` (`@CreationTimestamp` annotated), `OffsetDateTime updatedAt` (`@UpdateTimestamp` annotated).
-- **Domain object vs. entity**: the common shape is a package-private `*Entity` (`@Data @Entity`) paired with a public plain domain object
-  (`@Data`, no persistence annotations) with near-identical fields, including `id`/`version` (e.g. `depot/Depot.java` vs.
+- **Domain object vs. entity**: the common shape is a package-private `*Entity` (`@Getter @Setter @Entity`) paired with a public plain
+  domain object (`@Data`, no persistence annotations) with near-identical fields, including `id`/`version` (e.g. `depot/Depot.java` vs.
   `depot/DepotEntity.java`). This isn't universal, though — purely computed/non-persisted concepts (e.g.
   `depot/performance/model/Performance.java`) are domain-only with no entity counterpart. Don't assume every new domain concept needs an
   entity.
-- **Lombok**: `@Data` is the default for domain objects; Entities TBD;`@RequiredArgsConstructor` on `final` fields is the standard
-  constructor-injection style; `@UtilityClass` is used for static-only helpers (e.g. `MathFunctions`, `PaginationUtils`) instead of a
-  private constructor.
+- **Lombok**: `@Data` is the default for domain objects; `@Entity` classes use `@Getter` + `@Setter` instead — never `@Data`, since
+  Lombok-generated `equals`/`hashCode` is broken for JPA entities (identity semantics via Hibernate proxies, mutable hash codes).
+  `@Embeddable` classes (e.g. `CurrencyMappingEntity`, `HistoricalSecurityPriceMarketCloseTimeEntity`) deliberately keep `@Data`: they are
+  stored in `@ElementCollection` `HashSet`s and therefore need value-based `equals`/`hashCode` — don't "clean them up" to
+  `@Getter`/`@Setter`. `@RequiredArgsConstructor` on `final` fields is the standard constructor-injection style; `@UtilityClass` is used for
+  static-only helpers (e.g. `MathFunctions`, `PaginationUtils`) instead of a private constructor.
 - **`Optional<T>`** is used only at the repository boundary (e.g. `findByName(...)`); services unwrap it immediately via
   `.orElseThrow(NotFoundException::new)` rather than returning/propagating `Optional` themselves.
 - **Pagination**: reuse `common/pagination/PaginationUtils.getPageNumber/getPageSize(Integer)` (defaults `null` to page `0`/size `10`,
