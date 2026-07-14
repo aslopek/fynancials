@@ -16,7 +16,7 @@ import {
 import {SecurityLogoComponent} from "../../common/components/security-logo/security-logo.component";
 import {FlagIconComponent} from "../../common/components/flag-icon/flag-icon.component";
 import {FyCurrencyPipe, FyDatePipe, SecurityNamePipe} from "../../common";
-import {SecuritySymbols} from "../../common/pipe/security-symbols";
+import {SecuritySymbolsPipe} from "../../common/pipe/security-symbols.pipe";
 import {PriceIconPipePipe} from "./price-icon.pipe";
 import {MatIcon} from "@angular/material/icon";
 import {MatTooltip} from "@angular/material/tooltip";
@@ -41,7 +41,7 @@ import {UpdateSecurityComponent, UpdateSecurityDialogData,} from "../update-secu
     MatHeaderRow,
     MatRow,
     MatPaginator,
-    SecuritySymbols,
+    SecuritySymbolsPipe,
     PriceIconPipePipe,
     MatIcon,
     MatTooltip,
