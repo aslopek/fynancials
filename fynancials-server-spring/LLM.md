@@ -4,169 +4,123 @@ This file provides guidance to LLM coding agents (Claude Code, etc.) when workin
 
 ## What this package is
 
-A monolithic Spring Boot 4 (Java 25) backend implementing the `fynancials-api` OpenAPI specs.
-See the root `LLM.md` for how this fits together with `fynancials-api` (spec source) and
-`fynancials-client-angular` (which this backend is bundled into for the Electron desktop app).
+A monolithic Spring Boot 4 (Java 25) backend implementing the `fynancials-api` OpenAPI specs. See the root `LLM.md` for how this fits
+together with `fynancials-api` (spec source) and `fynancials-client-angular` (which this backend is bundled into for the Electron desktop
+app).
 
 ## Commands
 
-- `mvn package` — regenerates OpenAPI server sources (`generate-sources` phase,
-  `openapi-generator-maven-plugin`) then builds `target/fynancials-server-spring-1.0.0.jar`.
-- `mvn generate-sources` — regenerate only `target/generated-sources/openapi` without a full
-  build; do this after editing a spec in `../fynancials-api` and before relying on IDE
-  autocomplete for a new `*ApiDelegate`/DTO.
-- `mvn spring-boot:run -Dspring-boot.run.profiles=dev` — run the backend directly on port
-  `23726` (H2 console `23727`). Other dev profiles: `dev-file`, `dev-empty-db` (see
-  `application-dev*.yaml` for what each seeds/uses).
+- `mvn clean package -DskipTests` — regenerates OpenAPI server sources (`generate-sources` phase, `openapi-generator-maven-plugin`) then
+  builds `target/fynancials-server-spring-<version>.jar`.
+- `mvn generate-sources` — regenerate only `target/generated-sources/openapi` without a full build; do this after editing a spec in
+  `../fynancials-api` and before relying on IDE autocomplete for a new `*ApiDelegate`/DTO.
+- `mvn spring-boot:run -Dspring-boot.run.profiles=dev` — run the backend directly on port `23726` (H2 console `23727`). Other dev profiles:
+  `dev-file`, `dev-empty-db` (see `application-dev*.yaml` for what each seeds/uses).
 - `mvn test` — run all tests.
-- `mvn test -Dtest=CreateDepotTest` — run a single test class; `-Dtest=CreateDepotTest#someMethod`
-  for a single method.
-- No Maven wrapper is checked in (use a local `mvn`); no lint/checkstyle/spotless plugin is
-  configured.
+- `mvn test -Dtest=CreateDepotTest` — run a single test class; `-Dtest=CreateDepotTest#someMethod` for a single method.
+- No Maven wrapper is checked in (use a local `mvn`); no lint/checkstyle/spotless plugin is configured.
 
 ## Codegen workflow
 
-Each domain has its own `execution` block in the `openapi-generator-maven-plugin` config in
-`pom.xml`, all sharing `api/openapi-config.json` (delegate pattern, `Dto` model suffix, Java 8
-date types) but each setting its own `apiPackage` (e.g. `de.as.fynancials.depot.api.controller`)
-and `inputSpec` pointing at `../fynancials-api/*.yaml`. Generated sources land in
-`target/generated-sources/openapi/src/main/java` (wired into the build via the
-`build-helper-maven-plugin`) — never edit generated DTOs or `*ApiDelegate` interfaces; change
-the spec instead and re-run `mvn generate-sources`.
+Each domain has its own `execution` block in the `openapi-generator-maven-plugin` config in `pom.xml`, all sharing `api/openapi-config.json`
+(delegate pattern, `Dto` model suffix, Java 8 date types) but each setting its own `apiPackage` (e.g.
+`de.as.fynancials.depot.api.controller`) and `inputSpec` pointing at `../fynancials-api/*.yaml`. Generated sources land in
+`target/generated-sources/openapi/src/main/java` (wired into the build via the `build-helper-maven-plugin`) — never edit generated DTOs or
+`*ApiDelegate` interfaces; change the spec instead and re-run `mvn generate-sources`.
 
 ## Architecture
 
-- **Package-per-domain** under `de.as.fynancials/`: `depot` (+ `dividend`, `position`,
-  `transaction` sub-packages), `configuration` (+ `securitygroup`), `security` (+ `stocksplit`),
-  `price/security`, `notification/dividendannouncement`, `exchangerates` — one package per
-  `fynancials-api` spec file.
+- **Package-per-domain** under `de.as.fynancials/`: `depot` (+ `dividend`, `performance`, `position`, `transaction` sub-packages),
+  `configuration` (+ `securitygroup`), `security` (+ `stocksplit`), `price/security`, `notification/dividendannouncement`, `exchangerates`
+  — one package per `fynancials-api` spec file.
 - **Layering, consistent across every domain**:
     1. A package-private `*Controller` implements the generated `*ApiDelegate` interface (e.g.
-       `DepotController implements DepotApiDelegate`) — this is the only place generated
-       request/response DTOs are touched directly.
-    2. It delegates to a `*Service` interface / `*ServiceImpl` holding the actual business logic,
-       operating on plain domain objects/entities rather than DTOs. Service Interfaces and domain
-       objects are public, service implemenations package-private.
-    3. Persistence goes through a Spring Data JPA `*Repository` over a `*Entity`. Repositories
-       and Entities are package-private.
-    4. A MapStruct `*Mapper` converts between `*Entity`, domain objects, and generated DTOs —
-       add new field mappings here rather than in the controller or service. Mappers are
-       package-private.
-- **Persistence**: a single encrypted H2 file database (see root `LLM.md` for the
-  connection/env var details); schema changes go through Liquibase changelogs in
-  `src/main/resources/db/changelogs`, wired via `classpath:db/liquibase.xml`. `ddl-auto:
-  validate` means the entity model must always match an applied changelog — never rely on
-  Hibernate to create/alter the schema.
-- **Config profiles**: `application.yaml` holds shared/prod defaults; `application-dev.yaml`,
-  `application-dev-file.yaml`, `application-dev-empty-db.yaml` are local dev variants
-  (different seed/DB state) activated via `-Dspring-boot.run.profiles=<name>`.
-- **`common/`**: cross-domain utilities — `arithmetic` (incl. XIRR calculation), `monetary`,
-  `pagination`, `time`, `image`, `error` (exception handling), `database`. Reach for these
-  before writing a new one-off utility in a domain package.
+       `DepotController implements DepotApiDelegate`) — this is the only place generated request/response DTOs are touched directly.
+    2. It delegates to a `*Service` interface / `*ServiceImpl` holding the actual business logic, operating on plain domain objects/entities
+       rather than DTOs. Service Interfaces and domain objects are public, service implementations package-private.
+    3. Persistence goes through a Spring Data JPA `*Repository` over a `*Entity`. Repositories and Entities are package-private.
+    4. A MapStruct `*Mapper` converts between `*Entity`, domain objects, and generated DTOs — add new field mappings here rather than in the
+       controller or service. Mappers are package-private. Mapper interfaces are okay but never use `default` methods — switch to abstract
+       classes in this case.
+- **Persistence**: a single encrypted H2 file database (see root `LLM.md` for the connection/env var details); schema changes go through
+  Liquibase changelogs in `src/main/resources/db/changelogs`, wired via `classpath:db/liquibase.xml`. `ddl-auto: validate` means the entity
+  model must always match an applied changelog — never rely on Hibernate to create/alter the schema. New changelogs must follow the existing
+  conventions (consecutive IDs and filenames).
+- **Config profiles**: `application.yaml` holds shared/prod defaults; `application-dev.yaml`, `application-dev-file.yaml`,
+  `application-dev-empty-db.yaml` are local dev variants (different seed/DB state) activated via `-Dspring-boot.run.profiles=<name>`. None
+  of the dev profiles are shipped with the app.
+- **`common/`**: cross-domain utilities — `arithmetic` (incl. XIRR calculation), `config` (`@Configuration` classes), `database`, `error`
+  (exception handling), `image`, `mapper` (shared MapStruct helpers, e.g. `DateParser`), `monetary`, `pagination`, `time`, `util` (value
+  formatting). Reach for these before writing a new one-off utility in a domain package.
 
 ## Implementation conventions
 
-- **Exceptions**: `common/error` defines a flat set of empty, unchecked marker exceptions named
-  after their HTTP status (`NotFoundException`, `ConflictException`, `BadRequestException`,
-  `UnprocessableEntityException`, `NoContentException`, `InternalServerErrorException`), each
-  mapped 1:1 to a `ResponseEntity` with an empty body by a package-private `@ControllerAdvice`
-  (`common/error/RestExceptionHandler.java`; `ConstraintViolationException` also maps to 400
-  there). Service interface methods declare these in a `throws` clause even though they're
-  unchecked (e.g. `DepotService.createDepot(...) throws BadRequestException, ConflictException`)
-  purely to document which failures a caller must expect — keep this on new service methods
-  rather than removing it as redundant.
-- **Not-found/conflict/optimistic-locking checks are hand-rolled, not framework-driven**: every
-  entity has `@Version private Long version` for Hibernate optimistic locking, but services
-  still explicitly check first (`existsById`/`findById(...).orElseThrow(NotFoundException::new)`)
-  before writing, and separately catch `ObjectOptimisticLockingFailureException` around
-  `repository.saveAndFlush(...)` to rethrow as `ConflictException` (see
-  `depot/DepotServiceImpl.persist(...)`). Duplicate-name conflicts are checked manually via
-  repository `existsByName`/`findByName` lookups, not a unique-constraint exception handler.
-  Follow this same explicit-check style in new services.
-- **Domain object vs. entity**: the common shape is a package-private `*Entity` (`@Data @Entity`)
-  paired with a public plain domain object (`@Data`, no persistence annotations) with
-  near-identical fields, including `id`/`version` (e.g. `depot/Depot.java` vs.
-  `depot/DepotEntity.java`). This isn't universal, though — purely computed/non-persisted
-  concepts (e.g. `depot/performance/model/Performance.java`) are domain-only with no entity
-  counterpart. Don't assume every new domain concept needs both.
-- **Lombok**: `@Data` is the default for both entities and domain objects (not avoided the way
-  it commonly is for JPA entities elsewhere); `@RequiredArgsConstructor` on `final` fields is
-  the standard constructor-injection style; `@UtilityClass` is used for static-only helpers
-  (e.g. `MathFunctions`, `PaginationUtils`) instead of a private constructor. `@Builder` is
-  rare — most objects are built via setters.
-- Java **records** are effectively unused for domain/value objects here — new value types should
-  be plain Lombok classes, matching the rest of the codebase, not `record`s.
-- **`Optional<T>`** is used only at the repository boundary (e.g. `findByName(...)`); services
-  unwrap it immediately via `.orElseThrow(NotFoundException::new)` rather than returning/
-  propagating `Optional` themselves.
-- **Pagination**: reuse `common/pagination/PaginationUtils.getPageNumber/getPageSize(Integer)`
-  (defaults `null` to page `0`/size `10`, throws `BadRequestException` on negative/zero) and
-  `PageContainer<T>` (`total`, `currentPage`, `lastPage`, `pageSize`, `items`) — don't wire up
-  Spring Data's `Pageable`/`Page<T>` directly in controllers.
-- **Monetary/arithmetic helpers**: `common/arithmetic/MathFunctions` (a `@UtilityClass`) and
-  `XirrFunction` take an explicit `MathContext` rather than relying on a global rounding mode —
-  pass one through rather than hardcoding scale/rounding at the call site.
-  `common/monetary/StaticCurrencyMapper` normalizes currencies by mutating parallel
-  `List<BigDecimal>`/`List<String>` in place (it's a `BiConsumer`) — reuse it for currency
-  conversion rather than writing new conversion logic.
-- **Logging**: `@Slf4j` with parameterized `{}` placeholders is the convention — avoid string
-  concatenation in log calls.
+- **Exceptions**: `common/error` defines a flat set of empty, unchecked marker exceptions named after their HTTP status
+  (`NotFoundException`, `ConflictException`, `BadRequestException`, `UnprocessableEntityException`, `NoContentException`,
+  `InternalServerErrorException`), each mapped 1:1 to a `ResponseEntity` with an empty body by a package-private `@ControllerAdvice`
+  (`common/error/RestExceptionHandler.java`; `ConstraintViolationException` also maps to 400 there). Service interface methods declare these
+  in a `throws` clause even though they're unchecked (e.g. `DepotService.createDepot(...) throws BadRequestException, ConflictException`)
+  purely to document which failures a caller must expect — keep this on new service methods rather than removing it as redundant.
+- **Not-found/conflict/optimistic-locking**: have been hand-rolled instead of framework-driven in the past. New implementations should be
+  framework-driven and make use of the exceptions in `common/error` to translate into appropriate HTTP status responses. Existing code
+  will be transformed if touched.
+- **Default entity properties**: `Long id` (primary key), `Long version` (`@Version` annotated for optimistic locking),
+  `OffsetDateTime createdAt` (`@CreationTimestamp` annotated), `OffsetDateTime updatedAt` (`@UpdateTimestamp` annotated).
+- **Domain object vs. entity**: the common shape is a package-private `*Entity` (`@Data @Entity`) paired with a public plain domain object
+  (`@Data`, no persistence annotations) with near-identical fields, including `id`/`version` (e.g. `depot/Depot.java` vs.
+  `depot/DepotEntity.java`). This isn't universal, though — purely computed/non-persisted concepts (e.g.
+  `depot/performance/model/Performance.java`) are domain-only with no entity counterpart. Don't assume every new domain concept needs an
+  entity.
+- **Lombok**: `@Data` is the default for domain objects; Entities TBD;`@RequiredArgsConstructor` on `final` fields is the standard
+  constructor-injection style; `@UtilityClass` is used for static-only helpers (e.g. `MathFunctions`, `PaginationUtils`) instead of a
+  private constructor.
+- **`Optional<T>`** is used only at the repository boundary (e.g. `findByName(...)`); services unwrap it immediately via
+  `.orElseThrow(NotFoundException::new)` rather than returning/propagating `Optional` themselves.
+- **Pagination**: reuse `common/pagination/PaginationUtils.getPageNumber/getPageSize(Integer)` (defaults `null` to page `0`/size `10`,
+  throws `BadRequestException` on negative/zero) and `PageContainer<T>` (`total`, `currentPage`, `lastPage`, `pageSize`, `items`) — don't
+  wire up Spring Data's `Pageable`/`Page<T>` directly in controllers.
+- **Monetary/arithmetic helpers**: `common/arithmetic/MathFunctions` (a `@UtilityClass`) and `XirrFunction` take an explicit `MathContext`
+  rather than relying on a global rounding mode — pass one through rather than hardcoding scale/rounding at the call site.
+- **Logging**: `@Slf4j` with parameterized `{}` placeholders is the convention — avoid string concatenation in log calls.
 
 ## Testing concept
 
-Every endpoint (a URL + HTTP method combination) has its own integration test class, plus one
-test case in `CorsIntegrationTest.java`. Unit tests are the exception, written only when
-there's a specific reason (complex pure logic like `XirrFunctionTest`, `ValueFormatServiceTest`)
-— they never replace the per-endpoint integration test.
+Every endpoint (a URL + HTTP method combination) has its own integration test class, plus one test case in `CorsIntegrationTest.java`. Unit
+tests are the exception, written only when there's a specific reason (complex pure logic like `XirrFunctionTest`, `ValueFormatServiceTest`).
+They never replace the per-endpoint integration test.
 
-- **Per-endpoint integration test class** (e.g. `CreateDepotTest`, `DeleteDepotTest`,
-  `DividendAnnouncementConfigRepositoryTest`):
-    - The class and every `@Test`/`@BeforeEach`/etc.-annotated method are package-private.
-      Non-`@Autowired` members are `private` and are only ever initialized inside `void
-      beforeEach()` — `@Autowired` beans are the one exception, injected via field injection
-      instead.
-    - `beforeEach()` sets up the baseline. The **first test method** in the class is the baseline
-      case itself — no extra arrange, just act + assert. Every other test changes exactly one
-      precondition in its own arrange step, then does act + assert (see `CreateDepotTest`:
-      `createDepot_ok` is the baseline; `createDepot_USD_ok`, `createDepot_noName_badRequest`,
-      etc. each change exactly one field of the shared `requestBody`).
-    - Request bodies/headers that vary are `private` fields, initialized in `beforeEach()` per
-      the same rule; the MockMvc request itself is built in a small private helper (e.g.
-      `postDepot()`).
-    - Assertions cover both the HTTP response (status, body, headers where applicable) **and**
-      the resulting database state — and must check that neither too few nor too many rows
-      changed (a `DELETE` test must assert the target row is gone *and* the row count only
-      dropped by exactly one; see `DeleteDepotTest.deleteDepot_empty_ok` /
-      `deleteDepot_transactionsAreRemoved`, which use `TestDataQuery` helpers to check
-      cascade-deleted rows precisely).
-    - Where practical, factor repeated positive/negative cases into parameterizable
-      `runPositiveTestCase(...)` / `runNegativeTestCase(...)` private methods (see
-      `CreateDepotTest`) so individual `@Test` methods stay short.
-    - A custom JPA query on a `*Repository` must have its own integration test (e.g.
-      `DividendAnnouncementConfigRepositoryTest` for
-      `DividendAnnouncementConfigRepository.deleteAllBySecurityId`), following the same
-      `@IntegrationTest` + package-private conventions.
+- **Per-endpoint integration test class** (e.g. `CreateDepotTest`, `DeleteDepotTest`):
+    - The class and every `@Test`/`@BeforeEach`/etc.-annotated method are package-private. Non-`@Autowired` members are `private` and are
+      only ever initialized inside `void beforeEach()` — `@Autowired` beans are the one exception, injected via field injection instead.
+    - `beforeEach()` sets up the baseline. The **first test method** in the class is the baseline case itself — no extra arrange, just act +
+      assert. Every other test changes exactly one precondition in its own arrange step, then does act + assert (see `CreateDepotTest`:
+      `createDepot_ok` is the baseline; `createDepot_USD_ok`, `createDepot_noName_badRequest`, etc. each change exactly one field of the
+      shared `requestBody`).
+    - Request bodies/headers that vary are `private` fields, initialized in `beforeEach()` per the same rule; the MockMvc request itself is
+      built in a small private helper (e.g. `postDepot()`).
+    - Assertions cover both the HTTP response (status, body, headers where applicable) **and** the resulting database state — and must check
+      that neither too few nor too many rows changed (a `DELETE` test must assert the target row is gone *and* the row count only dropped by
+      exactly one; see `DeleteDepotTest.deleteDepot_empty_ok` / `deleteDepot_transactionsAreRemoved`, which use `TestDataQuery` helpers to
+      check cascade-deleted rows precisely).
+    - Where practical, factor repeated positive/negative cases into parameterizable `runPositiveTestCase(...)` / `runNegativeTestCase(...)`
+      private methods (see `CreateDepotTest`) so individual `@Test` methods stay short.
+- A custom JPA query on a `*Repository` must have its own integration test (e.g. `DividendAnnouncementConfigRepositoryTest` for
+  `DividendAnnouncementConfigRepository.deleteAllBySecurityId`), following the same `@IntegrationTest` + package-private conventions.
 - **`CorsIntegrationTest.java`**: one `@Test` per endpoint, each calling a shared
-  `testEndpoint(HttpMethod, url, requestBody[, contentType])` helper that asserts the CORS
-  header for two allowed origins and its absence for a disallowed one. Add a case here whenever
-  a new endpoint is added, grouped under a `// <path>` comment matching the existing layout.
-- **`@IntegrationTest`** (`src/test/java/integration/IntegrationTest.java`) is the
-  meta-annotation used by (almost) every test: `@SpringBootTest` + `@AutoConfigureMockMvc`,
-  seeds `example-data.sql` + exchange-rate + historical-price SQL before each test method and
-  truncates after. `MockServerUtils` stubs outbound HTTP calls (e.g. ECB exchange rates);
-  fixtures live under `src/test/resources/fixtures`.
+  `testEndpoint(HttpMethod, url, requestBody[, contentType])` helper that asserts the CORS header for two allowed origins and its absence
+  for a disallowed one. Add a case here whenever a new endpoint is added, grouped under a `// <path>` comment matching the existing layout
+  and alphabetical sorting.
+- **`@IntegrationTest`** (`src/test/java/integration/IntegrationTest.java`) is the meta-annotation used by every integration test:
+  `@SpringBootTest` + `@AutoConfigureMockMvc`, seeds `example-data.sql` + exchange-rate + historical-price SQL before each test method and
+  truncates after. `MockServerUtils` stubs outbound HTTP calls (e.g. ECB exchange rates); fixtures live under `src/test/resources/fixtures`.
 - **Never call an endpoint to prepare database state for a test.** All baseline data comes from
-  `src/main/resources/db/example-data/example-data.sql` — the same file the frontend uses for
-  local dev, so it must keep covering every case needed there, and any addition must follow the
-  existing, orderly layout of that file (grouped by table, consistent `INSERT` style). Only in
-  justified exceptional cases may an individual test case manipulate the database upfront with
-  its own SQL instead.
-- If a unit test is written, everything that isn't from the JDK — including DTOs — must be
-  mocked with Mockito rather than constructed for real (see `ValueFormatServiceTest`,
-  `DividendAnnouncementServiceTest`).
-- Assertions always use AssertJ's `assertThat(...)` (as in every example above) — never JUnit's
-  own `assertEquals`/`assertTrue`/etc.
-- `src/test/java/integration/` holds the shared integration-test infrastructure used across all
-  of the above: `IntegrationTest`, `IntegrationTestConfig`, `MockServerUtils`, ID constant
-  holders (`DepotIds`, `SecurityIds`), and `TestDataQuery` (raw SQL assertions against seeded
-  data).
+  `src/main/resources/db/example-data/example-data.sql` — the same file the frontend uses for local dev, so it must keep covering every case
+  needed there, and any addition must follow the existing, orderly layout of that file (grouped by table, consistent `INSERT` style). Only
+  in justified exceptional cases may an individual test case manipulate the database upfront with its own SQL instead.
+- If a unit test is written, everything that isn't from the JDK — including DTOs and domain objects — must be mocked with Mockito rather
+  than constructed for real (see `ValueFormatServiceTest`, `DividendAnnouncementServiceTest`).
+- **Only use AssertJ DSL for assertions:** Assertions always use AssertJ's `assertThat(...)` (as in every example above) — never JUnit's own
+  `assertEquals`/`assertTrue`/etc.
+- `src/test/java/integration/` holds the shared integration-test infrastructure used across all of the above: `IntegrationTest`,
+  `IntegrationTestConfig`, `MockServerUtils`, ID constant holders (`DepotIds`, `SecurityIds`), and `sql/TestDataQuery` (raw SQL assertions
+  against DB to avoid exposing repositories from other domains).

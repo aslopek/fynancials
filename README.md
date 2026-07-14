@@ -123,6 +123,25 @@ secrets management, rate limiting, audit logging, and compliance with the terms 
 third-party data sources being queried. Until then, treat the backend strictly as a local
 companion process of the desktop app.
 
+## Code Ownership and Use of AI
+
+I started this project in 2023, combining my passion for software engineering and the stock market with the goal of mastering Angular. Since
+then, this project has come a long way. In recent months, I have integrated AI tools into my workflow to make decisions faster and implement
+with less friction - especially while preparing the codebase for its public release.
+
+However, despite leveraging AI, every architectural decision and every single line of code in this project remains my sole responsibility. I
+take full ownership of the project. I use AI as a collaborative partner to:
+
+- Translate ideas into concrete architectural requirements
+- Derive implementation plans
+- Support with complex refactorings, code reviews or drafting an implementation
+
+No AI-generated output - whether it's an acceptance criterion, an architectural decision or a line of code - is committed into this
+repository without personal review. New features are the result of an ongoing "discussion" with the AI; sometimes its arguments win me over,
+and sometimes mine prevail.
+
+For more information on how AI is leveraged in this repository, view the `LLM.md` files in this repository.
+
 ## Changelog
 
 See [CHANGELOG.md](./CHANGELOG.md) for notable changes.
