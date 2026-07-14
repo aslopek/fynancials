@@ -24,6 +24,7 @@ import {
   deleteHistoricalSecurityPriceDataSource,
   DeleteHistoricalSecurityPriceDataSourceEffectArgs
 } from "./effects/delete-historical-security-price-data-source.effect";
+import {loadSecuritiesOn, LoadSecuritiesOnEffectArgs} from "./effects/load-securities-on.effect";
 
 @Injectable()
 export class SecurityEffects {
@@ -90,4 +91,8 @@ export class SecurityEffects {
     api: this.historicalSecurityPriceDataSourceApi,
     store: this.store
   } satisfies DeleteHistoricalSecurityPriceDataSourceEffectArgs));
+
+  readonly loadSecuritiesOn = createEffect(() => loadSecuritiesOn({
+    actions$: this.actions$
+  } satisfies LoadSecuritiesOnEffectArgs));
 }

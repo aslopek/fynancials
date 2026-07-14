@@ -78,10 +78,12 @@ Treat the `security` slice (`src/store/security/`) as the canonical template for
   selectors must follow this pattern (some older selectors in this codebase predate it and take the full state directly — don't copy those).
 - Only put data in a slice's state if it's genuinely global (needed across unrelated components/screens or persisted/loaded once and read
   from many places). Everything else belongs in a Signal Store.
-- **If two domains interact with each other, dependency inversion should be used.** Say domain A performs an action (whether pure or with
-  side effects) and Domain B needs to adjust after A is done. Then A does not dispatch one of B's actions, it rather dispatches a
-  (`...Done` | `...Success` | `...Error`) action from its own domain. B listens to these actions and reacts appropriately. This pattern may
-  not be enforced everywhere yet.
+- **If two domains interact with each other, dependency inversion must be used.** A domain in this sense is a global-store slice. Say
+  domain A performs an action (whether pure or with side effects) and Domain B needs to adjust after A is done. Then A does not dispatch
+  one of B's actions, it rather dispatches a (`...Done` | `...Success` | `...Error`) action from its own domain. B listens to these
+  actions in a dedicated `<verb>-<noun>-on.effect.ts` and reacts appropriately (see `depot/effects/reload-depots-on.effect.ts` and
+  `security/effects/load-securities-on.effect.ts` for the pattern, including how to add further triggering actions). This rule is scoped
+  to global-store slices only: components and Signal Stores are not domains and may dispatch any slice's actions directly.
 
 ## Signal Stores (component/feature-local state)
 

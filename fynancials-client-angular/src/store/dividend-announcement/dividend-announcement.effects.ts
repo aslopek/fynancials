@@ -1,13 +1,19 @@
 import {inject, Injectable} from '@angular/core';
 import {Actions, createEffect, ofType} from '@ngrx/effects';
-import {catchError, concatMap, delay, EMPTY, map, of, tap} from 'rxjs';
-import {DividendAnnouncementApi, DividendAnnouncementDataSourceApi, DividendAnnouncementRead} from '../../gen/api/notification/dividend-announcement';
+import {catchError, concatMap, delay, EMPTY, map, of} from 'rxjs';
+import {
+  DividendAnnouncementApi,
+  DividendAnnouncementDataSourceApi,
+  DividendAnnouncementRead
+} from '../../gen/api/notification/dividend-announcement';
 import {DividendAnnouncementActions} from './dividend-announcement.actions';
 import {Store} from '@ngrx/store';
 import {AppState} from '../app.state';
-import {SecurityActions} from '../security/security.actions';
 import {AppActions} from "../app.actions";
-import {setDividendAnnouncementDataSource, SetDividendAnnouncementDataSourceEffectArgs} from "./effects/set-dividend-announcement-data-source.effect";
+import {
+  setDividendAnnouncementDataSource,
+  SetDividendAnnouncementDataSourceEffectArgs
+} from "./effects/set-dividend-announcement-data-source.effect";
 import {
   deleteDividendAnnouncementDataSource,
   DeleteDividendAnnouncementDataSourceEffectArgs
@@ -30,29 +36,11 @@ export class DividendAnnouncementEffects {
       ofType(DividendAnnouncementActions.loadDividendAnnouncements),
       concatMap(() =>
         this.dividendAnnouncementApi.getDividendAnnouncements().pipe(
-          map((dividendAnnouncements: DividendAnnouncementRead[]) => {
-            for (const dividendAnnouncement of dividendAnnouncements) {
-              this.store.dispatch(SecurityActions.loadSecurity(dividendAnnouncement));
-            }
-            return DividendAnnouncementActions.loadDividendAnnouncementsSuccess(
-              {dividendAnnouncements});
-          }),
+          map((dividendAnnouncements: DividendAnnouncementRead[]) =>
+            DividendAnnouncementActions.loadDividendAnnouncementsSuccess({dividendAnnouncements})),
           catchError(() => of(DividendAnnouncementActions.loadDividendAnnouncementsError())))
       )
     )
-  );
-
-  readonly loadSecurities = createEffect(() =>
-      this.actions$.pipe(
-        ofType(DividendAnnouncementActions.loadDividendAnnouncementsSuccess),
-        tap((value) => {
-          const securityIds = [...new Set(value.dividendAnnouncements.map(d => d.securityId))];
-          for (const securityId of securityIds) {
-            this.store.dispatch(SecurityActions.loadSecurity({securityId}));
-          }
-        })
-      ),
-    {dispatch: false}
   );
 
   readonly reloadDividendAnnouncements = createEffect(() =>

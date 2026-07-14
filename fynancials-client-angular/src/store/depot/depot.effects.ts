@@ -18,12 +18,16 @@ import {DepotPositionApi} from "../../gen/api/depot-position";
 import {IncludeSpecialDividendsEffectArgs, setIncludeSpecialDividends} from "./effects/dividend/set-include-special-dividends.effect";
 import {setUseDividendGrossValues, UseDividendGrossValuesEffectArgs} from "./effects/dividend/set-use-dividend-gross-values.effect";
 import {loadDividends, LoadDividendsEffectArgs} from "./effects/dividend/load-dividends.effect";
-import {DividendAggregationTimespanEffectArgs, setDividendAggregationTimespan} from "./effects/dividend/set-dividend-aggregation-timespan.effect";
+import {
+  DividendAggregationTimespanEffectArgs,
+  setDividendAggregationTimespan
+} from "./effects/dividend/set-dividend-aggregation-timespan.effect";
 import {setSelectedDividendView, SetSelectedDividendViewEffectArgs} from "./effects/dividend/set-selected-dividend-view.effect";
 import {setSelectedPositionView, SetSelectedPositionViewEffectArgs} from "./effects/position/set-selected-position-view.effect";
 import {setUsePositionBuyInValues, SetUsePositionBuyInValuesEffectArgs} from "./effects/position/set-use-position-buy-in-values.effect";
 import {DepotPerformanceApi, DepotPerformanceIncomeApi} from "../../gen/api/depot-performance";
 import {loadPerformance, LoadPerformanceEffectArgs} from "./effects/performance/load-performance.effect";
+import {reloadDepotsOn, ReloadDepotsOnEffectArgs} from "./effects/reload-depots-on.effect";
 
 @Injectable()
 export class DepotEffects {
@@ -141,4 +145,8 @@ export class DepotEffects {
     depotPerformanceApi: this.depotPerformanceApi,
     store: this.store
   } satisfies LoadPerformanceEffectArgs))
+
+  readonly reloadDepotsOn = createEffect(() => reloadDepotsOn({
+    actions$: this.actions$
+  } satisfies ReloadDepotsOnEffectArgs));
 }
