@@ -110,7 +110,9 @@ export const DepotActions = createActionGroup({
     'Set Use Position Buy In Values Done': props<SetUsePositionBuyInValuesActionArgs>(),
     // depot.performance actions
     'Load Performance Done': props<LoadPerformanceDoneActionArgs>(),
-    // triggered by other domains (e.g. security groups, transactions) whose changes affect the depot's derived data
+    // dispatched by components/Signal Stores after operations affecting the depot's derived data, and by this slice's own effects
+    // reacting to other slices' Done/Success actions (e.g. security price config updates) - other global-store slices must never
+    // dispatch this action directly, per dependency inversion principle.
     'Reload Depots': emptyProps()
   }
 });
