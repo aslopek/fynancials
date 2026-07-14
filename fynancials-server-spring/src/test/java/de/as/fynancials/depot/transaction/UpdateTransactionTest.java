@@ -259,9 +259,13 @@ class UpdateTransactionTest {
 
     TransactionEntity afterUpdate = transactionRepository.findById(transactionId).orElseThrow();
     assertThat(afterUpdate.getVersion()).isEqualTo(version);
-    assertThat(afterUpdate).isEqualTo(beforeUpdate);
+    assertTransactionUnchanged(beforeUpdate, afterUpdate);
 
     assertThat(transactionRepository.count()).isEqualTo(transactionCount);
+  }
+
+  private void assertTransactionUnchanged(TransactionEntity before, TransactionEntity after) {
+    assertThat(after).usingRecursiveComparison().isEqualTo(before);
   }
 
   private ResultActions putTransaction(long depotId, long transactionId) throws Exception {
