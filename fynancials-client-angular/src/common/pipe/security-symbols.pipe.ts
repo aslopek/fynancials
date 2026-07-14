@@ -1,9 +1,4 @@
-import {
-  inject,
-  Pipe,
-  PipeTransform,
-  Signal
-} from '@angular/core';
+import {inject, Pipe, PipeTransform, Signal} from '@angular/core';
 import {SecuritiesById} from '../../store/security/security.state';
 import {Store} from '@ngrx/store';
 import {securitiesById} from '../../store/security/security.selector';
@@ -12,7 +7,7 @@ import {SecurityRead} from '../../gen/api/security';
 @Pipe({
   name: 'securitySymbols'
 })
-export class SecuritySymbols implements PipeTransform {
+export class SecuritySymbolsPipe implements PipeTransform {
 
   private readonly securities: Signal<SecuritiesById> = inject(Store).selectSignal(securitiesById);
 
