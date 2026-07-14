@@ -140,7 +140,7 @@ class UpdateSecurityTest {
 
     // verify database
     SecurityEntity msftAfterRequest = securityRepository.findById(1L).orElseThrow();
-    assertThat(msftAfterRequest).isEqualTo(msftBeforeRequest);
+    assertSecurityUnchanged(msftBeforeRequest, msftAfterRequest);
     assertThat(securityRepository.count()).isEqualTo(securityCount);
   }
 
@@ -155,7 +155,7 @@ class UpdateSecurityTest {
 
     // verify database
     SecurityEntity msftAfterRequest = securityRepository.findById(1L).orElseThrow();
-    assertThat(msftAfterRequest).isEqualTo(msftBeforeRequest);
+    assertSecurityUnchanged(msftBeforeRequest, msftAfterRequest);
     assertThat(securityRepository.count()).isEqualTo(securityCount);
   }
 
@@ -170,7 +170,7 @@ class UpdateSecurityTest {
 
     // verify database
     SecurityEntity msftAfterRequest = securityRepository.findById(1L).orElseThrow();
-    assertThat(msftAfterRequest).isEqualTo(msftBeforeRequest);
+    assertSecurityUnchanged(msftBeforeRequest, msftAfterRequest);
     assertThat(securityRepository.count()).isEqualTo(securityCount);
   }
 
@@ -185,7 +185,7 @@ class UpdateSecurityTest {
 
     // verify database
     SecurityEntity msftAfterRequest = securityRepository.findById(1L).orElseThrow();
-    assertThat(msftAfterRequest).isEqualTo(msftBeforeRequest);
+    assertSecurityUnchanged(msftBeforeRequest, msftAfterRequest);
     assertThat(securityRepository.count()).isEqualTo(securityCount);
 
   }
@@ -199,7 +199,7 @@ class UpdateSecurityTest {
     assertThat(result.getResponse().getContentLength()).isZero();
     assertThat(securityRepository.count()).isEqualTo(count);
     SecurityEntity msftAfterRequest = securityRepository.findById(1L).orElseThrow();
-    assertThat(msftAfterRequest).isEqualTo(msftBeforeRequest);
+    assertSecurityUnchanged(msftBeforeRequest, msftAfterRequest);
   }
 
   @Test
@@ -228,7 +228,7 @@ class UpdateSecurityTest {
 
     // verify database
     SecurityEntity msftAfterRequest = securityRepository.findById(1L).orElseThrow();
-    assertThat(msftAfterRequest).isEqualTo(msftBeforeRequest);
+    assertSecurityUnchanged(msftBeforeRequest, msftAfterRequest);
     assertThat(securityRepository.count()).isEqualTo(securityCount);
   }
 
@@ -258,7 +258,7 @@ class UpdateSecurityTest {
 
     // verify database
     SecurityEntity msftAfterRequest = securityRepository.findById(1L).orElseThrow();
-    assertThat(msftAfterRequest).isEqualTo(msftBeforeRequest);
+    assertSecurityUnchanged(msftBeforeRequest, msftAfterRequest);
     assertThat(securityRepository.count()).isEqualTo(securityCount);
   }
 
@@ -288,7 +288,7 @@ class UpdateSecurityTest {
 
     // verify database
     SecurityEntity msftAfterRequest = securityRepository.findById(1L).orElseThrow();
-    assertThat(msftAfterRequest).isEqualTo(msftBeforeRequest);
+    assertSecurityUnchanged(msftBeforeRequest, msftAfterRequest);
     assertThat(securityRepository.count()).isEqualTo(securityCount);
   }
 
@@ -303,13 +303,17 @@ class UpdateSecurityTest {
 
     // verify database
     SecurityEntity msftAfterRequest = securityRepository.findById(1L).orElseThrow();
-    assertThat(msftAfterRequest).isEqualTo(msftBeforeRequest);
+    assertSecurityUnchanged(msftBeforeRequest, msftAfterRequest);
     assertThat(securityRepository.count()).isEqualTo(securityCount);
   }
 
   private ResultActions putSecurity(long id) throws Exception {
     return mockMvc.perform(put(String.format(ENDPOINT, id)).contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(requestBody)));
+  }
+
+  private void assertSecurityUnchanged(SecurityEntity before, SecurityEntity after) {
+    assertThat(after).usingRecursiveComparison().isEqualTo(before);
   }
 
   private void verifyDatabase(long id) {

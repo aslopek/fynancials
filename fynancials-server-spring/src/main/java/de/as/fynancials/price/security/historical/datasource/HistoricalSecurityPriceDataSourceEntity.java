@@ -20,11 +20,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "HISTORICAL_SECURITY_PRICE_DATA_SOURCE")
 class HistoricalSecurityPriceDataSourceEntity {
