@@ -14,7 +14,7 @@
     "node": "^24.15.0"
   },
   "scripts": {
-    "test": "echo \"no test specified\" && exit 0",
+    "test": "jest",
     "build": "npm run clean && npm run generate && ng build --base-href ./ && npm run licenses:generate",
     "licenses:generate": "node scripts/generate-third-party-licenses.js",
     "licenses:check": "node scripts/check-third-party-licenses.js",
@@ -43,6 +43,7 @@
     "@angular/platform-browser": "^22.0.1",
     "@angular/platform-browser-dynamic": "^22.0.1",
     "@angular/router": "^22.0.1",
+    "@babel/preset-env": "^7.29.7",
     "@electron-forge/cli": "^7.2.0",
     "@electron-forge/maker-deb": "^7.2.0",
     "@electron-forge/maker-rpm": "^7.2.0",
@@ -61,9 +62,11 @@
     "electron": "^43.0.0",
     "electron-squirrel-startup": "^1.0.0",
     "html2canvas-pro": "^2.0.2",
+    "jest": "^30.4.2",
     "ngx-echarts": "^22.0.0",
     "rimraf": "^6.0.1",
     "rxjs": "~7.8.0",
+    "ts-jest": "^29.4.11",
     "tslib": "^2.3.0",
     "typescript": "^6.0.3"
   }

@@ -3,7 +3,8 @@ import {SetHistoricalSecurityPriceDataSourceDoneActionArgs} from "../security.ac
 import {DataSourceWithId} from "../../../settings/data-source/data-source.type";
 import {HistoricalSecurityPriceDataSourceRead} from "../../../gen/api/historical-security-price";
 
-export function setHistoricalSecurityPriceDataSource(state: Readonly<SecurityState>, args: SetHistoricalSecurityPriceDataSourceDoneActionArgs): SecurityState {
+export function setHistoricalSecurityPriceDataSource(state: Readonly<SecurityState>,
+                                                     args: SetHistoricalSecurityPriceDataSourceDoneActionArgs): SecurityState {
   const ds: HistoricalSecurityPriceDataSourceRead | undefined = args.dataSource;
   if (ds === undefined) {
     return state;

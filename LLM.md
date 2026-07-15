@@ -21,6 +21,18 @@ See `fynancials-api/LLM.md`, `fynancials-client-angular/LLM.md`, and `fynancials
 Line length is capped at 140 characters per line, project-wide (all three parts). Language-specific code styles are defined in the
 respective `LLM.md` files.
 
+## Domain separation beats DRY
+
+When DRY and domain separation conflict, domain separation wins — in both directions:
+
+- Breaking DRY (a new endpoint, service, or parallel implementation) is only justified when it carves out a genuine domain, never for a
+  representation/presentation concern of data a tier already has. Serialization/formatting/labeling belongs to the tier that presents the
+  data (usually the Angular client); prefer composing existing endpoints over adding server surface.
+- Conversely, duplication that preserves domain separation is accepted. Example: test data factories stay one per type — a handwritten
+  domain type and a generated API type each keep their own factory, even when the two are structurally near-identical. Don't couple them
+  (e.g. by spreading one into the other) just to deduplicate their defaults.
+- Within domains, DRY applies.
+
 ## Dependency licensing
 
 This project is MIT-licensed. Only add a new dependency (npm or Maven, in any of the three parts) if its license is compatible with that —
