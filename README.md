@@ -102,9 +102,10 @@ MockMvc — real controllers, services, and H2 database, with outbound third-par
 ECB exchange rates) stubbed at the edge. Every endpoint is verified against actual persistence
 and real payloads, not mocks standing in for the components that matter.
 
-Frontend tests are a known gap — there are currently no `*.spec.ts` files. The priority so far
-has been the backend, where the actual portfolio calculations live; component and store tests
-are the next area to invest in.
+Frontend test coverage is still a known gap. A Jest suite now covers first pieces of the store
+logic, but most of the frontend remains untested. The priority so far has been the backend,
+where the actual portfolio calculations live; broadening store, pipe, and component coverage
+is the next area to invest in.
 
 ## Security model
 

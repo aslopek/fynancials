@@ -22,7 +22,7 @@ The Angular + NgRx frontend, packaged as the Electron desktop app that ships to 
   already be built (`mvn package`). Ignore `electron:make` script.
 - `npm run licenses:generate` — collect licenses of packaged dependencies into a JSON file.
 - `npm run licenses:check` — verify license compatibility of dependencies.
-- `npm run test` — a no-op stub; there are no tests and no `*.spec.ts` files in this project currently.
+- `npm run test` — run all tests (config in `jest.config.ts`, uses `ts-jest`). `npx jest <path-to-spec>` runs a single file.
 
 ## Architecture
 
@@ -128,6 +128,9 @@ container component's `providers: [XStore]`, then have descendant components
 - When no existing type fits exactly, define a new, narrowly-scoped one (e.g. a `Get<X>State` selector input, an
   `<X>ActionArgs`/`<X>EffectArgs` type) rather than widening an existing type or leaving it inferred.
 - Use `type` over `interface`. Use `interface` if and only if there is a class implementing the interface.
+- One-line JSON objects and arrays are allowed if and only if they are empty or contain maximum one key / item.
+  - `[]`, `['foo']` are okay, `['foo', 'bar']` needs to be multi-line
+  - `{}`, `{foo: 'bar'}` are okay, `{foo: 'bar', baz: 1}` needs to be multi-line
 
 ## Date display
 
@@ -170,3 +173,40 @@ container component's `providers: [XStore]`, then have descendant components
   `performance-label.component.scss` and the `.performance-positive`/`.performance-negative` rules in `position-list.component.scss` for the
   pattern. Add a one-line comment explaining the coupling when you use it, and don't reach for it otherwise.
 - Avoid inline styling. Only if it supports readability, this is allowed. E.g. when dividing `width` among columns.
+
+## Testing
+
+The focus on testing in the angular app is on logic. Use `jest` to test:
+
+- NgRx global store
+  - effect functions (contents of `src/store/<slice>/effects`)
+  - reducer functions (contents of `src/store/<slice>/reducers`)
+  - selector functions (contents of `src/store/<slice>/selectors`)
+- signal stores
+  - effect functions (contents of `<path>/store/effects`)
+  - method functions (contents of `<path>/store/methods`)
+  - computed functions (contents of `<path>/store/computed`)
+  - if applicable, contents of other subdirectories
+- angular pipes: `*.pipe.ts` — instantiate the pipe directly with mocked constructor deps, no TestBed; see `security-name.pipe.spec.ts`
+  for the pattern (including mocking a `Store` whose `selectSignal` serves several selectors, dispatched by selector identity)
+- If important for the logic, components may also have a unit test; however logic should preferably reside in global or signal stores
+- Use marble testing (rxjs `TestScheduler`) for observable logic that resolves purely through rxjs operators/schedulers (mostly effects).
+  **Not** when the effect's `mergeMap`/`switchMap`/etc. callback is `async` or otherwise returns a `Promise` — a `Promise` resolves via the
+  real microtask queue, not rxjs virtual time, so `TestScheduler` can't observe it deterministically. For those, build the input with a real
+  `Observable` (`of`/`throwError`) and assert with `await firstValueFrom(...)` instead; see `load-security.effect.spec.ts` for the pattern.
+- In every `*.spec.ts` file, import exactly the jest symbols being used (`afterEach`, `beforeAll`, `beforeEach`, `describe`, `expect`,
+  `it`, `jest`, ...) explicitly from `@jest/globals` — never rely on ambient globals, and don't import symbols the file doesn't use.
+- Testing philosophy
+  - Use mocks wherever possible over real instances of dependencies and function arguments.
+  - `beforeEach()` sets up the baseline. The **first test function** in the file is the baseline case itself - no extra arrange, just act +
+    assert. Every other test changes exactly one precondition in its own arrange step, then does act + assert.
+  - Use nested `describe()` if you want multiple tests with the same alteration from the baseline: the shared alteration goes into the
+    nested `describe()`'s own `beforeEach()` — never into the `describe()` body, which runs at collection time, before any `beforeEach()`.
+    E.g. if tests only make sense if they alter n > 1 preconditions, then the nested `describe()`'s `beforeEach()` may alter up to n-1
+    preconditions and each test case alters exactly one in its own arrange step.
+  - TypeScript conventions set forth in this file (line length, strong type safety etc.) also apply for tests.
+  - use `toBe(...)` whenever referential equality is important - e.g. when a reducer returns the input state
+  - Prefer test data factories over verbose inline object initializers. Once a generated/domain type is used by more than one spec, add a
+    `<name>Factory(overrides?: Partial<Type>): Type` function for it in `src/testing/` (one file per type, e.g. `security-read.factory.ts`,
+    re-exported via `src/testing/index.ts`), returning a fresh object with sensible defaults and spreading `overrides` last so individual
+    tests only specify the fields they care about.
