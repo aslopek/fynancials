@@ -33,11 +33,10 @@ class DividendAnnouncementDataSourceServiceImpl implements DividendAnnouncementD
     if (dataSource.getId() != null) {
       throw new BadRequestException();
     }
-    if (repository.existsByName(dataSource.getName())) {
-      throw new ConflictException();
-    }
 
-    return writeToDatabase(dataSource);
+    DividendAnnouncementDataSourceEntity entity = mapper.toEntity(dataSource);
+    entity = persist(entity);
+    return mapper.fromEntity(entity);
   }
 
   @Override
@@ -45,29 +44,33 @@ class DividendAnnouncementDataSourceServiceImpl implements DividendAnnouncementD
   public DividendAnnouncementDataSource updateDataSource(DividendAnnouncementDataSource dataSource)
       throws BadRequestException, ConflictException, NotFoundException {
     validate(dataSource);
-    if (dataSource.getId() == null || !repository.existsById(dataSource.getId())) {
+    if (dataSource.getId() == null) {
       throw new NotFoundException();
     }
-    if (repository.existsByNameAndIdNot(dataSource.getName(), dataSource.getId())) {
+    DividendAnnouncementDataSourceEntity existing =
+        repository.findById(dataSource.getId()).orElseThrow(NotFoundException::new);
+    if (!existing.getVersion().equals(dataSource.getVersion())) {
       throw new ConflictException();
     }
-
-    return writeToDatabase(dataSource);
+    DividendAnnouncementDataSourceEntity entity = mapper.toEntity(dataSource);
+    entity = persist(entity);
+    return mapper.fromEntity(entity);
   }
 
   @Override
-  public void deleteDataSource(long id) throws BadRequestException, NotFoundException {
+  @Transactional
+  public void deleteDataSource(long id) throws BadRequestException, ConflictException, NotFoundException {
     if (id < MINIMUM_ID) {
       // do not allow pre-configured data sources to be deleted
       throw new BadRequestException();
     }
 
-    if (!repository.existsById(id)) {
-      throw new NotFoundException();
-    }
+    DividendAnnouncementDataSourceEntity entity = repository.findById(id).orElseThrow(NotFoundException::new);
     try {
-      repository.deleteById(id);
+      repository.delete(entity);
       repository.flush();
+    } catch (ObjectOptimisticLockingFailureException e) {
+      throw new ConflictException();
     } catch (DataIntegrityViolationException e) {
       throw new BadRequestException();
     }
@@ -87,20 +90,16 @@ class DividendAnnouncementDataSourceServiceImpl implements DividendAnnouncementD
     return mapper.fromEntity(entity);
   }
 
-  private DividendAnnouncementDataSource writeToDatabase(DividendAnnouncementDataSource dataSource)
-      throws BadRequestException, ConflictException {
-    DividendAnnouncementDataSourceEntity entity = mapper.toEntity(dataSource);
-    entity = persist(entity);
-    return mapper.fromEntity(entity);
+  @Override
+  public boolean dataSourceExists(long id) {
+    return repository.existsById(id);
   }
 
   private DividendAnnouncementDataSourceEntity persist(DividendAnnouncementDataSourceEntity entity)
-      throws BadRequestException, ConflictException {
+      throws ConflictException {
     try {
       return repository.saveAndFlush(entity);
-    } catch (DataIntegrityViolationException e) {
-      throw new BadRequestException();
-    } catch (ObjectOptimisticLockingFailureException e) {
+    } catch (ObjectOptimisticLockingFailureException | DataIntegrityViolationException e) {
       throw new ConflictException();
     }
   }

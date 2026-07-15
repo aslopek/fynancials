@@ -13,7 +13,7 @@ public interface HistoricalSecurityPriceDataSourceService {
   HistoricalSecurityPriceDataSource updateDataSource(HistoricalSecurityPriceDataSource dataSource)
       throws BadRequestException, ConflictException, NotFoundException;
 
-  void deleteDataSource(long id) throws BadRequestException, NotFoundException;
+  void deleteDataSource(long id) throws BadRequestException, ConflictException, NotFoundException;
 
   List<HistoricalSecurityPriceDataSource> getDataSources();
 

@@ -154,6 +154,12 @@ class CreateSecurityTest {
   }
 
   @Test
+  void createStock_duplicateWkn_fail() throws Exception {
+    requestBody.setWkn("870747");
+    runNegativeTestCase(HttpStatus.CONFLICT);
+  }
+
+  @Test
   void createStock_noIsin_fail() throws Exception {
     requestBody.setIsin(null);
     runNegativeTestCase(HttpStatus.BAD_REQUEST);

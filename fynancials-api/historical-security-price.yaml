@@ -96,6 +96,8 @@ paths:
           description: There are data (e.g. historical security prices) referencing this historical security price data source or the data source may not be deleted for other reasons
         '404':
           description: The historical security price data source to be deleted does not exist
+        '409':
+          description: Optimistic Lock failed
 
   /securities/{securityId}/historicalprices:
     parameters:
