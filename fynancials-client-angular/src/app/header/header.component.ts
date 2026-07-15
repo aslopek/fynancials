@@ -1,13 +1,12 @@
-import {AsyncPipe} from "@angular/common";
-import {Component, DestroyRef, inject, OnInit, Signal,} from "@angular/core";
-import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
+import {Component, inject, Signal,} from "@angular/core";
+import {toSignal} from "@angular/core/rxjs-interop";
 import {MatButtonModule} from "@angular/material/button";
 import {MatDialog} from "@angular/material/dialog";
 import {MatIconModule} from "@angular/material/icon";
 import {MatToolbarModule} from "@angular/material/toolbar";
 import {MatTooltipModule} from "@angular/material/tooltip";
 import {Store} from "@ngrx/store";
-import {firstValueFrom, Observable, take} from "rxjs";
+import {catchError, Observable, of, switchMap, take} from "rxjs";
 import {ConfigApi, DatabaseConfig} from "../../gen/api/configuration";
 import {AppConfigActions} from "../../store/app-config/app-config.actions";
 import {getOpenPage, isDevModeActive, isSideMenuOpen,} from "../../store/app-config/app-config.selector";
@@ -31,41 +30,29 @@ import {UpdateIndicatorComponent} from "./update-indicator/update-indicator.comp
     SecurityControlsComponent,
     DepotControlsComponent,
     UpdateIndicatorComponent,
-    AsyncPipe,
   ],
   templateUrl: "header.component.html",
   styleUrls: ["header.component.scss"],
 })
-export class HeaderComponent implements OnInit {
+export class HeaderComponent {
   private readonly appConfigStore: Store<AppState> = inject(Store);
-  private readonly sideMenuOpen$: Observable<boolean> =
-    this.appConfigStore.select(isSideMenuOpen);
-  protected readonly openPage: Signal<Page> =
-    this.appConfigStore.selectSignal(getOpenPage);
-  protected isDevModeActive: Observable<boolean> =
-    this.appConfigStore.select(isDevModeActive);
-  protected databaseConfig: DatabaseConfig | undefined = undefined;
-
-  private readonly destroyRef: DestroyRef = inject(DestroyRef);
+  private readonly sideMenuOpen$: Observable<boolean> = this.appConfigStore.select(isSideMenuOpen);
+  protected readonly openPage: Signal<Page> = this.appConfigStore.selectSignal(getOpenPage);
+  protected readonly isDevModeActive: Signal<boolean> = this.appConfigStore.selectSignal(isDevModeActive);
+  protected readonly databaseConfig: Signal<DatabaseConfig | undefined> = toSignal(this.appConfigStore.select(isDevModeActive).pipe(
+      switchMap((devModeActive: boolean): Observable<DatabaseConfig | undefined> =>
+        devModeActive
+          ? this.configApi.getDatabaseConfig().pipe(catchError((): Observable<undefined> => of(undefined)))
+          : of(undefined)
+      )
+    ),
+    {initialValue: undefined}
+  );
 
   constructor(
     private readonly dialog: MatDialog,
     private readonly configApi: ConfigApi,
   ) {
-  }
-
-  ngOnInit(): void {
-    this.isDevModeActive
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(async () => {
-        try {
-          this.databaseConfig = await firstValueFrom(
-            this.configApi.getDatabaseConfig(),
-          );
-        } catch (e) {
-          this.databaseConfig = undefined;
-        }
-      });
   }
 
   protected toggleMenu(): void {
@@ -87,7 +74,8 @@ export class HeaderComponent implements OnInit {
   }
 
   protected openDatabaseDialog(): void {
-    if (this.databaseConfig == null) {
+    const databaseConfig: DatabaseConfig | undefined = this.databaseConfig();
+    if (databaseConfig == null) {
       return;
     }
     this.dialog.open(DatabaseComponent, {
@@ -96,7 +84,7 @@ export class HeaderComponent implements OnInit {
       panelClass: "mat-app-background",
       autoFocus: false,
       disableClose: true,
-      data: this.databaseConfig,
+      data: databaseConfig,
     });
   }
 
