@@ -1,5 +1,5 @@
 import {RxMethod, rxMethod} from "@ngrx/signals/rxjs-interop";
-import {firstValueFrom, pipe, switchMap} from "rxjs";
+import {catchError, EMPTY, expand, forkJoin, map, Observable, of, pipe, reduce, switchMap, tap} from "rxjs";
 import {WritableSignalStore} from "../../../../common/types/signal-store.type";
 import {DepotPerformanceComputed, DepotPerformanceState} from "../depot-performance.store";
 import {PaginatedTransactionRead, SortOrder, TransactionApi, TransactionRead} from "../../../../gen/api/depot-transaction";
@@ -15,46 +15,65 @@ export type LoadTransactionsArgs = {
   depotValues: RebasedDepotValue[]
 }
 
+function fetchDepotTransactions(transactionApi: TransactionApi, depotId: number, pageSize: number,
+                                minDate: string): Observable<TransactionRead[]> {
+  const firstPage: Observable<PaginatedTransactionRead | null> =
+    transactionApi.getTransactions(depotId, 0, pageSize, undefined, SortOrder.ASC, minDate);
+
+  return firstPage.pipe(
+    expand((page: PaginatedTransactionRead | null): Observable<PaginatedTransactionRead | null> => {
+      if (page != null && page.currentPage < page.lastPage) {
+        return transactionApi.getTransactions(depotId, page.currentPage + 1, pageSize, undefined, SortOrder.ASC, minDate);
+      } else {
+        return EMPTY;
+      }
+    }),
+    map((page: PaginatedTransactionRead | null): TransactionRead[] => page?.items ?? []),
+    reduce((accumulated: TransactionRead[], pageItems: TransactionRead[]): TransactionRead[] =>
+      [...accumulated, ...pageItems], [] satisfies TransactionRead[])
+  );
+}
+
 export function loadTransactions(signalStore: WritableSignalStore<DepotPerformanceState, DepotPerformanceComputed>,
                                  globalStore: Store<AppState>,
                                  transactionApi: TransactionApi): RxMethod<LoadTransactionsArgs> {
   const pageSize: number = 1000;
   return rxMethod<LoadTransactionsArgs>(
     pipe(
-      switchMap(async (args: LoadTransactionsArgs): Promise<void> => {
+      switchMap((args: LoadTransactionsArgs): Observable<void> => {
         const {depotIds, depotValues} = args;
         if (depotValues.length === 0) {
-          return;
+          patchState(signalStore, {transactions: []});
+          return EMPTY;
         }
 
-        const transactions: TransactionRead[] = [];
-        let pageNumber: number;
-        let page: PaginatedTransactionRead;
-        for (const depotId of depotIds) {
-          pageNumber = 0;
-          do {
-            try {
-              page = await firstValueFrom(transactionApi.getTransactions(depotId, pageNumber, pageSize, undefined, SortOrder.ASC, depotValues[0].date));
-              transactions.push(...page.items);
-              pageNumber++;
-            } catch (ignored) {
-              patchState(signalStore, {transactions: []});
-              return;
+        const minDate: string = depotValues[0].date;
+        const depotTransactions$: Observable<TransactionRead[]>[] = depotIds.map((depotId: number): Observable<TransactionRead[]> =>
+          fetchDepotTransactions(transactionApi, depotId, pageSize, minDate));
+        const allTransactions$: Observable<TransactionRead[][]> =
+          depotTransactions$.length === 0 ? of([]) : forkJoin(depotTransactions$);
+
+        return allTransactions$.pipe(
+          map((perDepot: TransactionRead[][]): TransactionRead[] => perDepot.flat()),
+          tap((transactions: TransactionRead[]): void => {
+            sortTransactions(transactions);
+            transactions.reverse();
+            patchState(signalStore, {transactions});
+
+            const securityIds: Set<number> = new Set<number>();
+            for (const transaction of transactions) {
+              securityIds.add(transaction.securityId);
             }
-          } while (page.lastPage >= pageNumber);
-        }
-
-        sortTransactions(transactions);
-        transactions.reverse();
-        patchState(signalStore, {transactions});
-
-        const securityIds: Set<number> = new Set<number>();
-        for (const transaction of transactions) {
-          securityIds.add(transaction.securityId);
-        }
-        for (const securityId of securityIds) {
-          globalStore.dispatch(SecurityActions.loadSecurity({securityId}));
-        }
+            for (const securityId of securityIds) {
+              globalStore.dispatch(SecurityActions.loadSecurity({securityId}));
+            }
+          }),
+          map((): void => undefined), // typesafety: discard array so that void can be returned
+          catchError((): Observable<void> => {
+            patchState(signalStore, {transactions: []});
+            return EMPTY;
+          })
+        );
       })
     )
   )
