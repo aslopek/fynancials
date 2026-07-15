@@ -21,7 +21,7 @@ public interface DepotService {
   Depot updateDepot(Long id, String name, String currency, Long version)
       throws BadRequestException, NotFoundException, ConflictException;
 
-  void deleteDepot(Long id) throws NotFoundException;
+  void deleteDepot(Long id) throws ConflictException, NotFoundException;
 
   boolean depotsHaveSameCurrency(Set<Long> depotIds) throws NotFoundException;
 

@@ -124,6 +124,8 @@ paths:
           description: Successfully deleted the security
         '404':
           description: No security with the given ID exists
+        '409':
+          description: Optimistic Lock failed
 
   /securities/{id}/logo:
     parameters:

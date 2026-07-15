@@ -20,7 +20,7 @@ public interface SecurityService {
   Security createSecurity(Security security)
       throws BadRequestException, ConflictException, InternalServerErrorException;
 
-  void deleteSecurity(Long securityId) throws NotFoundException;
+  void deleteSecurity(Long securityId) throws ConflictException, NotFoundException;
 
   Map<Long, String> getNamesById();
 

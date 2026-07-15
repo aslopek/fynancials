@@ -61,9 +61,12 @@ Each domain has its own `execution` block in the `openapi-generator-maven-plugin
   (`common/error/RestExceptionHandler.java`; `ConstraintViolationException` also maps to 400 there). Service interface methods declare these
   in a `throws` clause even though they're unchecked (e.g. `DepotService.createDepot(...) throws BadRequestException, ConflictException`)
   purely to document which failures a caller must expect — keep this on new service methods rather than removing it as redundant.
-- **Not-found/conflict/optimistic-locking**: have been hand-rolled instead of framework-driven in the past. New implementations should be
-  framework-driven and make use of the exceptions in `common/error` to translate into appropriate HTTP status responses. Existing code
-  will be transformed if touched.
+- **Not-found/conflict/optimistic-locking**: framework-driven — let JPA/the DB detect the violation (stale version at flush,
+  unique/referential constraint violation, missing row on `findById`) and translate the resulting exception into the matching
+  `common/error` exception; never duplicate a condition the framework can detect with a hand-rolled pre-check query. Hand-rolling is only
+  justified when the precondition is invisible to JPA/the DB — e.g. comparing a client-supplied version against the loaded entity's in
+  update methods (`findById(...).orElseThrow(NotFoundException::new)` + version equality check → `ConflictException`, see
+  `SecurityServiceImpl.updateSecurity`) — so don't remove such checks as leftovers.
 - **Default entity properties**: `Long id` (primary key), `Long version` (`@Version` annotated for optimistic locking),
   `OffsetDateTime createdAt` (`@CreationTimestamp` annotated), `OffsetDateTime updatedAt` (`@UpdateTimestamp` annotated).
 - **Domain object vs. entity**: the common shape is a package-private `*Entity` (`@Data @Entity`) paired with a public plain domain object

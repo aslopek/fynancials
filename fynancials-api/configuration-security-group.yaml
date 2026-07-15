@@ -91,7 +91,8 @@ paths:
           description: Successfully deleted the security group
         '404':
           description: No security group with the given ID exists
-
+        '409':
+          description: Optimistic Lock failed
 
 components:
   schemas:

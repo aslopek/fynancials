@@ -248,6 +248,8 @@ paths:
           description: There are data (e.g. dividend announcement configs) referencing this dividend announcement data source or the data source may not be deleted for other reasons
         '404':
           description: The dividend announcement data source to be deleted does not exist
+        '409':
+          description: Optimistic Lock failed
 
 components:
   schemas:

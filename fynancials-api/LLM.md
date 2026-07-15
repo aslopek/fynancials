@@ -31,4 +31,6 @@ Each declares its own `info.version` (currently `1.0.0` across all files, indepe
   change" workflow in the root `LLM.md`.
 - Keep new domains consistent with existing ones: a top-level `info`/`servers` block, tags matching the domain name, and locally-defined
   `Id`/`Version` component schemas rather than importing them from another file.
+- Mutating endpoints on version-carrying resources (`DELETE`, `PUT`) declare a `409` response with description `Optimistic Lock failed` —
+  follow this on new endpoints.
 - Add new domains to the test script in package.json in accordance with the existing test scripts.
