@@ -21,14 +21,12 @@
 
     <app-notifications></app-notifications>
 
-    @if (isDevModeActive | async) {
-        @if (databaseConfig != null) {
-            <button (click)="openDatabaseDialog()"
-                    mat-icon-button
-                    matTooltip="Open Database">
-                <mat-icon fontIcon="database"></mat-icon>
-            </button>
-        }
+    @if (isDevModeActive() && databaseConfig() != null) {
+        <button (click)="openDatabaseDialog()"
+                mat-icon-button
+                matTooltip="Open Database">
+            <mat-icon fontIcon="database"></mat-icon>
+        </button>
     }
 
     <app-update-indicator></app-update-indicator>
