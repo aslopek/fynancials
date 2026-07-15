@@ -72,6 +72,19 @@ You may never perform writing operations such as, but not limited to: creating/a
 creating/deleting PRs etc. Keep the most important rule in mind: Anything going into this repository - code, text, PRs, issues etc. - are my
 responsibility and fully owned by me, which is why you cannot write any content yourself.
 
+### PR reviews
+
+When I ask you to do a PR review, first check source and target branch:
+
+- Merging from `next-release` to `main` is done in preparation of a release.
+- When a PR merges from any other branch to `main` you have to flag this to me, since the HEAD of `main` is supposed to always represent the
+  latest release. What is bundled therein - documentation may update the HEAD without a release.
+- You may assume that code on `next-release` has already been reviewed through other PRs, but a quick sanity check should include:
+    - Is everything mentioned on `CHANGELOG.md`'s `[Unreleased]` Section actually contained in the PR?
+    - Is anything missing in the `[Unreleased]` section, that's actually on the list of commits to be merged?
+    - Bug/Feature/NFR tickets are worth mentioning in the `CHANGELOG.md`. Tickets tagged only as `technical improvement` don't get
+      mentioned.
+
 ## Drafting and Reporting
 
 Larger output such as plans, PR reviews etc. go to the `.scratchpad` directory as Markdown files.
