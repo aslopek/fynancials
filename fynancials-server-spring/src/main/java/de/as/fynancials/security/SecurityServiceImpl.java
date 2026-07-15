@@ -31,12 +31,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -59,7 +61,6 @@ class SecurityServiceImpl implements SecurityService {
     }
 
     processSecurity(security);
-    checkDuplicatesBeforeCreate(security);
     SecurityEntity securityEntity = securityMapper.toEntity(security);
     securityEntity.setVersion(null);
     securityEntity = persist(securityEntity);
@@ -67,11 +68,15 @@ class SecurityServiceImpl implements SecurityService {
   }
 
   @Override
-  public void deleteSecurity(Long securityId) throws NotFoundException {
-    if (!securityRepository.existsById(securityId)) {
-      throw new NotFoundException();
+  @Transactional
+  public void deleteSecurity(Long securityId) throws ConflictException, NotFoundException {
+    SecurityEntity entity = securityRepository.findById(securityId).orElseThrow(NotFoundException::new);
+    try {
+      securityRepository.delete(entity);
+      securityRepository.flush();
+    } catch (ObjectOptimisticLockingFailureException e) {
+      throw new ConflictException();
     }
-    securityRepository.deleteById(securityId);
   }
 
   @Override
@@ -133,6 +138,11 @@ class SecurityServiceImpl implements SecurityService {
   }
 
   @Override
+  public boolean securitiesExist(Set<Long> securityIds) {
+    return securityRepository.countByIdIn(securityIds) == securityIds.size();
+  }
+
+  @Override
   public Security getSecurity(Long securityId) throws NotFoundException {
     SecurityEntity fromDatabase = securityRepository.findById(securityId).orElseThrow(NotFoundException::new);
     Security security = securityMapper.fromEntity(fromDatabase);
@@ -141,25 +151,18 @@ class SecurityServiceImpl implements SecurityService {
   }
 
   @Override
-  public Security getSecurityByIsin(String isin) throws NotFoundException {
-    SecurityEntity fromDatabase = securityRepository.findByIsin(isin).orElseThrow(NotFoundException::new);
-    Security security = securityMapper.fromEntity(fromDatabase);
-    security.setPriceMetaInfo(getPriceMetaInfo(security.getId()));
-    return security;
-  }
-
-  @Override
+  @Transactional
   public Security updateSecurity(Security security)
       throws BadRequestException, ConflictException, NotFoundException, InternalServerErrorException {
-    if (!securityRepository.existsById(security.getId())) {
-      throw new NotFoundException();
+    SecurityEntity existing = securityRepository.findById(security.getId()).orElseThrow(NotFoundException::new);
+    if (!existing.getVersion().equals(security.getVersion())) {
+      throw new ConflictException();
     }
     processSecurity(security);
-    SecurityEntity updatedValues = securityMapper.toEntity(security);
-    updatedValues.setId(security.getId());
-    checkDuplicatesBeforeUpdate(updatedValues);
-    updatedValues = persist(updatedValues);
-    return securityMapper.fromEntity(updatedValues);
+    SecurityEntity securityEntity = securityMapper.toEntity(security);
+    securityEntity.setId(security.getId());
+    securityEntity = persist(securityEntity);
+    return securityMapper.fromEntity(securityEntity);
   }
 
   @Override
@@ -206,6 +209,7 @@ class SecurityServiceImpl implements SecurityService {
     try {
       securityLogoRepository.deleteById(securityId);
     } catch (EmptyResultDataAccessException e) {
+      // ignore
     }
   }
 
@@ -247,10 +251,10 @@ class SecurityServiceImpl implements SecurityService {
     SecurityEntity saved;
     try {
       saved = securityRepository.saveAndFlush(security);
-    } catch (ObjectOptimisticLockingFailureException e) {
+    } catch (ObjectOptimisticLockingFailureException | DataIntegrityViolationException e) {
       throw new ConflictException();
     } catch (Exception e) {
-      log.error(e.getClass().getName() + ": " + e.getMessage());
+      log.error("{}: {}", e.getClass().getName(), e.getMessage());
       throw new InternalServerErrorException();
     }
     return saved;
@@ -271,36 +275,6 @@ class SecurityServiceImpl implements SecurityService {
     }
   }
 
-  private void checkDuplicatesBeforeCreate(Security security) throws ConflictException {
-    if (securityRepository.existsByIsin(security.getIsin())) {
-      throw new ConflictException();
-    }
-
-    if (!securityRepository.findSecurityIdsBySymbols(security.getSymbols()).isEmpty()) {
-      throw new ConflictException();
-    }
-  }
-
-  private void checkDuplicatesBeforeUpdate(SecurityEntity securityEntity) throws ConflictException {
-    Optional<SecurityEntity> other = securityRepository.findByIsin(securityEntity.getIsin());
-    if (other.isPresent() && !other.get().getId().equals(securityEntity.getId())) {
-      throw new ConflictException();
-    }
-
-    if (securityEntity.getWkn() != null) {
-      other = securityRepository.findByWkn(securityEntity.getWkn());
-      if (other.isPresent() && !other.get().getId().equals(securityEntity.getId())) {
-        throw new ConflictException();
-      }
-    }
-
-    for (Long securityId : securityRepository.findSecurityIdsBySymbols(securityEntity.getSymbols())) {
-      if (!securityId.equals(securityEntity.getId())) {
-        throw new ConflictException();
-      }
-    }
-  }
-
   private PriceMetaInfoDto getPriceMetaInfo(Long securityId) {
     LocalDate oneYearAgo = LocalDate.now(clock).minusYears(1);
     List<HistoricalSecurityPrice> prices;
@@ -314,15 +288,15 @@ class SecurityServiceImpl implements SecurityService {
     }
 
     PriceMetaInfoDto priceMetaInfo = new PriceMetaInfoDto();
-    HistoricalSecurityPrice latestPrice = prices.get(prices.size() - 1);
+    HistoricalSecurityPrice latestPrice = prices.getLast();
     priceMetaInfo.setCurrency(latestPrice.getCurrency());
     priceMetaInfo.setLatestPrice(latestPrice.getPrice().doubleValue());
     priceMetaInfo.setLatestPriceDate(latestPrice.getDate());
 
     List<Double> priceValues = new ArrayList<>(prices.stream().map(price -> price.getPrice().doubleValue()).toList());
     priceValues.sort(Double::compareTo);
-    priceMetaInfo.setLowTrailingTwelveMonths(priceValues.get(0));
-    priceMetaInfo.setHighTrailingTwelveMonths(priceValues.get(priceValues.size() - 1));
+    priceMetaInfo.setLowTrailingTwelveMonths(priceValues.getFirst());
+    priceMetaInfo.setHighTrailingTwelveMonths(priceValues.getLast());
     return priceMetaInfo;
   }
 

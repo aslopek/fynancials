@@ -20,7 +20,7 @@ public interface SecurityService {
   Security createSecurity(Security security)
       throws BadRequestException, ConflictException, InternalServerErrorException;
 
-  void deleteSecurity(Long securityId) throws NotFoundException;
+  void deleteSecurity(Long securityId) throws ConflictException, NotFoundException;
 
   Map<Long, String> getNamesById();
 
@@ -31,9 +31,9 @@ public interface SecurityService {
 
   boolean securityExists(long securityId);
 
-  Security getSecurity(Long securityId) throws NotFoundException;
+  boolean securitiesExist(Set<Long> securityIds);
 
-  Security getSecurityByIsin(String isin) throws NotFoundException;
+  Security getSecurity(Long securityId) throws NotFoundException;
 
   Security updateSecurity(Security security)
       throws BadRequestException, ConflictException, NotFoundException, InternalServerErrorException;

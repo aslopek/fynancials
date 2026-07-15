@@ -33,5 +33,5 @@ public interface TransactionService {
 
   void splitAdjustment(Long securityId, BigDecimal multiplier, LocalDate exDate);
 
-  void deleteTransaction(Long depotId, Long transactionId) throws NotFoundException;
+  void deleteTransaction(Long depotId, Long transactionId) throws ConflictException, NotFoundException;
 }

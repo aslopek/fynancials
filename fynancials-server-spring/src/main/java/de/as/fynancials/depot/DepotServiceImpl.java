@@ -16,9 +16,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -37,9 +39,6 @@ class DepotServiceImpl implements DepotService {
     depotEntity.setName(name);
     depotEntity.setCurrency(currency);
     processDepot(depotEntity);
-    if (depotRepository.existsByName(depotEntity.getName())) {
-      throw new ConflictException();
-    }
     depotEntity = persist(depotEntity);
     return depotMapper.fromEntity(depotEntity);
   }
@@ -67,14 +66,14 @@ class DepotServiceImpl implements DepotService {
 
 
   @Override
+  @Transactional
   public Depot updateDepot(Long id, String name, String currency, Long version) throws BadRequestException,
       NotFoundException, ConflictException {
-    if (!depotRepository.existsById(id)) {
-      throw new NotFoundException();
+    DepotEntity existing = depotRepository.findById(id).orElseThrow(NotFoundException::new);
+    if (!existing.getVersion().equals(version)) {
+      throw new ConflictException();
     }
-
-    DepotEntity fromDatabase = depotRepository.findById(id).orElseThrow(NotFoundException::new);
-    if (!fromDatabase.getCurrency().equals(currency)) {
+    if (!existing.getCurrency().equals(currency)) {
       throw new BadRequestException();
     }
     DepotEntity depotEntity = new DepotEntity();
@@ -84,21 +83,20 @@ class DepotServiceImpl implements DepotService {
     depotEntity.setVersion(version);
     processDepot(depotEntity);
 
-    Optional<DepotEntity> other = depotRepository.findByName(depotEntity.getName());
-    if (other.isPresent() && !other.get().getId().equals(id)) {
-      throw new ConflictException();
-    }
-
     depotEntity = persist(depotEntity);
     return depotMapper.fromEntity(depotEntity);
   }
 
   @Override
-  public void deleteDepot(Long id) throws NotFoundException {
-    if (!depotRepository.existsById(id)) {
-      throw new NotFoundException();
+  @Transactional
+  public void deleteDepot(Long id) throws ConflictException, NotFoundException {
+    DepotEntity entity = depotRepository.findById(id).orElseThrow(NotFoundException::new);
+    try {
+      depotRepository.delete(entity);
+      depotRepository.flush();
+    } catch (ObjectOptimisticLockingFailureException e) {
+      throw new ConflictException();
     }
-    depotRepository.deleteById(id);
   }
 
   @Override
@@ -174,10 +172,10 @@ class DepotServiceImpl implements DepotService {
     DepotEntity saved;
     try {
       saved = depotRepository.saveAndFlush(depot);
-    } catch (ObjectOptimisticLockingFailureException e) {
+    } catch (ObjectOptimisticLockingFailureException | DataIntegrityViolationException e) {
       throw new ConflictException();
     } catch (Exception e) {
-      log.error(e.getClass().getName() + ": " + e.getMessage());
+      log.error("{}: {}", e.getClass().getName(), e.getMessage());
       throw new InternalServerErrorException();
     }
     return saved;

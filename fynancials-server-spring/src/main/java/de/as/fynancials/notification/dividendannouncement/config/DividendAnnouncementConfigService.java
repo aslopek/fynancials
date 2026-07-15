@@ -15,7 +15,7 @@ public interface DividendAnnouncementConfigService {
       throws BadRequestException, ConflictException;
 
   DividendAnnouncementConfig updateDividendAnnouncementConfig(DividendAnnouncementConfig dividendAnnouncementConfig)
-      throws BadRequestException, NotFoundException;
+      throws BadRequestException, ConflictException, NotFoundException;
 
-  void deleteDividendAnnouncementConfig(long securityId) throws NotFoundException;
+  void deleteDividendAnnouncementConfig(long securityId) throws ConflictException, NotFoundException;
 }

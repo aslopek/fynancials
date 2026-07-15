@@ -149,6 +149,8 @@ paths:
           description: Successfully deleted the transaction
         '404':
           description: No transaction with the given ID exists, or it is not associated to the specified depot ID
+        '409':
+          description: Optimistic Lock failed
 
 components:
   parameters:
