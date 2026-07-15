@@ -108,6 +108,8 @@ paths:
           description: Successfully deleted the depot
         '404':
           description: No depot with the given ID exists
+        '409':
+          description: Optimistic Lock failed
 
   /depots/{id}/logo:
     parameters:

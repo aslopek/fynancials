@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 14
+      author: Armin Slopek
+      changes:
+        - sql:
+            dbms: h2
+            comment: Duplicate WKNs could be created before this constraint existed; null them all out since the rightful owner is unknown
+            sql: >-
+              UPDATE SECURITY SET WKN = NULL
+              WHERE WKN IN (SELECT WKN FROM SECURITY WHERE WKN IS NOT NULL GROUP BY WKN HAVING COUNT(*) > 1)
+
+        - addUniqueConstraint:
+            tableName: SECURITY
+            columnNames: WKN
+            constraintName: UK_SECURITY_WKN
+            validate: true

@@ -53,7 +53,7 @@ class SecurityEntity {
   @Column(nullable = false)
   private String name;
 
-  @Column
+  @Column(unique = true)
   private String wkn;
 
   @Column

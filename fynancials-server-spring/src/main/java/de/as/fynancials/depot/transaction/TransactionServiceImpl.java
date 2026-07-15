@@ -21,6 +21,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -106,10 +107,13 @@ class TransactionServiceImpl implements TransactionService {
   }
 
   @Override
+  @Transactional
   public Transaction updateTransaction(Transaction transaction)
       throws BadRequestException, ConflictException, NotFoundException {
-    if (!transactionRepository.existsByIdAndDepotId(transaction.getId(), transaction.getDepotId())) {
-      throw new NotFoundException();
+    TransactionEntity existing = transactionRepository.findByIdAndDepotId(transaction.getId(), transaction.getDepotId())
+        .orElseThrow(NotFoundException::new);
+    if (!existing.getVersion().equals(transaction.getVersion())) {
+      throw new ConflictException();
     }
     TransactionEntity entity = transactionMapper.toEntity(transaction);
     entity = persist(entity);
@@ -131,11 +135,16 @@ class TransactionServiceImpl implements TransactionService {
   }
 
   @Override
-  public void deleteTransaction(Long depotId, Long transactionId) throws NotFoundException {
-    if (!transactionRepository.existsByIdAndDepotId(transactionId, depotId)) {
-      throw new NotFoundException();
+  @Transactional
+  public void deleteTransaction(Long depotId, Long transactionId) throws ConflictException, NotFoundException {
+    TransactionEntity entity =
+        transactionRepository.findByIdAndDepotId(transactionId, depotId).orElseThrow(NotFoundException::new);
+    try {
+      transactionRepository.delete(entity);
+      transactionRepository.flush();
+    } catch (ObjectOptimisticLockingFailureException e) {
+      throw new ConflictException();
     }
-    transactionRepository.deleteByIdAndDepotId(transactionId, depotId);
   }
 
   private TransactionEntity persist(TransactionEntity transaction)
@@ -148,7 +157,7 @@ class TransactionServiceImpl implements TransactionService {
     } catch (DataIntegrityViolationException e) {
       throw new BadRequestException();
     } catch (Exception e) {
-      log.error(e.getClass().getName() + ": " + e.getMessage());
+      log.error("{}: {}", e.getClass().getName(), e.getMessage());
       throw new InternalServerErrorException();
     }
     return saved;

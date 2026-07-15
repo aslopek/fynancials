@@ -4,12 +4,12 @@ import de.as.fynancials.common.error.BadRequestException;
 import de.as.fynancials.common.error.ConflictException;
 import de.as.fynancials.common.error.InternalServerErrorException;
 import de.as.fynancials.common.error.NotFoundException;
+import de.as.fynancials.security.SecurityService;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +17,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -27,6 +28,7 @@ class SecurityGroupServiceImpl implements SecurityGroupService {
 
   private final SecurityGroupRepository securityGroupRepository;
   private final SecurityGroupMapper securityGroupMapper;
+  private final SecurityService securityService;
 
   @Override
   public List<SecurityGroup> getSecurityGroups() {
@@ -47,65 +49,63 @@ class SecurityGroupServiceImpl implements SecurityGroupService {
   }
 
   @Override
+  @Transactional
   public SecurityGroup createSecurityGroup(SecurityGroup securityGroup) throws BadRequestException, ConflictException {
-    SecurityGroupEntity entity = securityGroupMapper.toEntity(securityGroup);
-    trimName(entity);
-    if (entity.getSecurities().size() < MINIMUM_SECURITY_GROUP_SIZE) {
+    String name = trimName(securityGroup.getName());
+    if (securityGroup.getSecurities() == null || securityGroup.getSecurities().size() < MINIMUM_SECURITY_GROUP_SIZE) {
       throw new BadRequestException();
     }
+    verifySecuritiesExist(securityGroup.getSecurities());
     verifySecuritiesAreNotAssignedToAnotherGroup(securityGroup.getSecurities(), null);
-    if (securityGroupRepository.existsByName(entity.getName())) {
-      throw new ConflictException();
-    }
+
+    SecurityGroupEntity entity = securityGroupMapper.toEntity(securityGroup);
+    entity.setName(name);
     entity = persist(entity);
     return securityGroupMapper.fromEntity(entity);
   }
 
   @Override
+  @Transactional
   public SecurityGroup updateSecurityGroup(Long id, SecurityGroup securityGroup)
       throws BadRequestException, ConflictException, NotFoundException {
-    Optional<SecurityGroupEntity> fromDb = securityGroupRepository.findById(id);
-    if (fromDb.isEmpty()) {
-      throw new NotFoundException();
+    SecurityGroupEntity existing = securityGroupRepository.findById(id).orElseThrow(NotFoundException::new);
+    if (!existing.getVersion().equals(securityGroup.getVersion())) {
+      throw new ConflictException();
     }
+    String name = trimName(securityGroup.getName());
+    if (securityGroup.getSecurities() == null || securityGroup.getSecurities().size() < MINIMUM_SECURITY_GROUP_SIZE) {
+      throw new BadRequestException();
+    }
+    verifySecuritiesExist(securityGroup.getSecurities());
+    verifySecuritiesAreNotAssignedToAnotherGroup(securityGroup.getSecurities(), id);
 
     SecurityGroupEntity entity = securityGroupMapper.toEntity(securityGroup);
     entity.setId(id);
-    entity.setName(securityGroup.getName());
-    entity.setSecurities(securityGroup.getSecurities());
-    trimName(entity);
-    if (entity.getSecurities().size() < MINIMUM_SECURITY_GROUP_SIZE) {
-      throw new BadRequestException();
-    }
-    verifySecuritiesAreNotAssignedToAnotherGroup(securityGroup.getSecurities(), id);
-
-    Optional<SecurityGroupEntity> group = securityGroupRepository.findByName(entity.getName());
-    if (group.isPresent() && !group.get().getId().equals(id)) {
-      throw new ConflictException();
-    }
-
+    entity.setName(name);
     entity = persist(entity);
     return securityGroupMapper.fromEntity(entity);
   }
 
   @Override
-  public void deleteSecurityGroup(Long id) throws NotFoundException {
-    if (!securityGroupRepository.existsById(id)) {
-      throw new NotFoundException();
+  @Transactional
+  public void deleteSecurityGroup(Long id) throws ConflictException, NotFoundException {
+    SecurityGroupEntity entity = securityGroupRepository.findById(id).orElseThrow(NotFoundException::new);
+    try {
+      securityGroupRepository.delete(entity);
+      securityGroupRepository.flush();
+    } catch (ObjectOptimisticLockingFailureException e) {
+      throw new ConflictException();
     }
-    securityGroupRepository.deleteById(id);
   }
 
-  private SecurityGroupEntity persist(SecurityGroupEntity entity) throws BadRequestException, ConflictException {
+  private SecurityGroupEntity persist(SecurityGroupEntity entity) throws ConflictException {
     SecurityGroupEntity saved;
     try {
       saved = securityGroupRepository.saveAndFlush(entity);
-    } catch (ObjectOptimisticLockingFailureException e) {
+    } catch (ObjectOptimisticLockingFailureException | DataIntegrityViolationException e) {
       throw new ConflictException();
-    } catch (DataIntegrityViolationException e) {
-      throw new BadRequestException();
     } catch (Exception e) {
-      log.error(e.getClass().getName() + ": " + e.getMessage());
+      log.error("{}: {}", e.getClass().getName(), e.getMessage());
       throw new InternalServerErrorException();
     }
     return saved;
@@ -129,13 +129,20 @@ class SecurityGroupServiceImpl implements SecurityGroupService {
     }
   }
 
-  private void trimName(SecurityGroupEntity entity) throws BadRequestException {
-    if (entity.getName() == null) {
+  private void verifySecuritiesExist(Set<Long> securityIds) throws BadRequestException {
+    if (!securityService.securitiesExist(securityIds)) {
       throw new BadRequestException();
     }
-    entity.setName(entity.getName().trim());
-    if (entity.getName().isBlank()) {
+  }
+
+  private String trimName(String name) throws BadRequestException {
+    if (name == null) {
       throw new BadRequestException();
     }
+    String trimmed = name.trim();
+    if (trimmed.isBlank()) {
+      throw new BadRequestException();
+    }
+    return trimmed;
   }
 }

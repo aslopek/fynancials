@@ -17,5 +17,5 @@ public interface SecurityGroupService {
   SecurityGroup updateSecurityGroup(Long id, SecurityGroup securityGroup)
       throws BadRequestException, ConflictException, NotFoundException;
 
-  void deleteSecurityGroup(Long id) throws NotFoundException;
+  void deleteSecurityGroup(Long id) throws ConflictException, NotFoundException;
 }
