@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The database button now appears in the header on application start when dev mode is active,
+  instead of only after the first interaction with the header (#13).
+- The transaction list in the depot performance tab now shows the transactions matching the
+  selected time window instead of stale or no data (#14).
+- Creating a security with an already existing WKN is now rejected (#16).
+
 ## [1.0.1] - 2026-07-12
 
 ### Changed
