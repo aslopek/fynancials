@@ -1,29 +1,32 @@
 version: 2
+  
+multi-ecosystem-groups:
+  all-dependencies:
+    schedule:
+      interval: weekly
+
 updates:
   - package-ecosystem: npm
     directory: /fynancials-client-angular
-    schedule:
-      interval: weekly
-    groups:
-      client-dependencies:
-        patterns:
-          - '*'
+    patterns: ["*"]
+    multi-ecosystem-group: all-dependencies
+    cooldown:
+      default-days: 7
+
   - package-ecosystem: npm
     directory: /fynancials-api
-    schedule:
-      interval: weekly
-    groups:
-      api-dependencies:
-        patterns:
-          - '*'
+    patterns: ["*"]
+    multi-ecosystem-group: all-dependencies
+    cooldown:
+      default-days: 7
+
   - package-ecosystem: maven
     directory: /fynancials-server-spring
-    schedule:
-      interval: weekly
-    groups:
-      server-dependencies:
-        patterns:
-          - '*'
+    patterns: ["*"]
+    multi-ecosystem-group: all-dependencies
+    cooldown:
+      default-days: 7
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
