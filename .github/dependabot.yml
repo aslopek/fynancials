@@ -12,6 +12,10 @@ updates:
     multi-ecosystem-group: all-dependencies
     cooldown:
       default-days: 7
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: npm
     directory: /fynancials-api
@@ -19,6 +23,10 @@ updates:
     multi-ecosystem-group: all-dependencies
     cooldown:
       default-days: 7
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: maven
     directory: /fynancials-server-spring
@@ -26,6 +34,10 @@ updates:
     multi-ecosystem-group: all-dependencies
     cooldown:
       default-days: 7
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: github-actions
     directory: /
