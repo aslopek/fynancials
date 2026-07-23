@@ -96,6 +96,9 @@ When I ask you to do a PR review, first check source and target branch:
     - Is anything missing in the `[Unreleased]` section, that's actually on the list of commits to be merged?
   - Bug/Feature/NFR issues are worth mentioning in the `CHANGELOG.md`. issues tagged only as `technical improvement` don't get
       mentioned.
+    - Do any of the other Markdown files in this repository (e.g. `LLM.md` files, `README.md`, `USER_MANUAL.md`) have to be updated to
+      reflect
+      the changes to be merged?
 
 ## Drafting and Reporting
 
