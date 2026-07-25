@@ -26,6 +26,6 @@
     "url": "https://github.com/aslopek/fynancials"
   },
   "devDependencies": {
-    "@openapitools/openapi-generator-cli": "^2.39.1"
+    "@openapitools/openapi-generator-cli": "^2.40.1"
   }
 }
