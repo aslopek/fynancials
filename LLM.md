@@ -113,3 +113,90 @@ file. Use the following files as templates:
 
 If it makes sense to provide multiple stories, create a meta file in the directory. This may be turned into an epic and contain things like
 architectural decision records (ADRs), story map and other useful information.
+
+### Mockups
+
+A story that adds or changes a screen gets a mockup in the story's directory, sharing the story's number prefix.
+
+Draw one panel per state the ACs describe (empty, invalid, warning, error, populated, menu open …), caption each panel with the ACs it
+shows, and take colors and typography from `fynancials-client-angular/src/styles.scss` rather than inventing a palette. Panels that show
+placeholders for sections a later story adds are worth keeping — they make the boundary between the stories visible.
+
+### Acceptance criteria
+
+An acceptance criterion describes **one linear scenario** in `GIVEN` / `WHEN` / `THEN` blocks. All three blocks are always present.
+
+Not every AC has a trigger, though: when the `GIVEN` alone already establishes the state being asserted — a control that is simply
+shown, a rendered result, an invariant such as "this string is in no file" — write `**WHEN:** -`. Keep the line with the dash rather
+than dropping it, so a missing trigger reads as deliberate instead of forgotten. Name a `WHEN` whenever something actually happens: a
+user action, a render pass, an app start, an IPC call, an incoming HTTP request or response, events etc..
+
+Chain as many clauses per block as the scenario needs, using `AND` lines. An `AND` always belongs to the block above it — after `GIVEN`
+it adds a precondition, after `WHEN` a further step of the trigger, after `THEN` a further assertion. Prefer several short `AND` lines
+over one sentence cramming everything in with commas:
+
+```
+**AC3: Correct password unlocks into the splash**
+**GIVEN:** the unlock screen for a database with a stored hash for password `secret`
+**AND:** a backend that is not running yet
+**WHEN:** the user enters `secret`
+**AND:** confirms
+**THEN:** the backend is started with that password
+**AND:** the splash screen shows
+```
+
+What must **not** happen is branching inside an AC: no scenario may fork into "if it succeeded … / if it failed …", and no `AND` may
+introduce an alternative outcome ("AND: entering a wrong password instead …", "AND: cancelling yields …", "AND WHEN: …"). Each branch
+becomes its own AC — typically the same `GIVEN` setup with a different `WHEN`, and a `THEN` derived from exactly that:
+
+- happy path: **GIVEN** a password-protected database … **WHEN** the correct password is provided … **THEN** it opens …
+- unhappy path: **GIVEN** a password-protected database … **WHEN** a wrong password is provided … **THEN** the error appears …
+
+The same goes for a `GIVEN` that offers alternative setups ("… or `null` with no `java` on the `PATH`") — two setups, two ACs. A
+genuinely parameterized clause covering equivalent inputs of *one* rule stays a single AC (e.g. "WHEN it is renamed to `con`,
+`foo:bar` or a name containing a path separator" → all rejected the same way). The `THEN` decides which case you have: if the outcome
+differs per input, they are separate ACs, and a `THEN` naming two different follow-ups is the symptom of a merge that should not have
+happened — "the configuration screen shows … AND the unlock screen does not ask again" describes two rules and reads as a contradiction.
+
+A rule phrased as "if and only if" needs the states in which its condition cannot be evaluated covered by an AC of their own. "OK is
+enabled if and only if the input matches the stored hash" silently means "never enabled" for a database that has no stored hash yet —
+there is nothing to compare against. Whenever an AC gates a control or a transition on a comparison, ask which states lack the thing
+being compared to, and give them their own AC.
+
+A `GIVEN` carries only the preconditions the `THEN` actually depends on. Flip each clause: if the outcome stays the same, drop it.
+Over-specified setups quietly exclude the paths that matter — "an app run that has not shown the splash screen yet" excludes every
+retry, although a retry behaves identically.
+
+Where a whole story depends on an environment that exists in only one runtime, name that precondition once in the description and then
+repeat it as a `GIVEN` clause in every AC that needs it — e.g. "the startup bridge is available" for the `contextBridge` API the Electron
+preload exposes. It survives the flip test precisely because the outcome without it is *unspecified* rather than the same, and stating it
+per AC is what makes that deliberate: the other runtime then needs no ACs, and no code. A screen may well be openable under `ng serve` to
+look at its layout without the story promising anything about what it does there.
+
+A `WHEN` is an event observable at the moment it happens, not a condition reconstructed from history. "the spawned process exits" is
+observable; "the spawned process exits without ever having become reachable" makes the implementation track a past that changes
+nothing about the outcome.
+
+A negative assertion names what it is about. "Nothing is written to the disk" is untestable and, in an Electron app, plainly false —
+creating the window alone writes caches. "No changes to the config file are written to the disk" is checkable. The same goes for
+"never", "no file", "no request": bound them to the artifact the story controls.
+
+An AC asserts outcomes up to its own story's boundary. Where a scenario continues into behavior another story or component owns, name
+that owner rather than re-specifying its mechanics — `**AND:** making the app appear once the backend responds is left to the splash
+screen` instead of a `THEN` that duplicates the splash screen's contract. Referring to another story as the continuation is fine;
+asserting how it works internally is not, because the two copies drift apart the moment one story is reworked. Do not refer to specific ACs,
+only the story, since refining the ACs in a story may change numbering. Negative assertions about another story's triggers fall under the
+same rule: "no unlock screen shows while the startup mode is `boot` or `configure`" belongs to the story that computes the mode, not to the
+unlock screen's own story, which only has to get its own rendering right.
+
+A story that changes existing behavior models that behavior for exactly one purpose: an invariant its own change could plausibly break.
+"The four page routes keep their paths under the new parent route" and "the last opened page is still restored" earn their place when the
+story re-parents those routes and moves the subscription that restores the page — they are regression guards. An AC restating behavior the
+change does not touch is noise: no implementation can fail it, and it competes for attention with the ones that can. Such an AC also must
+not measure against unstated history — "the page shows as before" is not checkable, "the page shows with the header and the side menu around
+it" is.
+
+Keep the ACs numbered consecutively (`AC1`, `AC2`, …), each with a short title that names what the `THEN` asserts rather than the intent
+behind it: an AC titled "A correct password unlocks into the splash" whose `THEN` only enables a button promises something it never checks —
+then either the title or the `THEN` is wrong. Name controls the way the UI labels them (the `OK` button, not "the confirm control"), so that
+an AC and the screen it describes stay searchable against each other.
