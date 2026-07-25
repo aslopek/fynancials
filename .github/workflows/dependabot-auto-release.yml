@@ -6,6 +6,8 @@ on:
 
 permissions:
   actions: write
+  contents: read
+  pull-requests: read
 
 jobs:
   trigger-release:
@@ -15,6 +17,17 @@ jobs:
       github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
     steps:
-      - run: gh workflow run release.yml --repo "${{ github.repository }}" -f bump=patch
+      # A batch of Dependabot PRs merges one after another. Releasing after each of them would cut a version — and run the full three-OS
+      # build — per PR, and every release commit pushes the remaining PRs behind main again. Release once, after the last one lands.
+      - id: pending
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          count=$(gh pr list --repo "$REPO" --state open --base main --app dependabot --json number --jq 'length')
+          echo "Dependabot PRs still queued: $count"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+      - if: steps.pending.outputs.count == '0'
+        run: gh workflow run release.yml --repo "${{ github.repository }}" -f bump=patch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

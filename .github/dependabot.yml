@@ -12,6 +12,12 @@ updates:
     multi-ecosystem-group: all-dependencies
     cooldown:
       default-days: 7
+    # Security updates bypass the schedule and the cooldown above, and `multi-ecosystem-group` only covers version updates. Without an
+    # explicit `applies-to: security-updates` group they arrive as one PR per advisory.
+    groups:
+      all-security-updates:
+        applies-to: security-updates
+        patterns: [ "*" ]
     ignore:
       - dependency-name: "*"
         update-types:
@@ -23,6 +29,10 @@ updates:
     multi-ecosystem-group: all-dependencies
     cooldown:
       default-days: 7
+    groups:
+      all-security-updates:
+        applies-to: security-updates
+        patterns: [ "*" ]
     ignore:
       - dependency-name: "*"
         update-types:
@@ -34,6 +44,10 @@ updates:
     multi-ecosystem-group: all-dependencies
     cooldown:
       default-days: 7
+    groups:
+      all-security-updates:
+        applies-to: security-updates
+        patterns: [ "*" ]
     ignore:
       - dependency-name: "*"
         update-types:

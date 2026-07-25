@@ -4,26 +4,29 @@ Maintainer-only runbook for operational procedures that aren't obvious from the 
 
 ## Release automation & `RELEASE_TOKEN`
 
-Releases are driven by three GitHub Actions workflows:
+Releases are driven by four GitHub Actions workflows:
 
 - `.github/workflows/dependabot-auto-merge.yml` — enables auto-merge on green Dependabot PRs.
-- `.github/workflows/dependabot-auto-release.yml` — on a merged Dependabot PR, dispatches `release.yml` with `bump=patch`.
+- `.github/workflows/dependabot-rebase-behind.yml` — on every push to `main`, tells Dependabot to rebase the open PRs that fell behind.
+- `.github/workflows/dependabot-auto-release.yml` — on a merged Dependabot PR, dispatches `release.yml` with `bump=patch`, but only once
+  no other Dependabot PR is still open.
 - `.github/workflows/release.yml` — bumps the version, tags, builds, and publishes the GitHub Release.
 
-`dependabot-auto-merge.yml` and `release.yml` both use a Personal Access Token stored as the secret **`RELEASE_TOKEN`** instead of the
-default `GITHUB_TOKEN`. This is deliberate: GitHub suppresses cascading workflow runs for events caused by `GITHUB_TOKEN`, so a merge made
-with the default token would **not** trigger the release chain. Attributing the merge to a PAT makes the `pull_request: closed` event
-cascade into `dependabot-auto-release.yml`.
+`dependabot-auto-merge.yml`, `dependabot-rebase-behind.yml` and `release.yml` all use a Personal Access Token stored as the secret
+**`RELEASE_TOKEN`** instead of the default `GITHUB_TOKEN`. This is deliberate: GitHub suppresses cascading workflow runs for events caused
+by `GITHUB_TOKEN`, so a merge made with the default token would **not** trigger the release chain. Attributing the merge to a PAT makes the
+`pull_request: closed` event cascade into `dependabot-auto-release.yml`. `dependabot-rebase-behind.yml` needs the PAT for a second reason:
+Dependabot only obeys `@dependabot` commands from an account with write access, and `github-actions[bot]` does not count.
 
 ### The two-store gotcha
 
 `RELEASE_TOKEN` must exist in **two separate secret stores**, because Dependabot-triggered workflow runs are sandboxed and can only read
 Dependabot secrets — not Actions secrets:
 
-| Store          | Used by                     | Settings location                                 |
-|----------------|-----------------------------|---------------------------------------------------|
-| **Actions**    | `release.yml`               | Settings → Secrets and variables → **Actions**    |
-| **Dependabot** | `dependabot-auto-merge.yml` | Settings → Secrets and variables → **Dependabot** |
+| Store          | Used by                                       | Settings location                                 |
+|----------------|-----------------------------------------------|---------------------------------------------------|
+| **Actions**    | `release.yml`, `dependabot-rebase-behind.yml` | Settings → Secrets and variables → **Actions**    |
+| **Dependabot** | `dependabot-auto-merge.yml`                   | Settings → Secrets and variables → **Dependabot** |
 
 Updating one and forgetting the other breaks the release cascade **silently**: `secrets.RELEASE_TOKEN` resolves to an empty string in the
 store where it's missing, and the auto-merge step fails with a cryptic
@@ -35,16 +38,28 @@ gh: To use GitHub CLI in a GitHub Actions workflow, set the GH_TOKEN environment
 
 If you ever see that, the Dependabot copy of the token is missing or expired.
 
-### Required token scopes
+### Required token permissions
 
-Issue the **fine-grained PAT** with enough scope to merge PRs and dispatch workflows:  repository permissions `Contents: read/write`,
-`Pull requests: read/write`, `Workflows: read/write`.
+Issue the **fine-grained PAT** with enough scope to merge PRs, comment on them, and dispatch workflows: repository permissions
+`Contents: read/write`, `Issues: read/write`, `Pull requests: read/write`, `Workflows: read/write`.
+
+`Issues: read/write` is the counter-intuitive one, since the workflow that needs it only ever touches pull requests. A PR conversation
+comment is stored as an *issue* comment — a PR is an issue with a diff attached — and `gh pr comment` posts it through the GraphQL
+`addComment` mutation, which is generic over every commentable subject and is therefore gated on `Issues`, never on `Pull requests`.
+Without it, `dependabot-rebase-behind.yml` fails with:
+
+```
+GraphQL: Resource not accessible by personal access token (addComment)
+```
+
+Dropping `Issues: read/write` (e.g. when rotating the token) breaks only `dependabot-rebase-behind.yml`, and only once a Dependabot PR
+actually falls behind. Note the expiry.
 
 ### Rotating the token
 
 Do this whenever the PAT expires, is revoked, or you're rotating on a schedule. **Both** stores must be updated in the same pass.
 
-1. Create a new PAT with the scopes above and note the expiry.
+1. Create a new PAT with **all** permissions listed above
 2. Update the **Actions** secret:
    ```
    gh secret set RELEASE_TOKEN --repo aslopek/fynancials
@@ -59,4 +74,26 @@ Do this whenever the PAT expires, is revoked, or you're rotating on a schedule. 
    gh secret list --app dependabot --repo aslopek/fynancials
    ```
 5. Smoke-test: re-run the failed check on an open Dependabot PR (or comment `@dependabot rebase`) and confirm the
-   auto-merge → merge → auto-release → release chain completes.
+   auto-merge → merge → auto-release → release chain completes. If no Dependabot PR is open, the next push to `main` at least exercises
+   `dependabot-rebase-behind.yml` — it must finish green rather than on `addComment`.
+
+## The Dependabot PR queue
+
+Two kinds of Dependabot PRs land here, and they behave differently:
+
+- **Version updates** — regularly, grouped across all three parts into a single PR by the `all-dependencies` multi-ecosystem group, with a
+  7-day cooldown and no majors.
+- **Security updates** — triggered by Dependabot alerts, so they ignore both the schedule and the cooldown. `multi-ecosystem-group` does
+  not cover them; the `all-security-updates` group (`applies-to: security-updates`) in each `updates` entry is what bundles them, giving
+  at most one PR per ecosystem *and directory*. Grouping across directories additionally requires the repository-level
+  "Grouped security updates" setting (Settings → Advanced Security).
+
+So a single alert scan can still open more than one PR, and they merge one at a time — the `main` ruleset requires branches to be up to
+date. Every merge (and every release commit) therefore pushes the remaining PRs into the `BEHIND` state, which GitHub does **not** resolve
+on its own for Dependabot branches: it hands the rebase back to Dependabot, and Dependabot declines to rebase a PR whose bump is already
+covered by an existing PR. Without a nudge the queue deadlocks with green checks and auto-merge enabled. That nudge is
+`dependabot-rebase-behind.yml`; the manual equivalent is commenting `@dependabot rebase`.
+
+**Consequence of the release debounce:** while any Dependabot PR is open, merged Dependabot PRs do not cut a release. A PR that stays open
+because its CI is red therefore pauses automatic releases until it is fixed or closed. Dispatch `release.yml` manually if a release is
+needed sooner.
