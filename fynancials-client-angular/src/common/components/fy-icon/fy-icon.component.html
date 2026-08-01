@@ -1,5 +1,5 @@
 <div class="logo-background"
-     [ngClass]="'logo-background--' + (size() ?? 'medium')">
+     [ngClass]="['logo-background--' + (size() ?? 'medium'), 'logo-background--' + (background() ?? 'surface')]">
     <img alt=""
          class="logo"
          [ngClass]="'logo--' + (size() ?? 'medium')"

@@ -7,6 +7,7 @@ import {
   dividendIncludeSpecialDividends,
   dividendSelectedView,
   dividendUseGrossValues,
+  positionGroupBy,
   positionSelectedView,
   positionUseBuyIn,
   selectedDepotIds,
@@ -24,6 +25,7 @@ import {setSelectedDividendViewReducer} from "./reducers/dividend/set-selected-d
 import {setUsePositionBuyInValuesReducer} from "./reducers/position/set-use-position-buy-in-values.reducer";
 import {setSelectedPositionViewReducer} from "./reducers/position/set-selected-position-view.reducer";
 import {setPerformanceReducer} from "./reducers/performance/set-performance.reducer";
+import {setPositionGroupByReducer} from "./reducers/position/set-position-group-by.reducer";
 
 export const initialState: DepotState = {
   depots: [],
@@ -41,7 +43,8 @@ export const initialState: DepotState = {
     positions: null,
     selectedView: positionSelectedView.default,
     useBuyIn: positionUseBuyIn.default,
-    incomeByPosition: {}
+    incomeByPosition: {},
+    groupBy: positionGroupBy.default
   },
   performance: {
     performance: null
@@ -64,6 +67,7 @@ export const depotReducer = createReducer(
   // depot.position reducers
   on(DepotActions.setSelectedPositionView, setSelectedPositionViewReducer),
   on(DepotActions.setUsePositionBuyInValues, setUsePositionBuyInValuesReducer),
+  on(DepotActions.setPositionGroupBy, setPositionGroupByReducer),
   // depot/performance reducers
   on(DepotActions.loadPerformanceDone, setPerformanceReducer)
 );

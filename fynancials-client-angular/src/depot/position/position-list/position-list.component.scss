@@ -1,5 +1,7 @@
 @use '../../../styles' as styles;
 
+$group-gutter-width: 2.5rem;
+
 .wrapper {
   display: flex;
   align-items: center;
@@ -8,10 +10,6 @@
   height: 80vh;
   width: 100%;
   overflow-y: auto;
-}
-
-.margin-right {
-  margin-right: 1rem;
 }
 
 .sticky-header {
@@ -24,6 +22,10 @@
   background-color: var(--mat-app-background-color, #303030);
   padding-bottom: 0.5rem;
   border-bottom: 0.0625rem solid rgba(255, 255, 255, 0.08);
+
+  &.grouped {
+    padding-left: $group-gutter-width;
+  }
 }
 
 .total-row {
@@ -59,68 +61,49 @@
   text-align: right;
 }
 
-.position-item {
+.position-rows {
   width: 50%;
   min-width: 50rem;
-  padding: 0.6rem 0.4rem;
-  display: flex;
-  align-items: center;
-  flex-direction: row;
-  align-content: center;
-  cursor: pointer;
-  border-radius: 0.5rem;
-  transition: background-color 0.15s ease;
+}
 
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-  }
+.position-group {
+  position: relative;
+  width: 50%;
+  min-width: 50rem;
+  padding-left: $group-gutter-width;
 
   &:not(:last-child) {
-    border-bottom: 0.0625rem solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 0.75rem;
   }
 }
 
-.position-item-column {
+.group-gutter {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  width: 30%;
+  align-items: center;
+  width: $group-gutter-width;
+  overflow: hidden;
 }
 
-h3 {
+.group-brace {
+  align-self: stretch;
+  width: 0.625rem;
+  border: 0.0625rem solid rgba(255, 255, 255, 0.35);
+  border-right: none;
+}
+
+.group-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  max-height: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.85rem;
   font-weight: 500;
-  font-size: 1.05rem;
-  margin: 0;
-}
-
-// use em instead rem on h4/h5: .performance-positive/.performance-negative below use em
-// border-radius/padding so the pill badge scales with whichever of these two font-sizes it's applied to
-h4 {
-  font-weight: 500;
-  font-size: 0.95em;
-  margin: 0;
-}
-
-h5 {
-  font-weight: 400;
-  font-size: 0.8em;
-  margin: 0.2em 0 0;
-}
-
-.sub-value {
-  opacity: 0.6;
-}
-
-.performance-positive {
-  background-color: styles.$color-positive-tint;
-  color: styles.$color-positive;
-  padding: 0.15em 0.6em;
-  border-radius: 1em;
-}
-
-.performance-negative {
-  background-color: styles.$color-negative-tint;
-  color: styles.$color-negative;
-  padding: 0.15em 0.6em;
-  border-radius: 1em;
+  color: styles.$color-muted-text;
+  user-select: none;
 }

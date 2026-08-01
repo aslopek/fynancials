@@ -16,7 +16,7 @@ to check for available updates.
   money-weighted return), and configurable benchmarks: "what if I had put the same money into
   another financial instrument instead?"
 - **Positions** — per-holding returns, drill-down into individual purchase lots, allocation
-  chart.
+  chart; list and chart can be grouped by security's sector.
 - **Dividends** — per-depot dividend history and yield tables, plus a calendar of upcoming
   dividend announcements with in-app notifications.
 - **Securities** — master data, stock splits, and historical price charts for every security

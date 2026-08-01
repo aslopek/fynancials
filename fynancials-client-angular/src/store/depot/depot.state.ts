@@ -3,6 +3,7 @@ import {Timespan} from "../../common";
 import {Dividends} from "../../gen/api/depot-dividend";
 import {DepotComposition} from "../../gen/api/depot-position";
 import {DepotPerformance, Performance} from "../../gen/api/depot-performance";
+import {PositionGroupBy} from './position-grouping/position-group.type';
 
 export type DividendView = 'barchart' | 'table';
 export type PositionView = 'donut' | 'list';
@@ -27,6 +28,7 @@ export type DepotState = {
     selectedView: PositionView
     useBuyIn: boolean
     incomeByPosition: IncomeByPosition
+    groupBy: PositionGroupBy
   },
   performance: {
     performance: DepotPerformance | null

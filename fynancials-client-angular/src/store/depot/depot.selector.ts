@@ -24,6 +24,10 @@ import {getPositions} from "./selectors/position/get-positions.selector";
 import {getIncomeByPosition} from "./selectors/position/get-income-by-position.selector";
 import {DepotPerformance} from "../../gen/api/depot-performance";
 import {getDepotPerformance} from "./selectors/performance/get-depot-performance.selector";
+import {getPositionGroupBy} from "./selectors/position/get-position-group-by.selector";
+import {GroupedPositions, PositionGroupBy} from "./position-grouping/position-group.type";
+import {getGroupedPositions} from "./selectors/position/get-grouped-positions.selector";
+import {securitiesById} from "../security/security.selector";
 
 const depotSelector: MemoizedSelector<AppState, DepotState>
   = createFeatureSelector<DepotState>(depotSlice);
@@ -88,6 +92,12 @@ export const usePositionBuyInValues: MemoizedSelector<AppState, boolean>
 
 export const selectedPositionView: MemoizedSelector<AppState, PositionView>
   = createSelector(depotSelector, getSelectedPositionView);
+
+export const positionGroupBy: MemoizedSelector<AppState, PositionGroupBy>
+  = createSelector(depotSelector, getPositionGroupBy);
+
+export const groupedPositions: MemoizedSelector<AppState, GroupedPositions>
+  = createSelector(positions, securitiesById, positionGroupBy, usePositionBuyInValues, getGroupedPositions);
 
 // state.performance selectors
 
