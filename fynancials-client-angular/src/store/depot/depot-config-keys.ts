@@ -1,5 +1,6 @@
 import {Timespan} from "../../common";
 import {DepotState, DividendView, PositionView} from "./depot.state";
+import {PositionGroupBy} from "./position-grouping/position-group.type";
 
 export const depotConfigPrefix = 'depot';
 
@@ -55,4 +56,10 @@ export const positionUseBuyIn: DepotConfigKey<boolean> = {
   key: `${depotConfigPrefix}.position.use-buy-in`,
   default: false,
   getCurrentValue: (state: DepotState) => `${state.position.useBuyIn}`
+} as const;
+
+export const positionGroupBy: DepotConfigKey<PositionGroupBy> = {
+  key: `${depotConfigPrefix}.position.group-by`,
+  default: 'none',
+  getCurrentValue: (state: DepotState) => state.position.groupBy
 } as const;

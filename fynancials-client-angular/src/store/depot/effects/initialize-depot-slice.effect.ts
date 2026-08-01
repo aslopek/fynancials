@@ -12,6 +12,7 @@ import {
   dividendIncludeSpecialDividends,
   dividendSelectedView,
   dividendUseGrossValues,
+  positionGroupBy,
   positionSelectedView,
   positionUseBuyIn,
   selectedDepotIds,
@@ -19,6 +20,8 @@ import {
 } from "../depot-config-keys";
 import {DepotState, DividendView, PositionView} from "../depot.state";
 import {Timespan} from "../../../common";
+import {positionGroupByValues} from "../position-grouping/position-group-attributes";
+import {PositionGroupBy} from "../position-grouping/position-group.type";
 
 export type InitializeDepotsSliceEffectArgs = {
   actions$: Actions,
@@ -106,7 +109,8 @@ function parsePositionConfig(config: { [key: string]: string }): Pick<DepotState
       positions: null,
       incomeByPosition: {},
       selectedView: parseEnum<PositionView>(config[positionSelectedView.key], ['donut', 'list'], positionSelectedView.default),
-      useBuyIn: parseBoolean(config[positionUseBuyIn.key], positionUseBuyIn.default)
+      useBuyIn: parseBoolean(config[positionUseBuyIn.key], positionUseBuyIn.default),
+      groupBy: parseEnum<PositionGroupBy>(config[positionGroupBy.key], positionGroupByValues, positionGroupBy.default)
     }
   };
 }

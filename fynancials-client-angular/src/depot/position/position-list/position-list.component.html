@@ -1,22 +1,20 @@
-<div class="wrapper"
-     *ngrxLet="hideAbsoluteValues$ | async as hideAbsoluteValues">
-    <div class="sticky-header">
+@let composition = depotComposition();
+@let grouped = grouping();
+
+<div class="wrapper">
+    <div class="sticky-header"
+         [class.grouped]="grouped.groups.length > 0">
         <div class="total-row">
-            @if (!hideAbsoluteValues) {
-                @if (useBuyIn()) {
-                    <h1 class="title">
-                        {{ depotComposition().buyInAbsolute | fyCurrency:depotCurrency() }}
-                    </h1>
-                } @else {
-                    <h1 class="title">
-                        {{ depotComposition().currentSizeAbsolute | fyCurrency:depotCurrency() }}
-                    </h1>
-                }
+            @if (!hideAbsoluteValues()) {
+                @let total = useBuyIn() ? composition.buyInAbsolute : composition.currentSizeAbsolute;
+                <h1 class="title">
+                    {{ total | fyCurrency:depotCurrency() }}
+                </h1>
             }
 
             <app-performance-label
-                    [absolutePerformance]="depotComposition().absolutePerformance"
-                    [relativePerformance]="depotComposition().relativePerformance ?? 'infinity'"
+                    [absolutePerformance]="composition.absolutePerformance"
+                    [relativePerformance]="composition.relativePerformance ?? 'infinity'"
                     [currency]="depotCurrency()">
             </app-performance-label>
         </div>
@@ -24,7 +22,7 @@
         <div class="column-headers">
             <div class="column-headers-spacer"></div>
             <div class="column-header" style="width: 20%;">Size (%)</div>
-            @if (!hideAbsoluteValues) {
+            @if (!hideAbsoluteValues()) {
                 <div class="column-header" style="width: 20%;">Size</div>
             }
             <div class="column-header" style="width: 15%;">Performance</div>
@@ -32,91 +30,29 @@
         </div>
     </div>
 
-    @for (position of depotComposition().positions; track position) {
-        <div class="position-item"
-             (click)="openLotsDialog(position.securityIds)">
-            <fy-icon class="margin-right"
-                     style="width: 4rem;"
-                         src="{{basePath}}/securities/{{position.securityIds[0]}}/logo">
-            </fy-icon>
-
-            <h3 class="margin-right"
-                style="width: calc(30% - 4rem);">
-                {{ position.displayName }}
-            </h3>
-
-            <div class="position-item-column margin-right"
-                 style="width: 20%;">
-                <h4>
-                    {{ (useBuyIn() ? position.buyInRelative : position.currentSizeRelative) / 100 | fyPercent }}
-                </h4>
-            </div>
-
-            @if (!hideAbsoluteValues) {
-                <div class="position-item-column margin-right"
-                     style="width: 20%;">
-                    <h4>
-                        {{ (useBuyIn() ? position.buyInAbsolute : position.currentSizeAbsolute) | fyCurrency:depotCurrency() }}
-                    </h4>
-                    <h5 class="sub-value">
-                        {{ position.count | fyDecimal:'1.0-10' }}
-                        x {{ (useBuyIn() ? position.buyInAbsolute : position.currentSizeAbsolute) / position.count | fyCurrency:depotCurrency() }}
-                    </h5>
+    @if (grouped.groups.length > 0) {
+        @for (group of grouped.groups; track $index) {
+            @let label = group | positionGroupText : useBuyIn() : hideAbsoluteValues() : false : depotCurrency();
+            @let tooltip = group | positionGroupText : useBuyIn() : hideAbsoluteValues() : true : depotCurrency();
+            <div class="position-group">
+                <div class="group-gutter">
+                    <span class="group-label"
+                          [matTooltip]="tooltip">
+                        {{ label }}
+                    </span>
+                    <div class="group-brace"></div>
                 </div>
-            }
-
-            <div class="position-item-column margin-right"
-                 style="width: 15%;">
-                @if (hideAbsoluteValues) {
-                    <h4 [class]="position.relativePerformance >= 0 ? 'performance-positive' : 'performance-negative'">
-                        @if (position.buyInAbsolute === 0) {
-                            +&infin;
-                        } @else {
-                            {{ position.relativePerformance >= 0 ? '+' : '' }}{{ (position.relativePerformance / 100) | fyPercent }}
-                        }
-                    </h4>
-                } @else {
-                    <h4 [class]="position.absolutePerformance >= 0 ? 'performance-positive' : 'performance-negative'">
-                        {{ position.absolutePerformance >= 0 ? '+' : '' }}{{ position.absolutePerformance | fyCurrency:depotCurrency() }}
-                    </h4>
-                    <h5 [class]="position.relativePerformance >= 0 ? 'performance-positive' : 'performance-negative'">
-                        @if (position.buyInAbsolute === 0) {
-                            +&infin;
-                        } @else {
-                            {{ position.relativePerformance >= 0 ? '+' : '' }}{{ (position.relativePerformance / 100) | fyPercent }}
-                        }
-                    </h5>
-                }
-            </div>
-
-            @if (income()[position.securityIds[0]] != null) {
-                <div class="position-item-column margin-right"
-                     style="width: 15%"
-                     [matTooltip]="'Net Income (' + (income()[position.securityIds[0]].transactions.length | fyDecimal:'1.0') + ' transaction'+(income()[position.securityIds[0]].transactions.length === 1 ? '': 's')+')'">
-                    @if (hideAbsoluteValues) {
-                        <h4 [class]="income()[position.securityIds[0]].absoluteValueNet >= 0 ? 'performance-positive' : 'performance-negative'">
-                            @if (position.buyInAbsolute === 0) {
-                                +&infin;
-                            } @else {
-                                {{ income()[position.securityIds[0]].absoluteValueNet >= 0 ? '+' : '' }}{{ (income()[position.securityIds[0]].absoluteValueNet / position.buyInAbsolute) | fyPercent }}
-                            }
-                        </h4>
-                    } @else {
-                        <h4 [class]="income()[position.securityIds[0]].absoluteValueNet >= 0 ? 'performance-positive' : 'performance-negative'">
-                            {{ income()[position.securityIds[0]].absoluteValueNet >= 0 ? '+' : '' }}{{ income()[position.securityIds[0]].absoluteValueNet | fyCurrency:depotCurrency() }}
-                        </h4>
-                        <h5 [class]="income()[position.securityIds[0]].absoluteValueNet >= 0 ? 'performance-positive' : 'performance-negative'">
-                            @if (position.buyInAbsolute === 0) {
-                                +&infin;
-                            } @else {
-                                {{ income()[position.securityIds[0]].absoluteValueNet >= 0 ? '+' : '' }}{{ (income()[position.securityIds[0]].absoluteValueNet / position.buyInAbsolute) | fyPercent }}
-                            }
-                        </h5>
+                <div class="group-rows">
+                    @for (position of group.positions; track position) {
+                        <app-position-list-row [position]="position"></app-position-list-row>
                     }
                 </div>
-            } @else {
-                <div style="width:15%">
-                </div>
+            </div>
+        }
+    } @else {
+        <div class="position-rows">
+            @for (position of grouped.positions; track position) {
+                <app-position-list-row [position]="position"></app-position-list-row>
             }
         </div>
     }
