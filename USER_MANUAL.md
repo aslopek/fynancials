@@ -192,7 +192,11 @@ Everything about one depot, in four tabs (you can create any number of depots an
 the header):
 
 - **Positions** — your current holdings with cash-exclusive per-position returns, an allocation
-  chart, and a drill-down into the individual purchase lots behind each position.
+  chart, and a drill-down into the individual purchase lots behind each position. A *Group by*
+  control lets you group both views by security sector — the sector you maintain in the
+  security's master data; positions whose security has no sector fall into an `Others` group.
+  Each group carries its name and its share of the depot, with the group's value in the
+  tooltip. The chosen grouping is remembered for next time.
 - **Dividends** — received dividends over time as a bar chart plus per-security yield tables.
 - **Performance** — depot value over time with KPI tiles, invested capital, XIRR, and
   configurable benchmarks. See
@@ -201,7 +205,11 @@ the header):
 
 ![Positions tab: current holdings with per-position returns and income](./doc-assets/depot-positions-list.png)
 
+![Positions tab: the same list grouped by sector, each group labelled with its share of the depot](./doc-assets/depot-positions-list-grouped-by-sector.png)
+
 ![Positions tab: allocation donut chart](./doc-assets/depot-positions-allocation.png)
+
+![Positions tab: allocation donut with an outer ring of sector groups](./doc-assets/depot-positions-allocation-grouped-by-sector.png)
 
 ![Dividends tab: received dividends per month, grouped by year](./doc-assets/depot-dividends.png)
 

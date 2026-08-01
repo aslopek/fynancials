@@ -6,9 +6,17 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: styles.$color-surface-card;
   border-radius: 20%;
   overflow: clip;
+
+  // the background modifier is always emitted by the template, defaulting to --surface
+  &--surface {
+    background-color: styles.$color-surface-card;
+  }
+
+  &--transparent {
+    background-color: transparent;
+  }
 
   &--medium {
     width: 3.5rem;

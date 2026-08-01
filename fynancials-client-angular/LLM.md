@@ -87,6 +87,13 @@ Treat the `security` slice (`src/store/security/`) as the canonical template for
   takes props), `<slice>.reducer.ts`, `<slice>.selector.ts`.
 - `effects/` subfolder — one file per action, exporting a function that takes `actions$` (+ whatever API/store deps it needs) and returns
   the effect; `<slice>.effects.ts` only wires these into `createEffect(...)` calls, it never contains effect logic itself.
+- **An effect stays pure rxjs — no `async`, no `await`, no `Promise`, no `firstValueFrom`.** Everything an effect needs is already an
+  `Observable` (the generated API clients, `store.select(...)`), so compose it with operators: `switchMap`/`concatMap`/`mergeMap` returning
+  the API call, `map` to the success action, `catchError` to the error action, `concatLatestFrom` for store reads. This is a testability
+  rule as much as a style one — a `Promise` resolves on the real microtask queue, which rxjs virtual time cannot observe, so an `async`
+  callback makes the effect untestable with marbles and gives up on asserting timing and cancellation (see `Testing` below).
+  `set-position-group-by.effect.ts` is the reference. Several older effects predate this rule and wrap `firstValueFrom` in an `async`
+  helper — don't copy them; a change to one of them is a good opportunity to convert it.
 - `reducers/` subfolder — one pure function per state transition (e.g. `overwrite-security.reducer.ts`), composed with `on(...)` in
   `<slice>.reducer.ts`.
 - `selectors/` subfolder — one function per derived value, following **dependency inversion**: each selector file declares its own minimal
@@ -130,7 +137,8 @@ older stores, e.g. `add-security-wizard.store.ts` / `update-security.store.ts`, 
   global `depotPerformance` selector).
 - `methods/<name>.ts` — one exported function per mutation, taking `WritableSignalStore<State, Computed>` plus its own args and calling
   `patchState(...)`.
-- `effects/<name>.ts` — one exported function per side-effecting `rxMethod`, hooked up in `withHooks.onInit`.
+- `effects/<name>.ts` — one exported function per side-effecting `rxMethod`, hooked up in `withHooks.onInit`. The pure-rxjs rule from the
+  global store's `effects/` applies here too: compose operators, never `async`/`await`/`firstValueFrom`.
 - Domain-specific helper types/logic that don't fit `computed`/`methods`/`effects` get their own subfolder (see `benchmark/` in
   `depot-performance/store/`).
 
@@ -216,10 +224,24 @@ The focus on testing in the angular app is on logic. Use `jest` to test:
 - angular pipes: `*.pipe.ts` — instantiate the pipe directly with mocked constructor deps, no TestBed; see `security-name.pipe.spec.ts`
   for the pattern (including mocking a `Store` whose `selectSignal` serves several selectors, dispatched by selector identity)
 - If important for the logic, components may also have a unit test; however logic should preferably reside in global or signal stores
-- Use marble testing (rxjs `TestScheduler`) for observable logic that resolves purely through rxjs operators/schedulers (mostly effects).
-  **Not** when the effect's `mergeMap`/`switchMap`/etc. callback is `async` or otherwise returns a `Promise` — a `Promise` resolves via the
-  real microtask queue, not rxjs virtual time, so `TestScheduler` can't observe it deterministically. For those, build the input with a real
-  `Observable` (`of`/`throwError`) and assert with `await firstValueFrom(...)` instead; see `load-security.effect.spec.ts` for the pattern.
+- **Effects are tested with marble testing** (rxjs `TestScheduler`), and so is any other observable logic that resolves purely through rxjs
+  operators/schedulers. Marbles are what makes timing and cancellation assertable at all — that a `switchMap` drops an in-flight request
+  when the next action arrives is invisible to a `firstValueFrom` assertion. See `set-position-group-by.effect.spec.ts` for the pattern:
+  - Create every marble (`cold`/`hot`) **inside** `scheduler.run(...)`. Outside it a different frame factor applies, so marbles built in
+    `beforeEach` silently don't line up with the ones in the expectation.
+  - Feed the effect a hot action stream that never completes (`new Actions(hot(...))`), so the expectation sees the effect's own emissions
+    and nothing else.
+  - Declare the values of the **input** stream once in `beforeEach` as the spec's marble alphabet — including the letters only some tests
+    need (an action carrying a different payload, an action the effect must ignore) — and let each test pick letters instead of rebuilding
+    the value map. The **expected** values are not part of that alphabet: they are what the test asserts, so they stay inline at the call
+    site, even when that repeats them across tests. A reader must never have to scroll up to learn what a test claims.
+  - Keep the marble strings (action stream, API response) themselves as part of the `beforeEach` baseline, so a test alters one precondition
+    by assigning one string, and share the `scheduler.run(...)` call through a small local helper. Prefer altering the marble string over
+    altering the alphabet: the changed precondition then shows up in the test's own line rather than in a value the test only references.
+  - Space the response marble far enough from the action marble that no two events land on the same frame — emissions scheduled on the same
+    frame are ordered by scheduling order, which turns the assertion into a coin flip.
+  - After a marble test passes, break its expected marble once and check that it fails for the expected reason: a wrong-but-passing
+    expectation is the normal failure mode of marble tests.
 - In every `*.spec.ts` file, import exactly the jest symbols being used (`afterEach`, `beforeAll`, `beforeEach`, `describe`, `expect`,
   `it`, `jest`, ...) explicitly from `@jest/globals` — never rely on ambient globals, and don't import symbols the file doesn't use.
 - Testing philosophy
@@ -230,9 +252,21 @@ The focus on testing in the angular app is on logic. Use `jest` to test:
     nested `describe()`'s own `beforeEach()` — never into the `describe()` body, which runs at collection time, before any `beforeEach()`.
     E.g. if tests only make sense if they alter n > 1 preconditions, then the nested `describe()`'s `beforeEach()` may alter up to n-1
     preconditions and each test case alters exactly one in its own arrange step.
+  - **The baseline state of a store is always the store's own `initialState`**, shallow-copied — `state = {...initialState}` for a global
+    store slice, the Signal Store's `initialState` for a Signal Store. Never hand-build a full state object in `beforeEach()`: it
+    duplicates defaults the store already declares and drifts the moment the state type gains a field.
+  - A nested `describe()`'s `beforeEach()` (or a test's own arrange step) then spreads over that baseline and overwrites **only the
+    properties that differ from `initialState`**, so every value a test sets is by definition a precondition that test depends on. That
+    keeps the setup short and makes what a test actually varies readable at a glance.
   - TypeScript conventions set forth in this file (line length, strong type safety etc.) also apply for tests.
   - use `toBe(...)` whenever referential equality is important - e.g. when a reducer returns the input state
   - Prefer test data factories over verbose inline object initializers. Once a generated/domain type is used by more than one spec, add a
     `<name>Factory(overrides?: Partial<Type>): Type` function for it in `src/testing/` (one file per type, e.g. `security-read.factory.ts`,
     re-exported via `src/testing/index.ts`), returning a fresh object with sensible defaults and spreading `overrides` last so individual
     tests only specify the fields they care about.
+  - An expected value is written as an expression over the arranged fixtures, not a recomputed literal — `apple.buyInAbsolute +
+    microsoft.buyInAbsolute` instead of `150`, `apple.securityIds[0]` instead of `1`. A reader then verifies the assertion by looking at
+    the arrange step alone, never by re-doing the selector's/reducer's arithmetic in their head, and the test keeps passing for the right
+    reason when a fixture's value changes. This applies to full-object assertions too: prefer one `toEqual` on the whole expected
+    result/group over several narrow assertions on individual fields, so the test doubles as a complete, at-a-glance cross-check against
+    the arranged input.

@@ -1,5 +1,6 @@
 import {Component, input, InputSignal} from "@angular/core";
 import {NgClass} from "@angular/common";
+import {IconBackground} from "./icon-background.type";
 import {IconSize} from "./icon-size.type";
 
 @Component({
@@ -13,5 +14,6 @@ import {IconSize} from "./icon-size.type";
 export class FyIconComponent {
 
   readonly src: InputSignal<string> = input.required<string>();
-  readonly size: InputSignal<IconSize | undefined> = input<IconSize | undefined>();
+  readonly size: InputSignal<IconSize | undefined> = input<IconSize>();
+  readonly background: InputSignal<IconBackground | undefined> = input<IconBackground>();
 }

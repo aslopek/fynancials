@@ -7,6 +7,7 @@ import {Dividends} from "../../gen/api/depot-dividend";
 import {DepotComposition} from "../../gen/api/depot-position";
 import {Timespan} from "../../common";
 import {DepotPerformance, Performance} from "../../gen/api/depot-performance";
+import {PositionGroupBy} from "./position-grouping/position-group.type";
 
 export type AddDepotActionArgs = {
   depot: DepotCreate
@@ -72,6 +73,10 @@ export type SetUsePositionBuyInValuesActionArgs = {
   useBuyInValues: boolean
 };
 
+export type SetPositionGroupByActionArgs = {
+  groupBy: PositionGroupBy
+};
+
 export type LoadPerformanceDoneActionArgs = {
   depotPerformance: DepotPerformance | null
 };
@@ -108,6 +113,8 @@ export const DepotActions = createActionGroup({
     'Set Selected Position View Done': props<SetSelectedPositionViewActionArgs>(),
     'Set Use Position Buy In Values': props<SetUsePositionBuyInValuesActionArgs>(),
     'Set Use Position Buy In Values Done': props<SetUsePositionBuyInValuesActionArgs>(),
+    'Set Position Group By': props<SetPositionGroupByActionArgs>(),
+    'Set Position Group By Done': props<SetPositionGroupByActionArgs>(),
     // depot.performance actions
     'Load Performance Done': props<LoadPerformanceDoneActionArgs>(),
     // dispatched by components/Signal Stores after operations affecting the depot's derived data, and by this slice's own effects

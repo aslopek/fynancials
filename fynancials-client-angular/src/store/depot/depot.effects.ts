@@ -25,6 +25,7 @@ import {
 import {setSelectedDividendView, SetSelectedDividendViewEffectArgs} from "./effects/dividend/set-selected-dividend-view.effect";
 import {setSelectedPositionView, SetSelectedPositionViewEffectArgs} from "./effects/position/set-selected-position-view.effect";
 import {setUsePositionBuyInValues, SetUsePositionBuyInValuesEffectArgs} from "./effects/position/set-use-position-buy-in-values.effect";
+import {setPositionGroupBy, SetPositionGroupByEffectArgs} from "./effects/position/set-position-group-by.effect";
 import {DepotPerformanceApi, DepotPerformanceIncomeApi} from "../../gen/api/depot-performance";
 import {loadPerformance, LoadPerformanceEffectArgs} from "./effects/performance/load-performance.effect";
 import {reloadDepotsOn, ReloadDepotsOnEffectArgs} from "./effects/reload-depots-on.effect";
@@ -137,6 +138,12 @@ export class DepotEffects {
     configApi: this.configApi,
     store: this.store
   } satisfies SetUsePositionBuyInValuesEffectArgs));
+
+  readonly setPositionGroupBy = createEffect(() => setPositionGroupBy({
+    actions$: this.actions$,
+    configApi: this.configApi,
+    store: this.store
+  } satisfies SetPositionGroupByEffectArgs));
 
   // depot.performance effects
 

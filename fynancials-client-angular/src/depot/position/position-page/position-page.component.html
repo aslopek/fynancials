@@ -15,6 +15,20 @@
             </mat-button-toggle>
         </mat-button-toggle-group>
 
+        <mat-form-field appearance="outline"
+                        class="position-page-menu-item"
+                        subscriptSizing="dynamic">
+            <mat-label>Group by</mat-label>
+            <mat-select (selectionChange)="selectGroupBy($event.value)"
+                        [disabled]="selectedDepots().length === 0"
+                        [value]="groupBy()">
+                <mat-option value="none">None</mat-option>
+                @for (attribute of positionGroupAttributes; track attribute.id) {
+                    <mat-option [value]="attribute.id">{{ attribute.label }}</mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+
         <mat-checkbox (click)="toggleUseBuyIn()"
                       [checked]="useBuyIn()"
                       class="position-page-menu-item">
