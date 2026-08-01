@@ -57,8 +57,27 @@ The Angular + NgRx frontend, packaged as the Electron desktop app that ships to 
 - Charts use `ngx-echarts` with `echarts/core` and only the chart types/components registered in `app.config.ts` (`BarChart`, `LineChart`,
   `PieChart`, `Grid`/`Legend`/`Tooltip`, `SVGRenderer`) — add new echarts features to that `echarts.use([...])` call, not ad hoc per
   component.
-- **Chart options** for echarts are always built in a dedicated custom pipe per chart (e.g. `dividend-bar-chart.pipe.ts`,
-  `position-pie-chart.pipe.ts`), never inline in the component.
+- **Derived state belongs in the store, rendered artifacts belong in pipes.** The line is drawn by what the thing *is*, not by
+  where its inputs come from:
+  - **Deriving is what selectors and computeds are for** — keep doing it there. A global-store selector
+    (`selectors/<name>.selector.ts`) or a Signal Store computed (`store/computed/<name>.ts`) may filter, join, aggregate, sort
+    and reshape domain data as much as a screen needs, including combining several slices or merging local signals with global
+    selectors (`depot-performance/store/computed/depot-values.ts` is the reference).
+  - **A rendered artifact never lives in a store** — not in a slice's state, not in a selector, not in a Signal Store computed.
+    That means an echarts options object, SVG geometry (path/arc data drawn as chart chrome), a composed label/tooltip string:
+    anything whose shape is dictated by the thing that draws it rather than by the domain.
+  - **A pure custom pipe is the seam between the two**: it takes the derived state and produces the rendered artifact, in the
+    template. Never build one in a component field, a component method, a component-level `computed()`, or an inline template
+    expression. A component-level `computed()` stays fine for plain local logic (a disabled flag, which branch to render) — just
+    never for an artifact.
+  - **Chart options** for echarts get one dedicated pipe per chart (e.g. `dividend-bar-chart.pipe.ts`,
+    `position-pie-chart.pipe.ts`).
+  - When several bindings need the same pipe result, bind it once with `@let` instead of repeating the pipe expression. Chain
+    pipes in the template rather than precomputing a value in the component.
+  - A pipe that needs formatting injects the `fy*` pipes (see `position-pie-chart.pipe.ts`); the consuming component then lists
+    them in its `providers`. Pipes may inject other pipes the same way.
+  - Pass everything a pipe needs as an argument. A pure pipe re-runs only when its arguments change identity, so a signal it
+    reads on its own (e.g. `hideAbsoluteValues`) can change without the rendered text ever being recomputed.
 
 ## Global NgRx store conventions
 
@@ -84,6 +103,13 @@ Treat the `security` slice (`src/store/security/`) as the canonical template for
   actions in a dedicated `<verb>-<noun>-on.effect.ts` and reacts appropriately (see `depot/effects/reload-depots-on.effect.ts` and
   `security/effects/load-securities-on.effect.ts` for the pattern, including how to add further triggering actions). This rule is scoped
   to global-store slices only: components and Signal Stores are not domains and may dispatch any slice's actions directly.
+- **Dependency inversion governs writing, not reading.** A slice's `<slice>.selector.ts` may compose another slice's public selectors
+  (e.g. `createSelector(positions, securitiesById, ...)`): that is a pure, memoized read which creates none of the ordering or
+  control-flow coupling the rule above exists to prevent, and it is the normal way to derive data spanning two domains — prefer it over
+  joining the two slices in a component. Two constraints: read only along the direction the domain data already points (a depot position
+  carries `securityIds`, so depot → security, never the reverse), and keep the composing selector in the slice that does the reaching, so
+  a pair of slices never imports one another in both directions. The composed pure function then takes the already-derived values as its
+  parameters instead of a `Pick<SliceState, '...'>`, which is the same minimal-input principle.
 
 ## Signal Stores (component/feature-local state)
 
