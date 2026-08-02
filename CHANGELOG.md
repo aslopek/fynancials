@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-02
+
 ### Added
 
 - Depot positions can now be grouped by security sector in both the list and doughnut allocation views, with the
