@@ -85,11 +85,15 @@ jobs:
         run: |
           version="${{ needs.prepare.outputs.version }}"
           mkdir -p release-artifacts
+          # Every archive holds the complete packaged directory rather than the executable alone. electron-packager
+          # lays the Electron distribution down around the app, and LICENSE plus LICENSES.chromium.html are part of
+          # it
           case "${{ runner.os }}" in
             Windows)
               7z a "release-artifacts/fynancials-${version}-windows-x64.zip" ./out/fynancials-win32-x64 ;;
             macOS)
-              ditto -c -k --sequesterRsrc --keepParent out/fynancials-darwin-arm64/fynancials.app \
+              # ditto rather than zip, so the bundle's symlinks and extended attributes survive the round trip
+              ditto -c -k --sequesterRsrc --keepParent out/fynancials-darwin-arm64 \
                 "release-artifacts/fynancials-${version}-macos-arm64.zip" ;;
             Linux)
               tar -czf "release-artifacts/fynancials-${version}-linux-x64.tar.gz" -C out fynancials-linux-x64 ;;

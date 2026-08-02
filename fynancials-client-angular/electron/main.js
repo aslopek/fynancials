@@ -8,128 +8,140 @@ const url = require('url');
 const {Readable} = require('stream');
 const {pipeline} = require('stream/promises');
 const {dialog} = require('electron');
+const {createConfigFile} = require('./config/config-file.js');
+const {createAuthRegistry} = require('./config/auth-registry.js');
+const {BACKEND_PID_URL, createBackendReachability} = require('./backend/backend-reachable.js');
 
-const frontendUrlPath = path.join(__dirname, 'dist', 'fynancials', 'browser', 'index.html');
-const frontendIconPath = path.join(__dirname, 'dist', 'fynancials', 'browser', 'favicon.ico');
+/** @import {AuthState} from './config/auth.js' */
+
+// paths here are relative to electron/, so '..' reaches the package root
+const frontendUrlPath = path.join(__dirname, '..', 'dist', 'fynancials', 'browser', 'index.html');
+const frontendIconPath = path.join(__dirname, '..', 'dist', 'fynancials', 'browser', 'favicon.ico');
 const title = 'Fynancials';
 const askForJavaDownload = 'Java not found. Do you want to download Amazon Corretto 25?';
 const javaDownloadLicenseNote = 'Amazon Corretto is licensed under the GPLv2 with the Classpath Exception. '
   + 'The license terms are included in the downloaded archive. See https://aws.amazon.com/corretto/faqs/ for details.';
-let backendPath = '';
-let prompt;
+const wrongPasswordMessage = 'Wrong password for the configured database. Please try again.';
 
 if (process.platform === 'darwin') {
   process.chdir(path.resolve(process.argv0, '..', '..', '..', '..'));
 }
 
-const resourcesDir = app.isPackaged ? process.resourcesPath : path.join(__dirname, 'resources');
-backendPath = path.join(resourcesDir, 'backend.jar');
-prompt = require(path.join(resourcesDir, 'node_modules', 'custom-electron-prompt'));
+const resourcesDir = app.isPackaged ? process.resourcesPath : path.join(__dirname, '..', 'resources');
+const backendPath = path.join(resourcesDir, 'backend.jar');
+// resolved dynamically, so its type has to be asserted; the return type is what matters here, since the prompt's
+// result flows on as the database password
+const prompt = /** @type {(options: object) => Promise<string | null>} */
+  (require(path.join(resourcesDir, 'node_modules', 'custom-electron-prompt')));
 
 const logPath = path.join(process.cwd(), 'fynancials.log');
 
-/** @type Electron.CrossProcessExports.BrowserWindow  */
-let frontend;
+/** @type {import('electron').BrowserWindow | null} */
+let frontend = null;
 
-/** @type ChildProcessWithoutNullStreams */
-let backend;
+/** @type {import('node:child_process').ChildProcessWithoutNullStreams | null} */
+let backend = null;
 
 /**
- * @typedef {Object} FynancialsConfig
- * @property {Object.<string, string>} env - environment variables
- * @property {Object.<string, boolean>} askForPassword - define whether to ask for password when opening the file
+ * What a start attempt says about the database it was made against. `startedFrom` is the state read *before* the
+ * password was asked for, which is what a failed start has to be routed on.
+ *
+ * @typedef {{reachable: boolean, startedFrom: AuthState}} BackendStartOutcome
  */
-/** @type FynancialsConfig */
-let config;
-const pathToConfigFile = path.join(os.homedir(), 'fynancials.config.json');
 
-function saveConfig() {
-  try {
-    fs.writeFileSync(pathToConfigFile, JSON.stringify(config, null, 2), {
-      flag: 'w'
-    });
-  } catch (error) {
-    console.error(`Failed to save config to ${pathToConfigFile}:`, error);
-  }
-}
+/** @type {Promise<BackendStartOutcome> | null} */
+let backendStart = null;
 
-function defaultConfig() {
-  return {
-    env: {
-      FY_DB_FILE_PATH: path.join(os.homedir(), 'fynancials')
-    },
-    askForPassword: {}
-  };
-}
+const configFile = createConfigFile({
+  fileSystem: fs,
+  configFilePath: path.join(os.homedir(), 'fynancials.config.json'),
+  homeDirectory: os.homedir()
+});
+const config = configFile.load();
+const authRegistry = createAuthRegistry({configFile, config});
+const backendReachability = createBackendReachability({
+  fetchPid: fetchBackendPid,
+  delay
+});
+/** @type {string | undefined} */
+const databasePath = config.env.FY_DB_FILE_PATH;
 
-function loadConfig() {
-  if (!fs.existsSync(pathToConfigFile)) {
-    config = defaultConfig();
-    saveConfig();
-    return;
-  }
-
-  try {
-    config = JSON.parse(fs.readFileSync(pathToConfigFile, 'utf-8'));
-  } catch (error) {
-    // corrupt or unreadable config file - fall back to defaults rather than crashing the app on startup
-    console.error(`Failed to read config from ${pathToConfigFile}, falling back to defaults:`, error);
-    config = defaultConfig();
-    saveConfig();
-  }
-}
-
-async function promptPassword() {
-  const databaseFileLocation = config.env.FY_DB_FILE_PATH;
-  const fileLocationSpecified = databaseFileLocation != null;
-  const doNotAskForPassword = fileLocationSpecified && config.askForPassword[databaseFileLocation] === false;
-
-  if (doNotAskForPassword) {
-    return new Promise(resolve => resolve(''));
+/**
+ * Asks for the database password, unless the database is known to have none. A database with a verified record has
+ * the answer checked locally and is asked again on a mismatch, so a wrong password never reaches a backend spawn; a
+ * pending one is asked once and started blind, because only the H2 file itself can tell.
+ *
+ * @param {AuthState} startedFrom
+ * @returns {Promise<string>}
+ */
+async function promptPassword(startedFrom) {
+  if (startedFrom === 'passwordless') {
+    return '';
   }
 
-  return new Promise(resolve => {
-    prompt({
+  /** @type {string | null} */
+  let password;
+  while (true) {
+    password = await prompt({
       title: 'Password',
       label: 'Enter the password',
       customStylesheet: 'dark',
       inputAttrs: {
         type: 'password'
       }
-    }).catch(error => showErrorMessage(error)).then(result => {
-      if (result === null) {
-        process.exit(0);
-      }
+    }).catch(error => showErrorMessage(error));
 
-      if (config.askForPassword[databaseFileLocation] == null) {
-        config.askForPassword[databaseFileLocation] = result !== '';
-        saveConfig();
-      }
+    if (password === null) {
+      process.exit(0);
+    }
 
-      resolve(result);
-    })
-  });
+    if (startedFrom === 'scrypt' && databasePath != null && !authRegistry.verify(databasePath, password)) {
+      showWrongPasswordMessage();
+      continue;
+    }
+
+    return password;
+  }
 }
 
+/**
+ * @param {string | Error} [message]
+ * @returns {never}
+ */
 function showErrorMessage(message) {
   dialog.showMessageBoxSync({
     type: 'error',
-    title: 'Fynancials',
-    message: message ?? 'An error has occurred',
+    title: title,
+    message: message == null ? 'An error has occurred' : String(message),
     buttons: ['OK']
   });
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  app.quit();
   process.exit(1);
+}
+
+/**
+ * @returns {void}
+ */
+function showWrongPasswordMessage() {
+  dialog.showMessageBoxSync({
+    type: 'error',
+    title: title,
+    message: wrongPasswordMessage,
+    buttons: ['OK']
+  });
 }
 
 /**
  * Runs an external command without a shell (no string interpolation into a shell command line, so paths/args with spaces or
  * special characters can't break or inject into the invocation). Throws on a non-zero exit or a spawn failure, mirroring
  * execSync's throw-on-failure behavior so callers can use try/catch.
+ *
+ * @param {string} command
+ * @param {string[]} args
+ * @returns {void}
  */
 function runSync(command, args) {
+  /** @type {import('node:child_process').SpawnSyncReturns<Buffer<ArrayBuffer>>} */
   const result = spawnSync(command, args);
   if (result.error) {
     throw result.error;
@@ -139,7 +151,13 @@ function runSync(command, args) {
   }
 }
 
+/**
+ * @param {string} fileUrl
+ * @param {string} destinationPath
+ * @returns {Promise<void>}
+ */
 async function downloadFile(fileUrl, destinationPath) {
+  /** @type {Response} */
   const response = await fetch(fileUrl);
   if (!response.ok || response.body == null) {
     throw new Error(`Failed to download ${fileUrl}: HTTP ${response.status}`);
@@ -147,13 +165,19 @@ async function downloadFile(fileUrl, destinationPath) {
   await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(destinationPath));
 }
 
+/**
+ * @returns {string}
+ */
 function resolveTarPath() {
   if (process.platform === 'win32') {
-    return path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe');
+    return path.join(process.env['SystemRoot'] ?? 'C:\\Windows', 'System32', 'tar.exe');
   }
   return '/usr/bin/tar';
 }
 
+/**
+ * @returns {Promise<string>}
+ */
 async function verifyJava() {
   const downloadJavaForWindows = async () => {
     const pathToJava = path.resolve('.', 'java', 'bin', 'java.exe');
@@ -262,7 +286,7 @@ async function verifyJava() {
         showErrorMessage(`Java not found on your system. No automatic download available for ${process.platform}/${process.arch}`);
       }
     } catch (error) {
-      showErrorMessage(error);
+      showErrorMessage(error instanceof Error ? error : String(error));
     }
   };
 
@@ -283,10 +307,51 @@ async function verifyJava() {
   });
 }
 
-async function startBackend(java) {
-  if (backend != null) {
-    return;
+/**
+ * Spawns the backend at most once; a repeated call yields the first call's outcome.
+ *
+ * @param {string} java
+ * @returns {Promise<BackendStartOutcome>}
+ */
+function startBackend(java) {
+  backendStart ??= spawnBackend(java);
+  return backendStart;
+}
+
+/**
+ * @param {string} java
+ * @returns {Promise<BackendStartOutcome>}
+ */
+async function spawnBackend(java) {
+  removePreviousLog();
+
+  /** @type {AuthState} */
+  const startedFrom = databasePath == null ? 'pending' : authRegistry.stateOf(databasePath);
+  /** @type {string} */
+  const password = await promptPassword(startedFrom);
+  /** @type {import('node:child_process').ChildProcessWithoutNullStreams} */
+  const backendProcess = spawn(java, ['-jar', backendPath], {
+    env: {
+      ...process.env,
+      ...config.env,
+      FY_DB_FILE_PASSWORD: password
+    }
+  });
+  backend = backendProcess;
+  pipeBackendLog(backendProcess);
+
+  // a backend that answers proves the H2 file was decrypted with this password - and only then is it recorded
+  const reachable = await backendReachability.waitUntilReachable(backendProcess);
+  if (reachable && databasePath != null) {
+    authRegistry.recordProvenStart(databasePath, password);
   }
+  return {reachable, startedFrom};
+}
+
+/**
+ * @returns {void}
+ */
+function removePreviousLog() {
   try {
     if (fs.existsSync(logPath)) {
       fs.unlinkSync(logPath);
@@ -295,27 +360,51 @@ async function startBackend(java) {
     // non-fatal - worst case the previous run's log lines stay at the top since we open in append mode below
     console.error(`Failed to remove previous log file at ${logPath}:`, error);
   }
+}
 
-  const password = await promptPassword();
-  backend = spawn(java, ['-jar', backendPath], {
-    env: {
-      ...process.env,
-      ...config.env,
-      FY_DB_FILE_PASSWORD: password
-    }
-  });
-
+/**
+ * @param {import('node:child_process').ChildProcessWithoutNullStreams} backendProcess
+ * @returns {void}
+ */
+function pipeBackendLog(backendProcess) {
   try {
+    /** @type {import('node:fs').WriteStream} */
     const logStream = fs.createWriteStream(logPath, {flags: 'a'});
     logStream.on('error', (error) => console.error(`Failed to write backend log to ${logPath}:`, error));
-    backend.stdout.pipe(logStream, {end: false});
-    backend.stderr.pipe(logStream, {end: false});
-    backend.on('close', () => logStream.end());
+    backendProcess.stdout.pipe(logStream, {end: false});
+    backendProcess.stderr.pipe(logStream, {end: false});
+    backendProcess.on('close', () => logStream.end());
   } catch (error) {
     console.error(`Failed to set up backend logging at ${logPath}:`, error);
   }
 }
 
+/**
+ * @returns {Promise<boolean>}
+ */
+async function fetchBackendPid() {
+  try {
+    /** @type {Response} */
+    const response = await fetch(BACKEND_PID_URL);
+    return response.status === 200;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * @param {number} milliseconds
+ * @returns {Promise<void>}
+ */
+function delay(milliseconds) {
+  return new Promise(resolve => {
+    setTimeout(resolve, milliseconds);
+  });
+}
+
+/**
+ * @returns {void}
+ */
 function startFrontend() {
   if (frontend != null) {
     return;
@@ -354,10 +443,15 @@ function startFrontend() {
   });
 }
 
+/**
+ * @returns {Promise<void>}
+ */
 async function startApplication() {
-  loadConfig();
   const java = await verifyJava();
-  startBackend(java);
+  // deliberately not awaited - the window has to come up while the backend boots. The outcome is the seam the
+  // startup-mode routing consumes; nothing acts on it yet, which is why the rejection needs a handler here: an
+  // unhandled one terminates the main process, and a start that throws must not take the whole app down with it.
+  startBackend(java).catch(error => console.error('Failed to start the backend:', error));
   startFrontend();
 }
 
@@ -368,14 +462,6 @@ app.on('window-all-closed', () => {
     backend = null;
   }
 
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  app.quit();
   process.exit(0);
-});
-
-app.on('activate', () => {
-  if (frontend == null) {
-    startFrontend();
-  }
 });
