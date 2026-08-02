@@ -22,13 +22,16 @@ The Angular + NgRx frontend, packaged as the Electron desktop app that ships to 
   already be built (`mvn package`). Ignore `electron:make` script.
 - `npm run licenses:generate` — collect licenses of packaged dependencies into a JSON file.
 - `npm run licenses:check` — verify license compatibility of dependencies.
-- `npm run test` — run all tests (config in `jest.config.ts`, uses `ts-jest`). `npx jest <path-to-spec>` runs a single file.
+- `npm run test` — run all tests: `test:angular` first, then `test:electron`. Each runs standalone as well.
+- `npm run test:angular` — the Angular suite (config in `jest.angular.config.ts`, uses `ts-jest`).
+- `npm run test:electron` — type-checks `electron/` (`tsconfig.electron.json`) and then runs its specs (`jest.electron.config.ts`).
+- `npx jest <path-to-spec>` runs a single file in either suite (`jest.config.ts` aggregates both).
 
 ## Architecture
 
-- **Electron shell**: `main.js` is the Electron main process — it locates/prompts to download Corretto 25, spawns the Spring backend jar
-  as a child process, manages `fynancials.config.json` (env vars like `FY_DB_FILE_PATH`, per-file password prompts), and opens the
-  `BrowserWindow` pointing at the built Angular app (`dist/fynancials/browser/index.html`).
+- **Electron shell**: the Electron main process lives in `electron/` (entry point `electron/main.js`) and is the packaged desktop shell —
+  it owns `fynancials.config.json`, resolves Java, spawns the Spring backend jar as a child process and opens the `BrowserWindow` on the
+  built Angular app. See `electron/LLM.md` for its architecture, typing regime and testing.
 - **Two kinds of state, kept strictly separate** — see the dedicated sections below for each:
   - The **global NgRx store** (`src/store/`) holds only data that's genuinely shared/global (loaded entities, cross-screen config) — never
     screen-local drafts or UI-only state.
@@ -210,6 +213,9 @@ container component's `providers: [XStore]`, then have descendant components
 
 ## Testing
 
+Electron main-process specs live under `electron/`, with their own jest config and their own conventions on top of the ones below — see
+`electron/LLM.md`.
+
 The focus on testing in the angular app is on logic. Use `jest` to test:
 
 - NgRx global store
@@ -264,6 +270,14 @@ The focus on testing in the angular app is on logic. Use `jest` to test:
     `<name>Factory(overrides?: Partial<Type>): Type` function for it in `src/testing/` (one file per type, e.g. `security-read.factory.ts`,
     re-exported via `src/testing/index.ts`), returning a fresh object with sensible defaults and spreading `overrides` last so individual
     tests only specify the fields they care about.
+  - Prefer the tightest true invariant over a type-only check (`expect.any(String)` passes for any string, including a wrong one) whenever
+    the domain gives you something cheap to check. When no built-in matcher expresses it, write a custom asymmetric matcher: a class
+    extending `expect`'s exported `AsymmetricMatcher<T>` (`@extends {AsymmetricMatcher<T>}`), implementing `asymmetricMatch(other)`,
+    `toString()` **and** `toAsymmetricMatcher()` — the base class's own types mark `toAsymmetricMatcher` optional, but `pretty-format`'s
+    diff renderer throws without it on a failing match, and a plain `{asymmetricMatch, toString}` object (no `AsymmetricMatcher`
+    inheritance) prints as a raw `[Function]` dump on failure instead of the matcher's label, because only a real subclass carries the
+    `$$typeof` tag the renderer keys off. A matcher used by more than one spec gets its own file and its own spec in `src/testing/`,
+    alongside the data factories — it is logic, not a fixture.
   - An expected value is written as an expression over the arranged fixtures, not a recomputed literal — `apple.buyInAbsolute +
     microsoft.buyInAbsolute` instead of `150`, `apple.securityIds[0]` instead of `1`. A reader then verifies the assertion by looking at
     the arrange step alone, never by re-doing the selector's/reducer's arithmetic in their head, and the test keeps passing for the right
