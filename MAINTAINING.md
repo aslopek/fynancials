@@ -9,7 +9,7 @@ Releases are driven by four GitHub Actions workflows:
 - `.github/workflows/dependabot-auto-merge.yml` — enables auto-merge on green Dependabot PRs.
 - `.github/workflows/dependabot-rebase-behind.yml` — on every push to `main`, tells Dependabot to rebase the open PRs that fell behind.
 - `.github/workflows/dependabot-auto-release.yml` — on a merged Dependabot PR, dispatches `release.yml` with `bump=patch`, but only once
-  no other Dependabot PR is still open.
+  no other Dependabot PR is still open. `github-actions` updates are skipped: they change only CI, never what ships.
 - `.github/workflows/release.yml` — bumps the version, tags, builds, and publishes the GitHub Release.
 
 `dependabot-auto-merge.yml`, `dependabot-rebase-behind.yml` and `release.yml` all use a Personal Access Token stored as the secret
@@ -97,3 +97,10 @@ covered by an existing PR. Without a nudge the queue deadlocks with green checks
 **Consequence of the release debounce:** while any Dependabot PR is open, merged Dependabot PRs do not cut a release. A PR that stays open
 because its CI is red therefore pauses automatic releases until it is fixed or closed. Dispatch `release.yml` manually if a release is
 needed sooner.
+
+**GitHub Actions updates never release.** The `github-actions` ecosystem still gets its own weekly PRs and still auto-merges, but
+`dependabot-auto-release.yml` ignores them on both counts — merging one does not dispatch a release, and one sitting open does not hold a
+release back. Both halves are needed: skipping only the trigger would let a `github-actions` PR that merges last swallow the release the
+npm/maven batch had earned. The discriminator is the branch prefix `dependabot/github_actions/`, so `dependabot/all_dependencies-*` and
+the per-ecosystem `all-security-updates` branches all keep releasing. A merged `github-actions` PR still pushes `main`, so the other open
+PRs are rebased as usual.

@@ -11,21 +11,26 @@ permissions:
 
 jobs:
   trigger-release:
+    # A github-actions update changes nothing that ships to users — it would cut a version whose only content is a CI bump. Only npm and
+    # maven updates (the `all_dependencies` group and the per-ecosystem security groups) are worth a release.
     if: >-
       github.event.pull_request.merged == true &&
       github.event.pull_request.user.login == 'dependabot[bot]' &&
-      github.event.pull_request.base.ref == 'main'
+      github.event.pull_request.base.ref == 'main' &&
+      !startsWith(github.event.pull_request.head.ref, 'dependabot/github_actions/')
     runs-on: ubuntu-latest
     steps:
       # A batch of Dependabot PRs merges one after another. Releasing after each of them would cut a version — and run the full three-OS
       # build — per PR, and every release commit pushes the remaining PRs behind main again. Release once, after the last one lands.
+      # github-actions PRs are excluded here too: waiting for one would strand the release entirely, since merging it does not release.
       - id: pending
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
-          count=$(gh pr list --repo "$REPO" --state open --base main --app dependabot --json number --jq 'length')
-          echo "Dependabot PRs still queued: $count"
+          count=$(gh pr list --repo "$REPO" --state open --base main --app dependabot --json headRefName \
+            --jq '[.[] | select(.headRefName | startswith("dependabot/github_actions/") | not)] | length')
+          echo "Releasable Dependabot PRs still queued: $count"
           echo "count=$count" >> "$GITHUB_OUTPUT"
       - if: steps.pending.outputs.count == '0'
         run: gh workflow run release.yml --repo "${{ github.repository }}" -f bump=patch
