@@ -5,9 +5,10 @@
  * Sources (all automatic, no manually maintained lists):
  *  1. dist/fynancials/3rdpartylicenses.txt — written by `ng build`; contains name, license id and the verbatim
  *     license text (incl. copyright header) of every package that actually ends up in the shipped Angular bundle.
- *  2. The Electron shell packages that are distributed outside the Angular bundle: the `electron` runtime itself and
+ *  2. The Electron shell packages that are distributed outside the Angular bundle: the `electron` runtime itself,
  *     everything under resources/node_modules (currently `custom-electron-prompt` plus its production dependency
- *     closure, mirroring forge.config.js postPackage + `npm prune --omit=dev`).
+ *     closure, mirroring forge.config.js postPackage + `npm prune --omit=dev`), and every `dependencies` entry of
+ *     package.json — the main process's own runtime closure, which electron-packager keeps in the asar.
  *
  * Run via `npm run licenses:generate` (part of `npm run build`, after `ng build`).
  */
@@ -19,6 +20,7 @@ const projectRoot = path.join(__dirname, '..');
 const bundleLicensesPath = path.join(projectRoot, 'dist', 'fynancials', '3rdpartylicenses.txt');
 const nodeModulesPath = path.join(projectRoot, 'node_modules');
 const outputPath = path.join(projectRoot, 'dist', 'fynancials', 'browser', 'assets', 'third-party-licenses.json');
+const ownPackageJson = JSON.parse(fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf-8'));
 
 // packages shipped by the Electron shell outside the Angular bundle (see forge.config.js postPackage hook);
 // `traverse` follows the production dependency closure (what `npm prune --omit=dev` keeps in resources/node_modules).
@@ -26,7 +28,12 @@ const outputPath = path.join(projectRoot, 'dist', 'fynancials', 'browser', 'asse
 // the electron LICENSE plus the packaged LICENSES.chromium.html (see addRuntimeNotes).
 const shellPackageRoots = [
   {name: 'electron', traverse: false},
-  {name: 'custom-electron-prompt', traverse: true}
+  {name: 'custom-electron-prompt', traverse: true},
+  // Everything the main process requires at runtime is a `dependencies` entry (devDependencies are pruned out of the
+  // package) and is kept in the asar by electron-packager. Reading that block instead of naming the packages here is
+  // what makes the report impossible to forget: a runtime dependency added later shows up in it, and in
+  // `licenses:check`, without anyone remembering this file.
+  ...Object.keys(ownPackageJson.dependencies ?? {}).map(name => ({name, traverse: true}))
 ];
 
 const blockSeparator = /^-{10,}$/m;
