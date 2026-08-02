@@ -14,12 +14,73 @@ Fynancials is a portfolio-tracking desktop app. This is a monorepo; three parts 
 - **openapigen/** ignore it - it's just the shared cache dir for the `openapi-generator-cli` jar (`storageDir` in both `openapitools.json`
   files).
 
-See `fynancials-api/LLM.md`, `fynancials-client-angular/LLM.md`, and `fynancials-server-spring/LLM.md` for details specific to each part.
+See `fynancials-api/LLM.md`, `fynancials-client-angular/LLM.md`, `fynancials-client-angular/electron/LLM.md` (the Electron main process) and
+`fynancials-server-spring/LLM.md` for details specific to each part.
 
 ## Code style
 
 Line length is capped at 140 characters per line, project-wide (all three parts). Language-specific code styles are defined in the
 respective `LLM.md` files.
+
+## Testing: nothing under test witnesses itself
+
+Frameworks, file layout and everything else about testing live in each part's own `LLM.md`. One rule spans all three parts, because it is
+about what an assertion proves rather than about any framework:
+
+**An assertion never obtains the value it checks through the code under test.** Act with the unit under test, then assert against something
+that unit did not produce: the state it wrote, the collaborator it called, the response it returned. The moment a `THEN` calls back into the
+same unit — a sibling method of the registry/store/service just exercised, a selector or computed belonging to the reducer or Signal Store
+under test, a `GET` endpoint reading back what the `POST` under test wrote — the test stops showing that the behavior is right. It shows
+that two parts of one implementation agree with each other, and they agree just as readily when both are wrong. Such a test also stops
+localizing anything: one broken reader then fails every test of every writer.
+
+```js
+// wrong - `recordProvenStart` is confirmed by `stateOf` and `verify`, two readers out of the very module under test
+registry.recordProvenStart(databasePath, password);
+expect(registry.stateOf(databasePath)).toBe('scrypt');
+expect(registry.verify(databasePath, password)).toBe(true);
+
+// right - the config object it wrote into is inspected directly, and one assertion states what landed where
+registry.recordProvenStart(databasePath, password);
+expect(config.auth).toEqual({[databasePath]: {scrypt: {/* ... */}}});
+```
+
+Arranging is not exempt from this either — it is the same rationale, inverted. Using a service call or a `POST` to write fixture state into
+the database is just as bad as using a `GET` or a service call to read it back out for the assertion: **one broken reader then fails every
+test of every writer**, and one broken writer then fails every test that arranges through it. Arrange with mocks, direct SQL/inserts, or
+hand-built JSON/literal objects instead of calling production code that shares implementation with the unit under test.
+
+What the rule does not forbid:
+
+- **Calling the unit is the act**, always. `stateOf` and `verify` above each get tests of their own, in which that call *is* the act and the
+  arranged config is what the result is measured against — that is where they are covered, and it is why they need not be dragged into
+  someone else's assertion.
+- **Reading through a collaborator** the spec is not about: a different module, with its own spec, reached for because the plain state
+  cannot carry the claim (a persisted hash whose salt is random needs `auth.js`'s `verifyPassword` to be tied back to its password). Prefer
+  the plain state assertion, take this route only where the state alone cannot express what is claimed, and never route it back through the
+  unit under test.
+
+Where a part's `LLM.md` spells out a case of this, the specific rule stands alongside this one rather than replacing it — Spring's "never
+call an endpoint to prepare database state for a test" is the arrange-side twin of it.
+
+## Assertion precision
+
+Two further traps make an assertion prove less than it looks like it does — neither is about *what* the assertion reads, like the rule
+above, but about *how loosely* it reads it:
+
+- **A type-only check where a value check is cheap.** `expect.any(String)` (or the AssertJ equivalent) passes for any string, including a
+  wrong one. When the domain gives you a checkable shape — a base64 string decoding to an exact byte length, a UUID, an ISO date — assert
+  that shape instead of just its type. Reach for a custom matcher (Jest's `AsymmetricMatcher`, an AssertJ `Condition`) when the built-in
+  matchers can't express it, and give that matcher a spec of its own the moment it carries real logic (a regex, a decode-and-compare) rather
+  than just wrapping a literal — test-only code is not exempt from "logic gets a test" just because nothing ships it. Where a part keeps
+  reusable test infrastructure (`src/testing/` in the Angular client, `electron/testing/` in the Electron main process), a matcher used by
+  more than one spec belongs there, colocated with the data factories.
+- **Comparing a value to itself.** An "unchanged" assertion of the shape `expect(afterTheAct).toBe(theArrangedValue)` (or `.toEqual(...)`)
+  proves nothing when `afterTheAct` and `theArrangedValue` are the same mutable object reference — a future implementation that mutates that
+  object in place changes both sides identically, and the assertion stays green throughout. Capture an independent expected value *before*
+  the act (a fresh literal, or a snapshot taken up front) and assert against that instead. Keeping `toBe` against the live reference
+  alongside it still earns its place when identity itself is part of the claim ("no reassignment happened") — that and "the content is
+  still correct" are two different questions, and asserting both takes two assertions.
 
 ## Domain separation beats DRY
 
@@ -43,9 +104,9 @@ its parent POM if not set directly)before adding it.
 
 ## How the pieces fit together at runtime
 
-The Electron app (`fynancials-client-angular`) is the shipped product. Its `main.js` spawns a bundled Java process running the Spring Boot
-backend (`backend.jar`) as a child process, then points the Angular UI at it. The backend listens on port `23726` (H2 console on `23727`),
-backed by a local encrypted H2 file database whose path is configurable via `FY_DB_FILE_PATH`.
+The Electron app (`fynancials-client-angular`) is the shipped product. Its `electron/main.js` spawns a bundled Java process running the
+Spring Boot backend (`backend.jar`) as a child process, then points the Angular UI at it. The backend listens on port `23726` (H2 console
+on `23727`), backed by a local encrypted H2 file database whose path is configurable via `FY_DB_FILE_PATH`.
 
 `forge.config.js` copies `fynancials-server-spring/target/fynancials-server-spring-<version>.jar` into
 `fynancials-client-angular/resources/backend.jar` during electron-forge packaging — the Spring backend must be built (`mvn package`) before
