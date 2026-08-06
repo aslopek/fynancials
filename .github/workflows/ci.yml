@@ -37,7 +37,7 @@ jobs:
         working-directory: fynancials-api
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v5.6.0
+      - uses: actions/setup-java@v5.7.0
         with:
           distribution: corretto
           java-version: '25'
@@ -56,7 +56,7 @@ jobs:
         working-directory: fynancials-client-angular
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v5.6.0
+      - uses: actions/setup-java@v5.7.0
         with:
           distribution: corretto
           java-version: '25'
@@ -77,7 +77,7 @@ jobs:
         working-directory: fynancials-server-spring
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v5.6.0
+      - uses: actions/setup-java@v5.7.0
         with:
           distribution: corretto
           java-version: '25'
