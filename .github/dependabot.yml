@@ -1,22 +1,21 @@
 version: 2
-  
-multi-ecosystem-groups:
-  all-dependencies:
-    schedule:
-      interval: weekly
 
 updates:
   - package-ecosystem: npm
     directory: /fynancials-client-angular
-    patterns: ["*"]
-    multi-ecosystem-group: all-dependencies
+    schedule:
+      interval: weekly
+      day: saturday
+      time: "06:00"
+      timezone: "Europe/Berlin"
     cooldown:
       default-days: 7
-    # Security updates bypass the schedule and the cooldown above, and `multi-ecosystem-group` only covers version updates. Without an
-    # explicit `applies-to: security-updates` group they arrive as one PR per advisory.
     groups:
-      all-security-updates:
+      client-security-updates:
         applies-to: security-updates
+        patterns: [ "*" ]
+      client-version-updates:
+        applies-to: version-updates
         patterns: [ "*" ]
     ignore:
       - dependency-name: "*"
@@ -25,13 +24,19 @@ updates:
 
   - package-ecosystem: npm
     directory: /fynancials-api
-    patterns: ["*"]
-    multi-ecosystem-group: all-dependencies
+    schedule:
+      interval: weekly
+      day: saturday
+      time: "06:00"
+      timezone: "Europe/Berlin"
     cooldown:
       default-days: 7
     groups:
-      all-security-updates:
+      api-security-updates:
         applies-to: security-updates
+        patterns: [ "*" ]
+      api-version-updates:
+        applies-to: version-updates
         patterns: [ "*" ]
     ignore:
       - dependency-name: "*"
@@ -40,13 +45,19 @@ updates:
 
   - package-ecosystem: maven
     directory: /fynancials-server-spring
-    patterns: ["*"]
-    multi-ecosystem-group: all-dependencies
+    schedule:
+      interval: weekly
+      day: saturday
+      time: "06:00"
+      timezone: "Europe/Berlin"
     cooldown:
       default-days: 7
     groups:
-      all-security-updates:
+      server-security-updates:
         applies-to: security-updates
+        patterns: [ "*" ]
+      server-version-updates:
+        applies-to: version-updates
         patterns: [ "*" ]
     ignore:
       - dependency-name: "*"
@@ -57,3 +68,6 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: saturday
+      time: "06:00"
+      timezone: "Europe/Berlin"
