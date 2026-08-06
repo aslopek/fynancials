@@ -80,9 +80,13 @@ Use `gh` and `git` commands to interact with the GitHub repository.
 
 Use of any read-only `git` or `gh` commands (e.g. `git status`, `git diff`, reviewing PRs) is permitted.
 
-You may never perform writing operations such as, but not limited to: creating/amending commits, pushing, creating/deleting branches,
-creating/deleting PRs etc. Keep the most important rule in mind: Anything going into this repository - code, text, PRs, issues etc. - are my
-responsibility and fully owned by me, which is why you cannot write any content yourself.
+You may create, edit and delete files in the local working tree. That is how you hand work to me: I review it as a `git diff` before any of
+it becomes a commit.
+
+What you may never do is move anything out of the working tree and into the repository or onto GitHub. That includes, but is not limited to:
+staging (`git add`), creating/amending commits, pushing, creating/deleting branches or tags, and creating, deleting or commenting on PRs,
+issues and releases. Keep the most important rule in mind: anything going into this repository - code, text, PRs, issues etc. - is my
+responsibility and fully owned by me. The working tree is yours to work in; the commit is mine, and I am the only one who makes it.
 
 ### PR reviews
 
