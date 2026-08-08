@@ -18,7 +18,7 @@ See the parent `LLM.md` for the Angular renderer, and the root `LLM.md` for how 
 ```
 electron/
   main.js                      entry point; wiring only, no logic worth testing
-  preload.js                   (#35) contextBridge surface shared with the renderer
+  preload.js                   contextBridge surface shared with the renderer
   config/
     config-schema.js           zod schemas + inferred types for fynancials.config.json
     config-file.js             read/write fynancials.config.json
@@ -26,15 +26,35 @@ electron/
     auth-registry.js           the auth map over a loaded config, keyed by database base path
   backend/
     backend-reachable.js       poll GET /config/pid until reachable or child exit
-    backend-process.js         (#35/#40) spawn, log piping, stdin password handover
+    backend-process.js         spawn, log piping, single-instance guard, proven-start recording; (#40) stdin password handover
   java/                        (#38) resolve-java.js, download-corretto.js
-  ipc/                         (#35) handler registration
-  window/                      (#35) BrowserWindow creation, startup mode
+  ipc/
+    ipc-schema.js              zod schema for IPC input crossing the renderer boundary
+    startup-bridge.js          registers `startup:getState` and `backend:start`
+  window/
+    startup-mode.js            computes the startup mode (`boot` | `configure` | `unlock`) and consumes `configureOnNextStart`
+    main-window.js             `BrowserWindow` creation, wired to `preload.js`
   testing/                     shared spec-only helpers (custom matchers, ...) used by more than one *.spec.js
 ```
 
 Modules marked with an issue number do not exist yet; the story bringing them is named in brackets. Keep this map current as they land — it
 is what a reader starts from.
+
+## Boot order
+
+`app.on('ready')` loads the config, computes the startup mode (`window/startup-mode.js`), registers the IPC bridge (`ipc/startup-bridge.js`)
+and opens the single `BrowserWindow` (`window/main-window.js`). The backend is spawned only when the renderer calls `backend:start` over
+that bridge, handled by `backend/backend-process.js`, which resolves with an outcome (`reachable` or not) the renderer routes on. Java
+resolution (`verifyJava()` in `main.js`) still runs lazily, right before that spawn, and is otherwise untouched until #38 replaces it.
+
+The preload (`preload.js`) runs in Electron's sandboxed preload context, where `require` is a limited polyfill resolving only `electron`
+and a handful of Node built-ins — it cannot `require` a module of this app. That is why the two IPC channel names (`startup:getState`,
+`backend:start`) are literals duplicated in both `preload.js` and `ipc/startup-bridge.js` rather than shared via an import; keeping them in
+step is part of the manual verification checklist below.
+
+`config/config-file.js`'s `load()` no longer creates and writes the config file when none exists — it returns the default configuration
+without saving. Distinguishing "file missing" from "file present" is `exists()`, added to `ConfigFile` for that purpose: the startup-mode
+computation is what decides a missing file means `configure` mode, and that mode must leave no write behind.
 
 ## Structure rule
 
@@ -76,7 +96,11 @@ JSDoc rules:
 4. **Injected dependencies get a minimal declared type** — the same principle the parent `LLM.md` states for selectors. A module needing
    three `fs` functions declares exactly those three (see `ConfigFileSystem`), rather than depending on the whole module type. The real
    dependency is structurally assignable to it, and — the actual payoff — so is a test stub made of exactly that many `jest.fn()`s, with no
-   cast anywhere. A stub missing one is a compile error.
+   cast anywhere. A stub missing one is a compile error. This holds just as much for **this app's own collaborators** as for a third-party
+   module: an injected `ConfigFile`, `AuthRegistry` or `BackendProcess` is declared as a `Pick<>` of the members the module actually calls
+   (`Pick<ConfigFile, 'save'>`), never as the whole exported typedef. Naming the whole type costs nothing at runtime and everything in a
+   spec — the stub then has to carry members the module cannot reach, and a reader of that spec is left wondering which of them the
+   behavior depends on.
 5. **Type assertions** are written `/** @type {X} */ (expression)`, parentheses required, and only where no parser can help (a dynamic
    `require`). Never assert to `any`.
 6. **Constant objects use `@satisfies`**, which checks the shape without widening the literal types away.

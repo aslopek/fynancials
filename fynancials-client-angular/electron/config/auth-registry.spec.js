@@ -23,14 +23,12 @@ describe('authRegistry', () => {
   /** @type {FynancialsConfig} */
   let config;
 
-  /** @type {ConfigFile} */
+  /** @type {Pick<ConfigFile, 'save'>} */
   let configFile;
 
   /** @type {AuthRegistry} */
   let registry;
 
-  const defaultConfig = jest.fn(() => config);
-  const load = jest.fn(() => config);
   const save = jest.fn();
 
   beforeEach(() => {
@@ -41,12 +39,7 @@ describe('authRegistry', () => {
       auth: {}
     };
 
-    configFile = {
-      path: 'C:\\Users\\x\\fynancials.config.json',
-      defaultConfig,
-      load,
-      save
-    };
+    configFile = {save};
 
     registry = createAuthRegistry({configFile, config});
   });

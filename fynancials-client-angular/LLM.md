@@ -31,7 +31,19 @@ The Angular + NgRx frontend, packaged as the Electron desktop app that ships to 
 
 - **Electron shell**: the Electron main process lives in `electron/` (entry point `electron/main.js`) and is the packaged desktop shell —
   it owns `fynancials.config.json`, resolves Java, spawns the Spring backend jar as a child process and opens the `BrowserWindow` on the
-  built Angular app. See `electron/LLM.md` for its architecture, typing regime and testing.
+  built Angular app. The backend is spawned only on an IPC call the renderer makes after opening, never before the window exists — see
+  `electron/LLM.md` for its architecture, typing regime, testing and the boot order.
+- **Startup screens and the app shell**: `AppComponent` is just a `<router-outlet>` plus the trigger that starts the backend immediately
+  for a passwordless database (`boot` mode). The chrome (header, side menu, splash gate, the initial global-store loads) lives in
+  `ShellComponent` (`src/app/shell/`), mounted under the root route behind `startupPhaseGuard`. `/unlock` (`src/app/unlock/`) and
+  `/configure` (`src/app/configure/`) are sibling top-level routes with no chrome, rendered instead of the shell while the startup mode the
+  main process computed is `unlock` or `configure`; #36 and #37 fill them in. `src/app/startup/` is the renderer's only door to the main
+  process: `StartupBridgeService` wraps the `contextBridge` surface (`window.fynancials`, exposed by `electron/preload.js`) as observables,
+  and `StartupStore` (a root-provided `@ngrx/signals` Signal Store, not a global-store slice — it is read by an app initializer, a route
+  guard and both startup screens) holds the startup mode and phase and drives the `backend:start` call. `startup.initializer.ts` resolves
+  the startup state from the bridge before the router's first navigation, which is what lets `startupPhaseGuard` decide synchronously which
+  route to admit. In browser dev mode (`ng serve`, no bridge) none of this activates: the guard admits the shell immediately and the app
+  loads.
 - **Two kinds of state, kept strictly separate** — see the dedicated sections below for each:
   - The **global NgRx store** (`src/store/`) holds only data that's genuinely shared/global (loaded entities, cross-screen config) — never
     screen-local drafts or UI-only state.

@@ -14,6 +14,7 @@ import {appConfigReducer} from "../store/app-config/app-config.reducer";
 import {DividendAnnouncementEffects} from "../store/dividend-announcement/dividend-announcement.effects";
 import {dividendAnnouncementReducer} from "../store/dividend-announcement/dividend-announcement.reducer";
 import {routes} from "./app.routes";
+import {initializeStartup} from "./startup/startup.initializer";
 import {BarChart, LineChart, PieChart} from "echarts/charts";
 import * as echarts from "echarts/core";
 import {provideEchartsCore} from "ngx-echarts";
@@ -66,6 +67,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       inject(MatIconRegistry).setDefaultFontSetClass("material-symbols-outlined", "mat-ligature-font");
     }),
+    provideAppInitializer(() => initializeStartup()),
     {
       provide: IMAGE_CONFIG,
       useValue: {
