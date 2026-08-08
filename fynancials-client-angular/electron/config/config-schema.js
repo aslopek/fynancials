@@ -30,7 +30,10 @@ const fynancialsConfigSchema = z.looseObject({
   env: z.object({FY_DB_FILE_PATH: z.string().optional()}).catchall(z.string()),
   // deliberately not validated per `authEntrySchema` here: a single mangled entry must make *that* database pending
   // (`authStateOf` classifies it) rather than throwing away the whole config file
-  auth: z.record(z.string(), z.unknown()).default({})
+  auth: z.record(z.string(), z.unknown()).default({}),
+  // one-shot: read at start to force `configure` mode and deleted in the same step (epic ADR-006), so it can never
+  // be left dangling by any way of leaving the configuration screen
+  configureOnNextStart: z.boolean().optional()
 });
 
 /** @typedef {import('zod').infer<typeof scryptRecordSchema>} ScryptRecord */

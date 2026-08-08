@@ -95,14 +95,23 @@ describe('configFile', () => {
     expect(configFile.defaultConfig()).toEqual(defaultConfiguration);
   });
 
-  it('creates the default configuration when no file exists', () => {
+  it('returns the default configuration without writing it when no file exists', () => {
     existsSync.mockReturnValueOnce(false);
 
     const config = configFile.load();
 
     expect(config).toEqual(defaultConfiguration);
-    expect(writeFileSync).toHaveBeenCalledTimes(1);
-    expect(writeFileSync).toHaveBeenCalledWith(configFilePath, JSON.stringify(defaultConfiguration, null, 2), {flag: 'w'});
+    expect(writeFileSync).not.toHaveBeenCalled();
+  });
+
+  it('reports that the file exists', () => {
+    expect(configFile.exists()).toBe(true);
+  });
+
+  it('reports that the file does not exist', () => {
+    existsSync.mockReturnValueOnce(false);
+
+    expect(configFile.exists()).toBe(false);
   });
 
   it('keeps an unknown key', () => {
