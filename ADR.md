@@ -1,7 +1,6 @@
 # Architectural Decision Records
 
-This file contains Architectural Decision Records (ADRs) for the project. Target audience are humans. LLMs shall ignore this file unless
-explicitly asked to read from or write to it.
+This file contains Architectural Decision Records (ADRs) for the project.
 
 ## Dependabot Auto Releases
 
@@ -36,14 +35,8 @@ known to be patched immediately by the next release.
 
 **Consequences, accepted:**
 
-The gate is a count taken at one moment, which leaves two accepted holes:
-
-- A release fires early if the first PR of a batch merges before the last one is opened — narrow, since full CI would have to beat
-  Dependabot's own PR creation, but a race nonetheless.
-- A batch whose final PR is *closed* rather than merged dispatches nothing, leaving the earlier merges unreleased until some later merge
-  drains the queue.
-
-Both can be mitigated by hand, since `release.yml` is a `workflow_dispatch`.
+A batch whose final PR is *closed* rather than merged dispatches nothing, leaving the earlier merges unreleased until some later merge
+drains the queue. This can be mitigated by hand, since `release.yml` is a `workflow_dispatch`.
 
 ### ADR-3: GitHub Actions updates never trigger a release
 
@@ -69,4 +62,29 @@ that made `@dependabot rebase` useless and left #50, #51 and #53 unable to catch
 up-to-date requirement. Per-ecosystem groups restore the standard `dependabot/<manager>/<directory>/<group>-<hash>` namespace, in which
 both work.
 
-One shared slot is what preserves ADR-2's one release per wave. Saturday morning leaves the weekend to react.
+One shared slot is what lets ADR-2 and ADR-5 collapse the week's updates into one release. Saturday morning leaves the weekend to react.
+
+### ADR-5: The count is preceded by a 15-minute wait, and later merges cancel earlier ones
+
+**Status:** ACCEPTED
+
+**Decision:** `dependabot-auto-release.yml` sleeps 15 minutes before counting open Dependabot PRs, under a `concurrency` group keyed on the
+PR author with `cancel-in-progress: true`.
+
+**Rationale:** ADR-2's count is a snapshot, and a snapshot cannot see a PR that has not been opened yet. The previous assumption, that the
+PR runtime itself was longer than the time dependabot needs to open the next PR proved false.
+
+Waiting first closes it: each later merge starts a run that cancels the one still sleeping, so only the last merge of a wave reaches the
+count. The count still earns its place for the case the wait does not cover — a PR that is already open but sits in CI longer than the wait.
+The wait also does what the shared weekly slot of ADR-4 intends but cannot guarantee on its own: the client, api and server PRs of one
+Saturday collapse into a single release.
+
+The concurrency group is keyed on `github.event.pull_request.user.login` because GitHub evaluates concurrency before the job's `if`. Every
+closed PR — human ones included — starts a run of this workflow, so an unkeyed group would let a human PR closing cancel a wave's pending
+release.
+
+**Consequences, accepted:**
+
+A release now trails the last merge of a wave by 15 minutes, security updates included, and a runner idles for that time. Canceled runs
+show up in the Actions list as a normal part of a wave rather than as failures. A wave whose PRs are spaced more than 15 minutes apart still
+splits into two releases, but the count keeps that harmless whenever the later PR is already open.
