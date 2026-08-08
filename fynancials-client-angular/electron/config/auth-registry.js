@@ -18,7 +18,7 @@ const {authStateOf, createScryptRecord, passwordlessEntry, verifyPassword} = req
 
 /**
  * @typedef {Object} AuthRegistryOptions
- * @property {ConfigFile} configFile
+ * @property {Pick<ConfigFile, 'save'>} configFile
  * @property {FynancialsConfig} config
  */
 

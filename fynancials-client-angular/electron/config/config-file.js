@@ -7,8 +7,10 @@ const {fynancialsConfigSchema} = require('./config-schema.js');
  * Reads and writes `fynancials.config.json`. The file system and the file's location are injected, so this module is
  * exercisable without touching a real disk.
  *
- * A missing file is created from the default; an unreadable, unparsable or schema-violating file falls back to the
- * default and overwrites it rather than crashing the app on startup; a failed write is logged, never thrown.
+ * A missing file returns the default configuration without writing it - the caller (the startup-mode computation)
+ * is what decides a missing file means `configure` mode, and that mode must not leave a write behind. An unreadable,
+ * unparsable or schema-violating file falls back to the default and overwrites it rather than crashing the app on
+ * startup; a failed write is logged, never thrown.
  */
 
 /**
@@ -33,6 +35,7 @@ const {fynancialsConfigSchema} = require('./config-schema.js');
  * @typedef {Object} ConfigFile
  * @property {string} path
  * @property {() => FynancialsConfig} defaultConfig
+ * @property {() => boolean} exists
  * @property {() => FynancialsConfig} load
  * @property {(config: FynancialsConfig) => void} save
  */
@@ -79,13 +82,18 @@ function createConfigFile(options) {
   }
 
   /**
+   * @returns {boolean}
+   */
+  function exists() {
+    return fileSystem.existsSync(configFilePath);
+  }
+
+  /**
    * @returns {FynancialsConfig}
    */
   function load() {
-    if (!fileSystem.existsSync(configFilePath)) {
-      const config = defaultConfig();
-      save(config);
-      return config;
+    if (!exists()) {
+      return defaultConfig();
     }
 
     let contents;
@@ -102,6 +110,7 @@ function createConfigFile(options) {
   return {
     path: configFilePath,
     defaultConfig,
+    exists,
     load,
     save
   };

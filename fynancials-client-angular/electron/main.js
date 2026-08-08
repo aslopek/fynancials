@@ -1,27 +1,23 @@
-const {app, BrowserWindow, screen, shell} = require('electron');
+const {app, dialog, ipcMain} = require('electron');
 const spawn = require('child_process').spawn;
 const spawnSync = require('child_process').spawnSync;
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const url = require('url');
 const {Readable} = require('stream');
 const {pipeline} = require('stream/promises');
-const {dialog} = require('electron');
 const {createConfigFile} = require('./config/config-file.js');
 const {createAuthRegistry} = require('./config/auth-registry.js');
 const {BACKEND_PID_URL, createBackendReachability} = require('./backend/backend-reachable.js');
+const {createBackendProcess} = require('./backend/backend-process.js');
+const {createStartupMode} = require('./window/startup-mode.js');
+const {createStartupBridge} = require('./ipc/startup-bridge.js');
+const {createMainWindow} = require('./window/main-window.js');
 
-/** @import {AuthState} from './config/auth.js' */
-
-// paths here are relative to electron/, so '..' reaches the package root
-const frontendUrlPath = path.join(__dirname, '..', 'dist', 'fynancials', 'browser', 'index.html');
-const frontendIconPath = path.join(__dirname, '..', 'dist', 'fynancials', 'browser', 'favicon.ico');
 const title = 'Fynancials';
 const askForJavaDownload = 'Java not found. Do you want to download Amazon Corretto 25?';
 const javaDownloadLicenseNote = 'Amazon Corretto is licensed under the GPLv2 with the Classpath Exception. '
   + 'The license terms are included in the downloaded archive. See https://aws.amazon.com/corretto/faqs/ for details.';
-const wrongPasswordMessage = 'Wrong password for the configured database. Please try again.';
 
 if (process.platform === 'darwin') {
   process.chdir(path.resolve(process.argv0, '..', '..', '..', '..'));
@@ -29,28 +25,8 @@ if (process.platform === 'darwin') {
 
 const resourcesDir = app.isPackaged ? process.resourcesPath : path.join(__dirname, '..', 'resources');
 const backendPath = path.join(resourcesDir, 'backend.jar');
-// resolved dynamically, so its type has to be asserted; the return type is what matters here, since the prompt's
-// result flows on as the database password
-const prompt = /** @type {(options: object) => Promise<string | null>} */
-  (require(path.join(resourcesDir, 'node_modules', 'custom-electron-prompt')));
 
 const logPath = path.join(process.cwd(), 'fynancials.log');
-
-/** @type {import('electron').BrowserWindow | null} */
-let frontend = null;
-
-/** @type {import('node:child_process').ChildProcessWithoutNullStreams | null} */
-let backend = null;
-
-/**
- * What a start attempt says about the database it was made against. `startedFrom` is the state read *before* the
- * password was asked for, which is what a failed start has to be routed on.
- *
- * @typedef {{reachable: boolean, startedFrom: AuthState}} BackendStartOutcome
- */
-
-/** @type {Promise<BackendStartOutcome> | null} */
-let backendStart = null;
 
 const configFile = createConfigFile({
   fileSystem: fs,
@@ -63,72 +39,30 @@ const backendReachability = createBackendReachability({
   fetchPid: fetchBackendPid,
   delay
 });
-/** @type {string | undefined} */
-const databasePath = config.env.FY_DB_FILE_PATH;
+const startupMode = createStartupMode({configFile, config, authRegistry});
+const backendProcess = createBackendProcess({
+  spawn: spawnChildProcess,
+  resolveJava: verifyJava,
+  backendPath,
+  config,
+  authRegistry,
+  backendReachability,
+  logFileSystem: {createWriteStream: fs.createWriteStream},
+  logPath
+});
 
 /**
- * Asks for the database password, unless the database is known to have none. A database with a verified record has
- * the answer checked locally and is asked again on a mismatch, so a wrong password never reaches a backend spawn; a
- * pending one is asked once and started blind, because only the H2 file itself can tell.
+ * A thin wrapper around `child_process.spawn`, typed to exactly the three-argument call `backendProcess` makes - `spawn`
+ * itself is overloaded across many stdio configurations, and assigning the bare function to `BackendProcessOptions.spawn`
+ * cannot pick the right overload, while a normal call expression like this one resolves it the same way it always has.
  *
- * @param {AuthState} startedFrom
- * @returns {Promise<string>}
+ * @param {string} command
+ * @param {string[]} args
+ * @param {{env: NodeJS.ProcessEnv}} spawnOptions
+ * @returns {import('./backend/backend-process.js').SpawnedBackendProcess}
  */
-async function promptPassword(startedFrom) {
-  if (startedFrom === 'passwordless') {
-    return '';
-  }
-
-  /** @type {string | null} */
-  let password;
-  while (true) {
-    password = await prompt({
-      title: 'Password',
-      label: 'Enter the password',
-      customStylesheet: 'dark',
-      inputAttrs: {
-        type: 'password'
-      }
-    }).catch(error => showErrorMessage(error));
-
-    if (password === null) {
-      process.exit(0);
-    }
-
-    if (startedFrom === 'scrypt' && databasePath != null && !authRegistry.verify(databasePath, password)) {
-      showWrongPasswordMessage();
-      continue;
-    }
-
-    return password;
-  }
-}
-
-/**
- * @param {string | Error} [message]
- * @returns {never}
- */
-function showErrorMessage(message) {
-  dialog.showMessageBoxSync({
-    type: 'error',
-    title: title,
-    message: message == null ? 'An error has occurred' : String(message),
-    buttons: ['OK']
-  });
-  app.quit();
-  process.exit(1);
-}
-
-/**
- * @returns {void}
- */
-function showWrongPasswordMessage() {
-  dialog.showMessageBoxSync({
-    type: 'error',
-    title: title,
-    message: wrongPasswordMessage,
-    buttons: ['OK']
-  });
+function spawnChildProcess(command, args, spawnOptions) {
+  return spawn(command, args, spawnOptions);
 }
 
 /**
@@ -173,6 +107,21 @@ function resolveTarPath() {
     return path.join(process.env['SystemRoot'] ?? 'C:\\Windows', 'System32', 'tar.exe');
   }
   return '/usr/bin/tar';
+}
+
+/**
+ * @param {string | Error} [message]
+ * @returns {never}
+ */
+function showErrorMessage(message) {
+  dialog.showMessageBoxSync({
+    type: 'error',
+    title: title,
+    message: message == null ? 'An error has occurred' : String(message),
+    buttons: ['OK']
+  });
+  app.quit();
+  process.exit(1);
 }
 
 /**
@@ -308,47 +257,6 @@ async function verifyJava() {
 }
 
 /**
- * Spawns the backend at most once; a repeated call yields the first call's outcome.
- *
- * @param {string} java
- * @returns {Promise<BackendStartOutcome>}
- */
-function startBackend(java) {
-  backendStart ??= spawnBackend(java);
-  return backendStart;
-}
-
-/**
- * @param {string} java
- * @returns {Promise<BackendStartOutcome>}
- */
-async function spawnBackend(java) {
-  removePreviousLog();
-
-  /** @type {AuthState} */
-  const startedFrom = databasePath == null ? 'pending' : authRegistry.stateOf(databasePath);
-  /** @type {string} */
-  const password = await promptPassword(startedFrom);
-  /** @type {import('node:child_process').ChildProcessWithoutNullStreams} */
-  const backendProcess = spawn(java, ['-jar', backendPath], {
-    env: {
-      ...process.env,
-      ...config.env,
-      FY_DB_FILE_PASSWORD: password
-    }
-  });
-  backend = backendProcess;
-  pipeBackendLog(backendProcess);
-
-  // a backend that answers proves the H2 file was decrypted with this password - and only then is it recorded
-  const reachable = await backendReachability.waitUntilReachable(backendProcess);
-  if (reachable && databasePath != null) {
-    authRegistry.recordProvenStart(databasePath, password);
-  }
-  return {reachable, startedFrom};
-}
-
-/**
  * @returns {void}
  */
 function removePreviousLog() {
@@ -359,23 +267,6 @@ function removePreviousLog() {
   } catch (error) {
     // non-fatal - worst case the previous run's log lines stay at the top since we open in append mode below
     console.error(`Failed to remove previous log file at ${logPath}:`, error);
-  }
-}
-
-/**
- * @param {import('node:child_process').ChildProcessWithoutNullStreams} backendProcess
- * @returns {void}
- */
-function pipeBackendLog(backendProcess) {
-  try {
-    /** @type {import('node:fs').WriteStream} */
-    const logStream = fs.createWriteStream(logPath, {flags: 'a'});
-    logStream.on('error', (error) => console.error(`Failed to write backend log to ${logPath}:`, error));
-    backendProcess.stdout.pipe(logStream, {end: false});
-    backendProcess.stderr.pipe(logStream, {end: false});
-    backendProcess.on('close', () => logStream.end());
-  } catch (error) {
-    console.error(`Failed to set up backend logging at ${logPath}:`, error);
   }
 }
 
@@ -402,66 +293,15 @@ function delay(milliseconds) {
   });
 }
 
-/**
- * @returns {void}
- */
-function startFrontend() {
-  if (frontend != null) {
-    return;
-  }
+app.on('ready', () => {
+  removePreviousLog();
+  const startupState = startupMode.resolve();
+  createStartupBridge({ipcMain, startupState, backendProcess}).register();
+  createMainWindow();
+});
 
-  const {width, height} = screen.getPrimaryDisplay().workAreaSize;
-  frontend = new BrowserWindow({
-    width: parseInt(`${width * 0.9}`),
-    height: parseInt(`${height * 0.9}`),
-    center: true,
-    icon: frontendIconPath,
-    autoHideMenuBar: true,
-    webPreferences: {
-      devTools: false,
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: true,
-      webSecurity: true
-    }
-  });
-  frontend.maximize();
-
-  frontend.loadURL(url.format({
-    pathname: frontendUrlPath,
-    protocol: 'file:',
-    slashes: true
-  }));
-
-  frontend.on('closed', () => {
-    frontend = null;
-  });
-
-  frontend.webContents.setWindowOpenHandler(({url}) => {
-    shell.openExternal(url);
-    return {action: 'deny'};
-  });
-}
-
-/**
- * @returns {Promise<void>}
- */
-async function startApplication() {
-  const java = await verifyJava();
-  // deliberately not awaited - the window has to come up while the backend boots. The outcome is the seam the
-  // startup-mode routing consumes; nothing acts on it yet, which is why the rejection needs a handler here: an
-  // unhandled one terminates the main process, and a start that throws must not take the whole app down with it.
-  startBackend(java).catch(error => console.error('Failed to start the backend:', error));
-  startFrontend();
-}
-
-app.on('ready', startApplication);
 app.on('window-all-closed', () => {
-  if (backend != null) {
-    backend.kill('SIGTERM');
-    backend = null;
-  }
-
+  backendProcess.kill();
   app.quit();
   process.exit(0);
 });
