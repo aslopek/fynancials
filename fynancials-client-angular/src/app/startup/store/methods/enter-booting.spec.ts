@@ -40,4 +40,16 @@ describe('enterBooting', (): void => {
       expect(navigate).toHaveBeenCalledWith(['/']);
     });
   });
+
+  describe('when the phase is unlock and a previous start failed', (): void => {
+    beforeEach((): void => {
+      store = signalState<StartupStoreState>({...initialState, phase: 'unlock', startFailed: true});
+    });
+
+    it('clears the start failure', (): void => {
+      enterBooting(store, router);
+
+      expect(getState(store)).toEqual({...initialState, phase: 'booting', startFailed: false});
+    });
+  });
 });

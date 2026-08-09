@@ -1,0 +1,51 @@
+.unlock-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.unlock-content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 32rem;
+  padding: 2rem;
+}
+
+.database-file-name {
+  margin: 0;
+  text-align: center;
+  word-break: break-all;
+}
+
+.database-path {
+  margin: 0.5rem 0 1.5rem;
+  text-align: center;
+  word-break: break-all;
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.start-failed {
+  margin: 0 0 1rem;
+  color: var(--mat-sys-error);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.use-different-database {
+  align-self: center;
+  margin-top: 1rem;
+}

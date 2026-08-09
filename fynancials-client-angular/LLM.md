@@ -35,13 +35,17 @@ The Angular + NgRx frontend, packaged as the Electron desktop app that ships to 
   `electron/LLM.md` for its architecture, typing regime, testing and the boot order.
 - **Startup screens and the app shell**: `AppComponent` is just a `<router-outlet>` plus the trigger that starts the backend immediately
   for a passwordless database (`boot` mode). The chrome (header, side menu, splash gate, the initial global-store loads) lives in
-  `ShellComponent` (`src/app/shell/`), mounted under the root route behind `startupPhaseGuard`. `/unlock` (`src/app/unlock/`) and
-  `/configure` (`src/app/configure/`) are sibling top-level routes with no chrome, rendered instead of the shell while the startup mode the
-  main process computed is `unlock` or `configure`; #36 and #37 fill them in. `src/app/startup/` is the renderer's only door to the main
-  process: `StartupBridgeService` wraps the `contextBridge` surface (`window.fynancials`, exposed by `electron/preload.js`) as observables,
-  and `StartupStore` (a root-provided `@ngrx/signals` Signal Store, not a global-store slice — it is read by an app initializer, a route
-  guard and both startup screens) holds the startup mode and phase and drives the `backend:start` call. `startup.initializer.ts` resolves
-  the startup state from the bridge before the router's first navigation, which is what lets `startupPhaseGuard` decide synchronously which
+  `ShellComponent` (`src/app/shell/`), mounted under the root route behind `startupPhaseGuard`. `/unlock` (`src/app/unlock/`) is the real
+  unlock screen, with its own screen-scoped Signal Store (`src/app/unlock/store/`) verifying a typed password against the stored hash over
+  the bridge and driving `StartupStore.startBackend`. `/configure` (`src/app/configure/`) is still #37's placeholder. Both are sibling
+  top-level routes with no chrome, rendered instead of the shell while the startup mode the main process computed is `unlock` or
+  `configure`. `src/app/startup/` is the renderer's only door to the main process: `StartupBridgeService` wraps the `contextBridge` surface
+  (`window.fynancials`, exposed by `electron/preload.js`) as observables, and `StartupStore` (a root-provided `@ngrx/signals` Signal Store,
+  not a global-store slice — it is read by an app initializer, a route guard and both startup screens) holds the startup mode, phase,
+  database path, the database's `authState` (what gates the unlock screen's `OK` button: only a stored `scrypt` record demands a local
+  match) and the `startFailed` flag (set on a failed `backend:start`, cleared on the next attempt), and drives the `backend:start` call.
+  Both `/unlock` and #37's `/configure` route on that same flag rather than each carrying their own. `startup.initializer.ts` resolves the
+  startup state from the bridge before the router's first navigation, which is what lets `startupPhaseGuard` decide synchronously which
   route to admit. In browser dev mode (`ng serve`, no bridge) none of this activates: the guard admits the shell immediately and the app
   loads.
 - **Two kinds of state, kept strictly separate** — see the dedicated sections below for each:

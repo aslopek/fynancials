@@ -1,26 +1,27 @@
-import {Component, inject, signal, WritableSignal} from "@angular/core";
+import {AfterViewInit, Component, ElementRef, inject, Signal, viewChild} from "@angular/core";
 import {MatButtonModule} from "@angular/material/button";
 import {MatFormFieldModule} from "@angular/material/form-field";
+import {MatIconModule} from "@angular/material/icon";
 import {MatInputModule} from "@angular/material/input";
 import {ReadableStartupStore, StartupStore} from "../startup/store/startup.store";
+import {ReadableUnlockStore, UnlockStore} from "./store/unlock.store";
 
-/**
- * Story #35 creates this component with only what its own ACs need to be exercised: a password input and an OK
- * button that triggers a start. #36 fills it in with local hash verification against the stored record,
- * OK-enablement, an error surface, Cancel and "Use a different database…" - none of that lives here yet.
- */
 @Component({
   selector: "app-unlock",
-  imports: [MatButtonModule, MatFormFieldModule, MatInputModule],
+  imports: [MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule],
+  providers: [UnlockStore],
   templateUrl: "unlock.component.html",
   styleUrls: ["unlock.component.scss"],
 })
-export class UnlockComponent {
+export class UnlockComponent implements AfterViewInit {
 
-  protected readonly password: WritableSignal<string> = signal<string>("");
-  private readonly startupStore: ReadableStartupStore = inject(StartupStore);
+  protected readonly unlockStore: ReadableUnlockStore = inject(UnlockStore);
+  protected readonly startupStore: ReadableStartupStore = inject(StartupStore);
 
-  protected unlock(): void {
-    this.startupStore.startBackend(this.password());
+  private readonly passwordInput: Signal<ElementRef<HTMLInputElement>> =
+    viewChild.required<ElementRef<HTMLInputElement>>("passwordInput");
+
+  ngAfterViewInit(): void {
+    this.passwordInput().nativeElement.focus();
   }
 }
