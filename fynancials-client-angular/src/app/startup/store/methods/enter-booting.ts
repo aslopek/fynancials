@@ -11,7 +11,7 @@ import {StartupComputed, StartupStoreState} from "../startup.store";
 export function enterBooting(signalStore: WritableSignalStore<StartupStoreState, StartupComputed>,
                              router: Pick<Router, 'navigate'>): void {
   const wasAlreadyBooting: boolean = signalStore.phase() === 'booting';
-  patchState(signalStore, {phase: 'booting'});
+  patchState(signalStore, {phase: 'booting', startFailed: false});
   if (!wasAlreadyBooting) {
     router.navigate(['/']);
   }

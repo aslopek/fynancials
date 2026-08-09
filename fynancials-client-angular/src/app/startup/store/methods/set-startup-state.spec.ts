@@ -14,34 +14,42 @@ describe('setStartupState', (): void => {
   });
 
   it('enters the booting phase for boot mode', (): void => {
-    const state: StartupState = {databasePath, mode: 'boot'};
+    const state: StartupState = {authState: 'passwordless', databasePath, mode: 'boot'};
 
     setStartupState(store, state);
 
-    expect(getState(store)).toEqual({databasePath, mode: 'boot', phase: 'booting'});
+    expect(getState(store)).toEqual({authState: 'passwordless', databasePath, mode: 'boot', phase: 'booting', startFailed: false});
   });
 
   it('enters the unlock phase for unlock mode', (): void => {
-    const state: StartupState = {databasePath, mode: 'unlock'};
+    const state: StartupState = {authState: 'pending', databasePath, mode: 'unlock'};
 
     setStartupState(store, state);
 
-    expect(getState(store)).toEqual({databasePath, mode: 'unlock', phase: 'unlock'});
+    expect(getState(store)).toEqual({authState: 'pending', databasePath, mode: 'unlock', phase: 'unlock', startFailed: false});
+  });
+
+  it('carries the auth state through for an scrypt record', (): void => {
+    const state: StartupState = {authState: 'scrypt', databasePath, mode: 'unlock'};
+
+    setStartupState(store, state);
+
+    expect(getState(store)).toEqual({authState: 'scrypt', databasePath, mode: 'unlock', phase: 'unlock', startFailed: false});
   });
 
   it('enters the configure phase for configure mode', (): void => {
-    const state: StartupState = {databasePath, mode: 'configure'};
+    const state: StartupState = {authState: 'pending', databasePath, mode: 'configure'};
 
     setStartupState(store, state);
 
-    expect(getState(store)).toEqual({databasePath, mode: 'configure', phase: 'configure'});
+    expect(getState(store)).toEqual({authState: 'pending', databasePath, mode: 'configure', phase: 'configure', startFailed: false});
   });
 
-  it('records a null database path when the config names no database', (): void => {
-    const state: StartupState = {databasePath: null, mode: 'configure'};
+  it('records a null database path and null auth state when the config names no database', (): void => {
+    const state: StartupState = {authState: null, databasePath: null, mode: 'configure'};
 
     setStartupState(store, state);
 
-    expect(getState(store)).toEqual({databasePath: null, mode: 'configure', phase: 'configure'});
+    expect(getState(store)).toEqual({authState: null, databasePath: null, mode: 'configure', phase: 'configure', startFailed: false});
   });
 });

@@ -1,12 +1,52 @@
-<h2>Unlock</h2>
-<mat-form-field>
-    <mat-label>Password</mat-label>
-    <input matInput
-           type="password"
-           [value]="password()"
-           (input)="password.set($any($event.target).value)">
-</mat-form-field>
-<button mat-raised-button
-        (click)="unlock()">
-    OK
-</button>
+<div class="unlock-screen">
+    <div class="unlock-content">
+        <h1 class="database-file-name">
+            {{ unlockStore.databaseFileName() }}
+        </h1>
+        <p class="database-path">
+            {{ startupStore.databasePath() }}
+        </p>
+
+        <mat-form-field>
+            <mat-label>Password</mat-label>
+            <input #passwordInput
+                   matInput
+                   [type]="unlockStore.passwordVisible() ? 'text' : 'password'"
+                   [value]="unlockStore.password()"
+                   (input)="unlockStore.setPassword($any($event.target).value)"
+                   (keyup.enter)="unlockStore.submit()">
+            <button matSuffix
+                    mat-icon-button
+                    type="button"
+                    [attr.aria-label]="unlockStore.passwordVisible() ? 'Hide password' : 'Show password'"
+                    (click)="unlockStore.togglePasswordVisibility()">
+                <mat-icon>{{ unlockStore.passwordVisible() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+        </mat-form-field>
+
+        @if (startupStore.startFailed()) {
+            <p class="start-failed">
+                wrong password or corrupted database
+            </p>
+        }
+
+        <div class="actions">
+            <button mat-stroked-button
+                    (click)="unlockStore.cancel()">
+                Cancel
+            </button>
+            <button mat-raised-button
+                    color="primary"
+                    [disabled]="!unlockStore.canSubmit()"
+                    (click)="unlockStore.submit()">
+                OK
+            </button>
+        </div>
+
+        <button mat-button
+                class="use-different-database"
+                (click)="unlockStore.useDifferentDatabase()">
+            Use a different database…
+        </button>
+    </div>
+</div>

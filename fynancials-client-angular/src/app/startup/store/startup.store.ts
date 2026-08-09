@@ -4,8 +4,9 @@ import {signalStore, withComputed, withMethods, withState} from "@ngrx/signals";
 import {RxMethod} from "@ngrx/signals/rxjs-interop";
 import {ReadableSignalStore, WritableSignalStore} from "../../../common/types/signal-store.type";
 import {StartupBridgeService} from "../startup-bridge.service";
-import {StartupMode, StartupState} from "../startup-bridge.type";
+import {AuthState, StartupMode, StartupState} from "../startup-bridge.type";
 import {startBackend} from "./effects/start-backend";
+import {enterConfigure} from "./methods/enter-configure";
 import {setStartupState} from "./methods/set-startup-state";
 
 /** Where the app currently is, distinct from `mode` (what the main process computed at start - see below). */
@@ -14,21 +15,26 @@ export type StartupPhase = 'booting' | 'configure' | 'unlock';
 export type StartupComputed = {};
 
 export type StartupMethods = {
+  enterConfigure: () => void
   setStartupState: (state: StartupState) => void
   startBackend: (password: string) => void
 };
 
 export type StartupStoreState = {
+  authState: AuthState | null
   databasePath: string | null
   // null means no bridge (`ng serve` in a browser) - set once from `startup:getState`, never again afterwards
   mode: StartupMode | null
   phase: StartupPhase
+  startFailed: boolean
 };
 
 export const initialState: StartupStoreState = {
+  authState: null,
   databasePath: null,
   mode: null,
-  phase: 'booting'
+  phase: 'booting',
+  startFailed: false
 } as const;
 
 export type ReadableStartupStore = ReadableSignalStore<StartupStoreState, StartupComputed, StartupMethods>;
@@ -42,6 +48,7 @@ export const StartupStore = signalStore(
                router: Router = inject(Router)): StartupMethods => {
     const startBackendMethod: RxMethod<string> = startBackend(signalStore, bridge, router);
     return {
+      enterConfigure: (): void => enterConfigure(signalStore, router),
       setStartupState: (state: StartupState): void => setStartupState(signalStore, state),
       startBackend: startBackendMethod
     };

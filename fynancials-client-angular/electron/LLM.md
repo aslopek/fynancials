@@ -30,7 +30,7 @@ electron/
   java/                        (#38) resolve-java.js, download-corretto.js
   ipc/
     ipc-schema.js              zod schema for IPC input crossing the renderer boundary
-    startup-bridge.js          registers `startup:getState` and `backend:start`
+    startup-bridge.js          registers `startup:getState`, `backend:start`, `auth:verify` (request/response) and `app:quit` (one-way)
   window/
     startup-mode.js            computes the startup mode (`boot` | `configure` | `unlock`) and consumes `configureOnNextStart`
     main-window.js             `BrowserWindow` creation, wired to `preload.js`
@@ -48,9 +48,9 @@ that bridge, handled by `backend/backend-process.js`, which resolves with an out
 resolution (`verifyJava()` in `main.js`) still runs lazily, right before that spawn, and is otherwise untouched until #38 replaces it.
 
 The preload (`preload.js`) runs in Electron's sandboxed preload context, where `require` is a limited polyfill resolving only `electron`
-and a handful of Node built-ins — it cannot `require` a module of this app. That is why the two IPC channel names (`startup:getState`,
-`backend:start`) are literals duplicated in both `preload.js` and `ipc/startup-bridge.js` rather than shared via an import; keeping them in
-step is part of the manual verification checklist below.
+and a handful of Node built-ins — it cannot `require` a module of this app. That is why the four IPC channel names (`startup:getState`,
+`backend:start`, `auth:verify`, `app:quit`) are literals duplicated in both `preload.js` and `ipc/startup-bridge.js` rather than shared via
+an import; keeping them in step is part of the manual verification checklist below.
 
 `config/config-file.js`'s `load()` no longer creates and writes the config file when none exists — it returns the default configuration
 without saving. Distinguishing "file missing" from "file present" is `exists()`, added to `ConfigFile` for that purpose: the startup-mode
@@ -139,9 +139,7 @@ in the calling module, not in the schema — zod answers "is this shaped like a 
 ## Runtime dependencies
 
 `package.json`'s `dependencies` block is the main process's. Anything the main process `require`s statically belongs there and **not** in
-`devDependencies`: electron-packager prunes dev dependencies out of the packaged app, which is exactly why `custom-electron-prompt` needs
-the manual `postPackage` copy in `forge.config.js` and a dynamic `require` (that pattern is unresolvable for the type checker — do not copy
-it for anything new).
+`devDependencies`: electron-packager prunes dev dependencies out of the packaged app.
 
 A package added to `dependencies` ships to users, and `scripts/generate-third-party-licenses.js` picks it up from that block on its own —
 attribution is not something to remember here. Its license still has to pass `npm run licenses:check` and the root `LLM.md`'s licensing
@@ -209,3 +207,8 @@ arrange step, shared alterations live in a nested `describe`'s own `beforeEach`,
 Main-process changes have **no integration coverage** — the end-to-end behavior has to be run by hand, and in the *packaged* app
 (`npm run electron:pack`), not only under `npm run electron:start`. A pruned-away runtime dependency, a missed `__dirname` fix or a
 resource path that only exists in the repo checkout all pass every test and fail on the first real start.
+
+The unlock screen (`/unlock`, `src/app/unlock/` in the renderer) exercises this directory's IPC surface end to end: typing a password
+against a database with a stored `scrypt` record calls `auth:verify` and enables/disables OK locally, with no backend spawn for a wrong
+password; a pending database's OK is enabled regardless of input; Cancel calls `app:quit` and exits the app without spawning a backend or
+writing to `fynancials.config.json`.
