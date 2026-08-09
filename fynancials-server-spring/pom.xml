@@ -68,11 +68,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>
             <version>4.0.0-M1</version>
@@ -490,6 +485,40 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <!--
+                Resolves ${org.mockito:mockito-core:jar} to the jar's path in the local repository, so surefire below
+                can load Mockito as a static -javaagent. Deliberately not on the goal's default initialize phase:
+                properties-maven-plugin writes every project property into the packaged
+                properties-from-pom.properties at generate-resources, so resolving earlier would ship this machine's
+                absolute .m2 paths inside the jar. process-test-classes is past that write and still before test.
+                -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>resolve-mockito-agent-path</id>
+                        <phase>process-test-classes</phase>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <!--
+                Mockito's inline mock maker needs a java agent. Without one it self-attaches at runtime, which a future
+                JDK will refuse - passing it as -javaagent is what the agent-based tests (common/startup) rely on.
+                -Xshare:off silences the CDS warning the agent's bootstrap classpath append triggers.
+                -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-javaagent:${org.mockito:mockito-core:jar} -Xshare:off</argLine>
+                </configuration>
             </plugin>
         </plugins>
     </build>

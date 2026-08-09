@@ -15,7 +15,9 @@ app).
 - `mvn generate-sources` — regenerate only `target/generated-sources/openapi` without a full build; do this after editing a spec in
   `../fynancials-api` and before relying on IDE autocomplete for a new `*ApiDelegate`/DTO.
 - `mvn spring-boot:run -Dspring-boot.run.profiles=dev` — run the backend directly on port `23726` (H2 console `23727`). Other dev profiles:
-  `dev-file`, `dev-empty-db` (see `application-dev*.yaml` for what each seeds/uses).
+  `dev-file`, `dev-empty-db` (see `application-dev*.yaml` for what each seeds/uses). Every dev profile sets `spring.datasource.password`
+  itself and never consults `FY_DB_FILE_PASSWORD`, so the stdin password channel described below does not apply to any of them; a plain
+  `mvn spring-boot:run` with no profile and `FY_DB_FILE_PASSWORD` exported in the shell works without providing a password on `stdin`.
 - `mvn test` — run all tests.
 - `mvn test -Dtest=CreateDepotTest` — run a single test class; `-Dtest=CreateDepotTest#someMethod` for a single method.
 - No Maven wrapper is checked in (use a local `mvn`); no lint/checkstyle/spotless plugin is configured.
@@ -49,9 +51,22 @@ Each domain has its own `execution` block in the `openapi-generator-maven-plugin
 - **Config profiles**: `application.yaml` holds shared/prod defaults; `application-dev.yaml`, `application-dev-file.yaml`,
   `application-dev-empty-db.yaml` are local dev variants (different seed/DB state) activated via `-Dspring-boot.run.profiles=<name>`. None
   of the dev profiles are shipped with the app.
+- **Database password channel**: the packaged Electron spawn hands the H2 file password over the process's stdin rather than its
+  environment, marked by `FY_DB_FILE_PASSWORD_STDIN=true` in the environment.
+  `common/startup/StdinPasswordEnvironmentPostProcessor` (an `EnvironmentPostProcessor`, registered via `META-INF/spring.factories` under
+  `org.springframework.boot.EnvironmentPostProcessor` — the `.imports` mechanism is auto-configuration-only and does not apply here) reads
+  `System.in` to EOF only when that marker is present, decodes the complete byte array once as UTF-8, and contributes it as the
+  `FY_DB_FILE_PASSWORD` property ahead of the system environment via `common/startup/StdinPasswordHandover`. The read is one-shot per JVM
+  (`System.in` reaches EOF exactly once), so the outcome of the first read is memoized rather than the stream being read again.
+  The wire format has no delimiter — EOF alone completes the handover, so the password travels
+  byte-for-byte, whitespace included. Without the marker (every standalone `mvn spring-boot:run` and every dev profile), `System.in` is
+  never touched and `application.yaml`'s `${FY_DB_FILE_PASSWORD:}` placeholder falls through to the environment variable exactly as before;
+  the same fallback applies if the marker is set but the stream never reaches EOF within the read timeout. The password is never logged.
+  Running `backend.jar` by hand with the marker set completes the input with `Ctrl-D` (`Ctrl-Z` then `Enter` on Windows), since EOF rather
+  than `Enter` is what ends the handover.
 - **`common/`**: cross-domain utilities — `arithmetic` (incl. XIRR calculation), `config` (`@Configuration` classes), `database`, `error`
-  (exception handling), `image`, `mapper` (shared MapStruct helpers, e.g. `DateParser`), `monetary`, `pagination`, `time`, `util` (value
-  formatting). Reach for these before writing a new one-off utility in a domain package.
+  (exception handling), `image`, `mapper` (shared MapStruct helpers, e.g. `DateParser`), `monetary`, `pagination`, `startup` (boot-time
+  environment contributions), `time`, `util` (value formatting). Reach for these before writing a new one-off utility in a domain package.
 
 ## Implementation conventions
 
@@ -95,8 +110,9 @@ Each domain has its own `execution` block in the `openapi-generator-maven-plugin
 ## Testing concept
 
 Every endpoint (a URL + HTTP method combination) has its own integration test class, plus one test case in `CorsIntegrationTest.java`. Unit
-tests are the exception, written only when there's a specific reason (complex pure logic like `XirrFunctionTest`, `ValueFormatServiceTest`).
-They never replace the per-endpoint integration test.
+tests are the exception, written only when there's a specific reason (complex pure logic like `XirrFunctionTest`, `ValueFormatServiceTest`;
+or, like `common/startup`'s `StdinPasswordHandoverTest`/`StdinPasswordEnvironmentPostProcessorTest`, logic that runs before any application
+context exists and so no integration test can reach it). They never replace the per-endpoint integration test.
 
 - **Per-endpoint integration test class** (e.g. `CreateDepotTest`, `DeleteDepotTest`):
     - The class and every `@Test`/`@BeforeEach`/etc.-annotated method are package-private. Non-`@Autowired` members are `private` and are
