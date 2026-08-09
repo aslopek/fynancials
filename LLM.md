@@ -108,9 +108,10 @@ The Electron app (`fynancials-client-angular`) is the shipped product. `app.on('
 Angular app immediately — it does not resolve Java, ask for a password or spawn the backend first. The Angular shell reads a computed
 startup mode (`boot`, `unlock` or `configure`) over an IPC bridge and, once past any unlock/configure screen, triggers the backend start
 itself via that same bridge. `electron/main.js` then spawns a bundled Java process running the Spring Boot backend (`backend.jar`) as a
-child process and reports back whether it became reachable. The backend listens on port `23726` (H2 console on `23727`), backed by a local
-encrypted H2 file database whose path is configurable via `FY_DB_FILE_PATH`. See `fynancials-client-angular/electron/LLM.md` for the boot
-order in full.
+child process and reports back whether it became reachable. The database password reaches that child over its stdin — the entire content
+of the stream, closed right after — rather than through its environment. The backend listens on port `23726` (H2 console on `23727`),
+backed by a local encrypted H2 file database whose path is configurable via `FY_DB_FILE_PATH`. See
+`fynancials-client-angular/electron/LLM.md` for the boot order in full.
 
 `forge.config.js` copies `fynancials-server-spring/target/fynancials-server-spring-<version>.jar` into
 `fynancials-client-angular/resources/backend.jar` during electron-forge packaging — the Spring backend must be built (`mvn package`) before

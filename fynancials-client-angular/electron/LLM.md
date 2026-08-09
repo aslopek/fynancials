@@ -26,7 +26,7 @@ electron/
     auth-registry.js           the auth map over a loaded config, keyed by database base path
   backend/
     backend-reachable.js       poll GET /config/pid until reachable or child exit
-    backend-process.js         spawn, log piping, single-instance guard, proven-start recording; (#40) stdin password handover
+    backend-process.js         spawn, stdin password handover, log piping, single-instance guard, proven-start recording
   java/                        (#38) resolve-java.js, download-corretto.js
   ipc/
     ipc-schema.js              zod schema for IPC input crossing the renderer boundary
@@ -47,10 +47,18 @@ and opens the single `BrowserWindow` (`window/main-window.js`). The backend is s
 that bridge, handled by `backend/backend-process.js`, which resolves with an outcome (`reachable` or not) the renderer routes on. Java
 resolution (`verifyJava()` in `main.js`) still runs lazily, right before that spawn, and is otherwise untouched until #38 replaces it.
 
+The spawn passes the database password as the entire content of the child's stdin, closed right after, rather than through the child's
+environment: the environment carries `FY_DB_FILE_PASSWORD_STDIN=true` as a marker and no password at all. A few rules govern
+that handover, worth knowing before touching `backend-process.js` again: `write`'s boolean return is flow control, not a success/failure
+signal; a `drain` wait is registered only after a write returned `false`, never unconditionally; the password buffer is zeroed inside the
+write callback, because Node queues the chunk by reference rather than copying it; and the handover never blocks `start` — a child that
+never reads its stdin surfaces as a failed start through the existing reachability poll instead of hanging the IPC call.
+
 The preload (`preload.js`) runs in Electron's sandboxed preload context, where `require` is a limited polyfill resolving only `electron`
 and a handful of Node built-ins — it cannot `require` a module of this app. That is why the four IPC channel names (`startup:getState`,
 `backend:start`, `auth:verify`, `app:quit`) are literals duplicated in both `preload.js` and `ipc/startup-bridge.js` rather than shared via
-an import; keeping them in step is part of the manual verification checklist below.
+an import. Nothing checks that the two copies agree — a renamed channel compiles, passes the suite, and fails only at runtime, so a change
+to one literal is a change to two files.
 
 `config/config-file.js`'s `load()` no longer creates and writes the config file when none exists — it returns the default configuration
 without saving. Distinguishing "file missing" from "file present" is `exists()`, added to `ConfigFile` for that purpose: the startup-mode
@@ -62,6 +70,10 @@ There is **no integration-test harness for Electron main code**. Everything with
 its I/O dependencies as arguments (file system, `fetch`, timers, the spawned child), and `main.js` is wiring: it constructs the
 collaborators, passes the real implementations, and connects them to Electron's `app` events. A piece of logic that can only be reached by
 booting Electron is a piece of logic nothing will ever test — that is why the directory looks the way it does.
+
+The flip side is a limit on what a green suite proves here: it says nothing about whether the packaged app actually starts. Wiring,
+`__dirname` resolution, resource paths and dependency pruning are all outside its reach. Never report a main-process change as verified on
+a passing suite alone — say which part still rests on a packaged run.
 
 ## Type safety — JSDoc over checked JavaScript
 
@@ -201,14 +213,3 @@ arrange step, shared alterations live in a nested `describe`'s own `beforeEach`,
   mirror scrypt's own parameter validation so a hand-edited record classifies as pending, and the derivation is additionally guarded so an
   unanticipated rejection reads as "does not verify" instead of escaping into the startup path. To settle an actual disagreement, probe the
   shipped runtime directly: `ELECTRON_RUN_AS_NODE=1 npx electron <script>` runs any script under Electron's own Node and crypto.
-
-## Manual verification
-
-Main-process changes have **no integration coverage** — the end-to-end behavior has to be run by hand, and in the *packaged* app
-(`npm run electron:pack`), not only under `npm run electron:start`. A pruned-away runtime dependency, a missed `__dirname` fix or a
-resource path that only exists in the repo checkout all pass every test and fail on the first real start.
-
-The unlock screen (`/unlock`, `src/app/unlock/` in the renderer) exercises this directory's IPC surface end to end: typing a password
-against a database with a stored `scrypt` record calls `auth:verify` and enables/disables OK locally, with no backend spawn for a wrong
-password; a pending database's OK is enabled regardless of input; Cancel calls `app:quit` and exits the app without spawning a backend or
-writing to `fynancials.config.json`.
