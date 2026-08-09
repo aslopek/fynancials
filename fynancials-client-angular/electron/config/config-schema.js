@@ -31,8 +31,7 @@ const fynancialsConfigSchema = z.looseObject({
   // deliberately not validated per `authEntrySchema` here: a single mangled entry must make *that* database pending
   // (`authStateOf` classifies it) rather than throwing away the whole config file
   auth: z.record(z.string(), z.unknown()).default({}),
-  // one-shot: read at start to force `configure` mode and deleted in the same step (epic ADR-006), so it can never
-  // be left dangling by any way of leaving the configuration screen
+  // one-shot: read at start to force `configure` mode and deleted in the same step, so it cannot outlive the run it was written for
   configureOnNextStart: z.boolean().optional()
 });
 

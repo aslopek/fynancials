@@ -1,11 +1,19 @@
 import {Inject, Injectable} from "@angular/core";
 import {defer, from, Observable} from "rxjs";
 import {BRIDGE_HOST, BridgeHost} from "./bridge-host.token";
-import {BackendStartOutcome, FynancialsBridge, StartupState} from "./startup-bridge.type";
+import {
+  AppliedConfiguration,
+  BackendStartOutcome,
+  ConfigurationChanges,
+  ConfigureState,
+  FynancialsBridge,
+  PickedDatabase,
+  StartupState
+} from "./startup-bridge.type";
 
 /**
- * The only place in the renderer that touches the `contextBridge` surface `preload.js` exposes. `#36`/`#37`/`#38`
- * add their own methods here rather than reaching into `window.fynancials` from elsewhere.
+ * The only place in the renderer that touches the `contextBridge` surface exposed by `preload.js`. A further bridge
+ * method is added here as another wrapper, never by reaching into `window.fynancials` from somewhere else.
  */
 @Injectable({providedIn: "root"})
 export class StartupBridgeService {
@@ -30,6 +38,26 @@ export class StartupBridgeService {
 
   verifyPassword(password: string): Observable<boolean> {
     return defer((): Observable<boolean> => from(this.requireBridge().verifyPassword(password)));
+  }
+
+  getConfigureState(): Observable<ConfigureState> {
+    return defer((): Observable<ConfigureState> => from(this.requireBridge().getConfigureState()));
+  }
+
+  pickExistingDatabase(currentSelection: string | null): Observable<string | null> {
+    return defer((): Observable<string | null> => from(this.requireBridge().pickExistingDatabase(currentSelection)));
+  }
+
+  pickNewDatabase(currentSelection: string | null): Observable<PickedDatabase | null> {
+    return defer((): Observable<PickedDatabase | null> => from(this.requireBridge().pickNewDatabase(currentSelection)));
+  }
+
+  forgetPassword(databasePath: string): Observable<void> {
+    return defer((): Observable<void> => from(this.requireBridge().forgetPassword(databasePath)));
+  }
+
+  applyConfiguration(changes: ConfigurationChanges): Observable<AppliedConfiguration> {
+    return defer((): Observable<AppliedConfiguration> => from(this.requireBridge().applyConfiguration(changes)));
   }
 
   /**

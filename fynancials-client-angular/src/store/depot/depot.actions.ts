@@ -117,9 +117,9 @@ export const DepotActions = createActionGroup({
     'Set Position Group By Done': props<SetPositionGroupByActionArgs>(),
     // depot.performance actions
     'Load Performance Done': props<LoadPerformanceDoneActionArgs>(),
-    // dispatched by components/Signal Stores after operations affecting the depot's derived data, and by this slice's own effects
-    // reacting to other slices' Done/Success actions (e.g. security price config updates) - other global-store slices must never
-    // dispatch this action directly, per dependency inversion principle.
+    // an explicit request to reload the depots and everything derived from them, after an operation that can have
+    // changed them. Another global-store slice must never dispatch it, per dependency inversion principle: it
+    // dispatches its own Done/Success action, which this slice reacts to in a `<verb>-<noun>-on.effect.ts`.
     'Reload Depots': emptyProps()
   }
 });

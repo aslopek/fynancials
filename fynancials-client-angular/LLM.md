@@ -37,17 +37,30 @@ The Angular + NgRx frontend, packaged as the Electron desktop app that ships to 
   for a passwordless database (`boot` mode). The chrome (header, side menu, splash gate, the initial global-store loads) lives in
   `ShellComponent` (`src/app/shell/`), mounted under the root route behind `startupPhaseGuard`. `/unlock` (`src/app/unlock/`) is the real
   unlock screen, with its own screen-scoped Signal Store (`src/app/unlock/store/`) verifying a typed password against the stored hash over
-  the bridge and driving `StartupStore.startBackend`. `/configure` (`src/app/configure/`) is still #37's placeholder. Both are sibling
-  top-level routes with no chrome, rendered instead of the shell while the startup mode the main process computed is `unlock` or
-  `configure`. `src/app/startup/` is the renderer's only door to the main process: `StartupBridgeService` wraps the `contextBridge` surface
+  the bridge and driving `StartupStore.startBackend`. `/configure` (`src/app/configure/`) is the configuration screen: a frame of stacked,
+  independently titled sections — not a wizard — around a screen-scoped `ConfigureStore` that `ConfigureComponent` provides and each
+  section component injects. The frame owns the notices, the two finish buttons and the handover back to the startup flow; a section
+  contributes its controls, one `*Valid` computed aggregated by `enableSaveAndStart`, and its slice of `ConfigurationChanges`. "Save &
+  start" persists every section in a single `config:apply` write, "Discard & start" writes nothing and continues with the config as it was,
+  and `store/routing/next-startup-step.ts` is the one place either of them decides what follows (a backend start with the password defined
+  here, or the unlock screen for a file whose password can only be proven). Adding a section therefore means adding a component, a slice
+  and one term in `enableSaveAndStart` — the frame itself is not touched. That split is what the store's folders express: a section's own
+  computeds/effects/methods sit under `store/<section>/` (`store/database/computed|effects|methods`, and
+  `store/java/computed|effects|methods`), while `store/computed|effects|methods` hold only the frame's own. The same split shapes the
+  store's types, as a reading aid only: private `Frame*`/`Database*` slices that the exported
+  `ConfigureStoreState`/`ConfigureComputed`/`ConfigureMethods` intersect back into one flat object. Both are sibling top-level routes with
+  no chrome, rendered instead of the shell while the startup mode the main process computed is `unlock` or `configure`.
+  `src/app/startup/` is the renderer's only door to the main process: `StartupBridgeService` wraps the `contextBridge` surface
   (`window.fynancials`, exposed by `electron/preload.js`) as observables, and `StartupStore` (a root-provided `@ngrx/signals` Signal Store,
   not a global-store slice — it is read by an app initializer, a route guard and both startup screens) holds the startup mode, phase,
   database path, the database's `authState` (what gates the unlock screen's `OK` button: only a stored `scrypt` record demands a local
   match) and the `startFailed` flag (set on a failed `backend:start`, cleared on the next attempt), and drives the `backend:start` call.
-  Both `/unlock` and #37's `/configure` route on that same flag rather than each carrying their own. `startup.initializer.ts` resolves the
-  startup state from the bridge before the router's first navigation, which is what lets `startupPhaseGuard` decide synchronously which
-  route to admit. In browser dev mode (`ng serve`, no bridge) none of this activates: the guard admits the shell immediately and the app
-  loads.
+  `selectDatabase` is what keeps `databasePath`/`authState` correct once the configuration screen switches databases — the two arrive once
+  from `startup:getState` and describe the database the app *started* against — and `enterUnlock` sits alongside
+  `enterConfigure`/`enterBooting` as the way back into the unlock screen. Both `/unlock` and `/configure` route on the same `startFailed`
+  flag rather than each carrying their own. `startup.initializer.ts` resolves the startup state from the bridge before the router's first
+  navigation, which is what lets `startupPhaseGuard` decide synchronously which route to admit. In browser dev mode (`ng serve`, no bridge)
+  none of this activates: the guard admits the shell immediately and the app loads.
 - **Two kinds of state, kept strictly separate** — see the dedicated sections below for each:
   - The **global NgRx store** (`src/store/`) holds only data that's genuinely shared/global (loaded entities, cross-screen config) — never
     screen-local drafts or UI-only state.
@@ -184,6 +197,9 @@ container component's `providers: [XStore]`, then have descendant components
 - One-line JSON objects and arrays are allowed if and only if they are empty or contain maximum one key / item.
   - `[]`, `['foo']` are okay, `['foo', 'bar']` needs to be multi-line
   - `{}`, `{foo: 'bar'}` are okay, `{foo: 'bar', baz: 1}` needs to be multi-line
+- **Doc comments obey dependency inversion** (root `LLM.md`, "Dependency inversion binds the docs too"): a selector, computed, method,
+  effect or store helper documents its own contract, never which component or screen calls it, in which order the callers run, or what
+  another slice/screen does with the result afterwards.
 
 ## Date display
 
@@ -268,6 +284,14 @@ The focus on testing in the angular app is on logic. Use `jest` to test:
   `it`, `jest`, ...) explicitly from `@jest/globals` — never rely on ambient globals, and don't import symbols the file doesn't use.
 - Testing philosophy
   - Use mocks wherever possible over real instances of dependencies and function arguments.
+  - **A collaborator reached through a plain `import` is a dependency like any other — mock it with `jest.mock()`.** Nothing about a
+    module-level function makes it part of the unit under test: leaving it real turns the spec into a test of the combination, and the
+    assertions then have to reach past the unit's own boundary to that collaborator's collaborators Assert the handover instead: that the
+    unit called the collaborator, with which arguments, how often — and never what the real collaborator would have done next.
+    `discard-and-start.spec.ts` is the reference.
+    - Mechanics: `jest.mock('<path>', () => ({<fn>: jest.fn()}))` at the top of the file, the mocked function's signature as a local
+      `type`, and a `let <fn>Mock: jest.Mock<Signature>` assigned from the imported binding in `beforeEach()`. Module mocks live for the
+      whole file, so reset it there too, or call counts leak from one test into the next.
   - `beforeEach()` sets up the baseline. The **first test function** in the file is the baseline case itself - no extra arrange, just act +
     assert. Every other test changes exactly one precondition in its own arrange step, then does act + assert.
   - Use nested `describe()` if you want multiple tests with the same alteration from the baseline: the shared alteration goes into the

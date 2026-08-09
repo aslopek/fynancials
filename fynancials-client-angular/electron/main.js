@@ -8,11 +8,13 @@ const {Readable} = require('stream');
 const {pipeline} = require('stream/promises');
 const {createConfigFile} = require('./config/config-file.js');
 const {createAuthRegistry} = require('./config/auth-registry.js');
+const {createConfigurationWriter} = require('./config/configuration-writer.js');
 const {BACKEND_PID_URL, createBackendReachability} = require('./backend/backend-reachable.js');
 const {createBackendProcess} = require('./backend/backend-process.js');
+const {createDatabaseDialogs} = require('./window/database-dialogs.js');
 const {createStartupMode} = require('./window/startup-mode.js');
 const {createStartupBridge} = require('./ipc/startup-bridge.js');
-const {createMainWindow} = require('./window/main-window.js');
+const {createMainWindow, getMainWindow} = require('./window/main-window.js');
 
 const title = 'Fynancials';
 const askForJavaDownload = 'Java not found. Do you want to download Amazon Corretto 25?';
@@ -30,16 +32,21 @@ const logPath = path.join(process.cwd(), 'fynancials.log');
 
 const configFile = createConfigFile({
   fileSystem: fs,
-  configFilePath: path.join(os.homedir(), 'fynancials.config.json'),
-  homeDirectory: os.homedir()
+  configFilePath: path.join(os.homedir(), 'fynancials.config.json')
 });
-const config = configFile.load();
+const {config, state: configFileState} = configFile.load();
 const authRegistry = createAuthRegistry({configFile, config});
+const configurationWriter = createConfigurationWriter({configFile, config, authRegistry});
 const backendReachability = createBackendReachability({
   fetchPid: fetchBackendPid,
   delay
 });
-const startupMode = createStartupMode({configFile, config, authRegistry});
+const databaseDialogs = createDatabaseDialogs({
+  dialog,
+  getParentWindow: getMainWindow,
+  fileSystem: fs
+});
+const startupMode = createStartupMode({configFile, configFileState, config, authRegistry});
 const backendProcess = createBackendProcess({
   spawn: spawnChildProcess,
   resolveJava: verifyJava,
@@ -68,7 +75,7 @@ function spawnChildProcess(command, args, spawnOptions) {
 /**
  * Runs an external command without a shell (no string interpolation into a shell command line, so paths/args with spaces or
  * special characters can't break or inject into the invocation). Throws on a non-zero exit or a spawn failure, mirroring
- * execSync's throw-on-failure behavior so callers can use try/catch.
+ * execSync's throw-on-failure behavior.
  *
  * @param {string} command
  * @param {string[]} args
@@ -299,9 +306,13 @@ app.on('ready', () => {
   createStartupBridge({
     ipcMain,
     startupState,
+    configFileState,
     backendProcess,
     authRegistry,
+    configurationWriter,
+    databaseDialogs,
     config,
+    logPath,
     quit: () => app.quit()
   }).register();
   createMainWindow();

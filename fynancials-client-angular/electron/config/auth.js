@@ -85,7 +85,8 @@ function authStateOf(entry) {
 
 /**
  * Verifies a candidate against an entry, locally and synchronously. A pending entry has nothing to verify against and
- * yields `false`, so callers branch on `authStateOf` rather than on this result.
+ * yields `false` too, so a `false` means "not proven" rather than "wrong password" - only `authStateOf` tells the two
+ * apart.
  *
  * @param {unknown} entry
  * @param {string} candidate

@@ -94,6 +94,34 @@ When DRY and domain separation conflict, domain separation wins — in both dire
   (e.g. by spreading one into the other) just to deduplicate their defaults.
 - Within domains, DRY applies.
 
+## Dependency inversion binds the docs too
+
+Dependency inversion is a rule about knowledge, not merely about `import` statements — and a doc comment carries knowledge just as an
+import does. A unit that must not depend on its callers must not *describe* them either: **a comment on a function, class, module or type
+explains what that unit does, what its parameters and return value mean, and which invariants it upholds — never who calls it, in what
+order, from which screen, or what a downstream consumer will later do with the result.** This holds in all three parts, for every comment
+form (JSDoc, Javadoc, `//`), and it holds for callers the code has today just as much as for the ones a story happens to mention.
+
+Naming the caller in prose is worse than importing it, because nothing checks it. The compiler catches a stale import; a comment claiming
+"this runs on both finish buttons so the unlock screen's `OK` gates correctly" survives every rename, every new caller and the deletion of
+that screen, and then actively misinforms the next reader. It also re-couples what the code took care to decouple: the module now cannot be
+read, moved or reused without the reader believing they need the caller's context.
+
+Where the knowledge is real, write it down where it belongs:
+
+- **A reason a caller has for calling** belongs to the caller — put it there, next to the call, where it is about that caller's own
+  behavior.
+- **A rule spanning two screens or two tiers** belongs to the story's acceptance criteria, and to whichever `LLM.md` documents that seam,
+  not to a helper that happens to sit on the path between them.
+- **An invariant the unit itself upholds** is fair game and stays: express it as a property of the unit's own contract ("returns the
+  selection re-read from the config, so a discarded `auth` entry reads as `pending`"), phrased so it is verifiable from the unit's own
+  signature and body.
+
+What this does not forbid: naming a *seam the unit itself owns* is part of its contract, not a caller reference — an IPC handler may name
+the channel it serves, a delegate implementation the endpoint it fulfills, a preload script the bridge key it exposes. The test is whether
+the statement stays true when every existing caller is deleted. If it does, it is the unit's contract; if it doesn't, it is a caller's
+business.
+
 ## Dependency licensing
 
 This project is MIT-licensed. Only add a new dependency (npm or Maven, in any of the three parts) if its license is compatible with that —
@@ -107,7 +135,9 @@ its parent POM if not set directly)before adding it.
 The Electron app (`fynancials-client-angular`) is the shipped product. `app.on('ready')` opens its single `BrowserWindow` on the built
 Angular app immediately — it does not resolve Java, ask for a password or spawn the backend first. The Angular shell reads a computed
 startup mode (`boot`, `unlock` or `configure`) over an IPC bridge and, once past any unlock/configure screen, triggers the backend start
-itself via that same bridge. `electron/main.js` then spawns a bundled Java process running the Spring Boot backend (`backend.jar`) as a
+itself via that same bridge. In `configure` mode the shell renders the configuration screen, where the user picks or creates the database
+file and, for a newly created one, defines its password; finishing there continues the very same startup flow in the same window, without
+a relaunch. `electron/main.js` then spawns a bundled Java process running the Spring Boot backend (`backend.jar`) as a
 child process and reports back whether it became reachable. The database password reaches that child over its stdin — the entire content
 of the stream, closed right after — rather than through its environment. The backend listens on port `23726` (H2 console on `23727`),
 backed by a local encrypted H2 file database whose path is configurable via `FY_DB_FILE_PATH`. See

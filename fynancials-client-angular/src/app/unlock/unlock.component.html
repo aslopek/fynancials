@@ -1,7 +1,10 @@
 <div class="unlock-screen">
     <div class="unlock-content">
+        <img alt=""
+             class="app-logo"
+             src="./assets/logo.png"/>
         <h1 class="database-file-name">
-            {{ unlockStore.databaseFileName() }}
+            {{ startupStore.databasePath() | fileName:'.mv.db' }}
         </h1>
         <p class="database-path">
             {{ startupStore.databasePath() }}
