@@ -6,5 +6,6 @@ const {z} = require('zod');
  */
 
 const backendStartPasswordSchema = z.string().optional();
+const authVerifyPasswordSchema = z.string();
 
-module.exports = {backendStartPasswordSchema};
+module.exports = {backendStartPasswordSchema, authVerifyPasswordSchema};

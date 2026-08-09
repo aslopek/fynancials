@@ -42,7 +42,7 @@ describe('startupMode', () => {
   it('resolves unlock for a pending database', () => {
     const state = startupMode.resolve();
 
-    expect(state).toEqual({databasePath, mode: 'unlock'});
+    expect(state).toEqual({authState: 'pending', databasePath, mode: 'unlock'});
     expect(save).not.toHaveBeenCalled();
   });
 
@@ -54,7 +54,7 @@ describe('startupMode', () => {
     it('resolves configure mode and consumes the flag', () => {
       const state = startupMode.resolve();
 
-      expect(state).toEqual({databasePath, mode: 'configure'});
+      expect(state).toEqual({authState: 'pending', databasePath, mode: 'configure'});
       expect(save).toHaveBeenCalledTimes(1);
       expect(save).toHaveBeenCalledWith({
         env: {FY_DB_FILE_PATH: databasePath},
@@ -71,7 +71,7 @@ describe('startupMode', () => {
     it('resolves configure mode without saving', () => {
       const state = startupMode.resolve();
 
-      expect(state).toEqual({databasePath, mode: 'configure'});
+      expect(state).toEqual({authState: 'pending', databasePath, mode: 'configure'});
       expect(save).not.toHaveBeenCalled();
     });
   });
@@ -81,10 +81,11 @@ describe('startupMode', () => {
       config.env = {};
     });
 
-    it('resolves configure mode with a null database path', () => {
+    it('resolves configure mode with a null database path and null auth state', () => {
       const state = startupMode.resolve();
 
-      expect(state).toEqual({databasePath: null, mode: 'configure'});
+      expect(state).toEqual({authState: null, databasePath: null, mode: 'configure'});
+      expect(stateOf).not.toHaveBeenCalled();
     });
   });
 
@@ -93,10 +94,10 @@ describe('startupMode', () => {
       stateOf.mockReturnValue('scrypt');
     });
 
-    it('resolves unlock mode', () => {
+    it('resolves unlock mode with authState scrypt', () => {
       const state = startupMode.resolve();
 
-      expect(state).toEqual({databasePath, mode: 'unlock'});
+      expect(state).toEqual({authState: 'scrypt', databasePath, mode: 'unlock'});
     });
   });
 
@@ -108,7 +109,7 @@ describe('startupMode', () => {
     it('resolves boot mode', () => {
       const state = startupMode.resolve();
 
-      expect(state).toEqual({databasePath, mode: 'boot'});
+      expect(state).toEqual({authState: 'passwordless', databasePath, mode: 'boot'});
     });
   });
 });

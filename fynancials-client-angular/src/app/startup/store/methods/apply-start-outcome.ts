@@ -16,7 +16,7 @@ export function applyStartOutcome(signalStore: WritableSignalStore<StartupStoreS
   }
 
   const phase: StartupPhase = phaseAfterFailedStart(outcome.startedFrom);
-  patchState(signalStore, {phase});
+  patchState(signalStore, {phase, startFailed: true});
 
   const route: string | null = startupRouteFor(phase);
   if (route != null) {

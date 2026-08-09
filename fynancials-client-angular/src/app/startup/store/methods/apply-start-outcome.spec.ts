@@ -30,10 +30,10 @@ describe('applyStartOutcome', (): void => {
       outcome = {reachable: false, startedFrom: 'pending'};
     });
 
-    it('enters the unlock phase', (): void => {
+    it('enters the unlock phase and marks the start as failed', (): void => {
       applyStartOutcome(store, router, outcome);
 
-      expect(getState(store)).toEqual({...initialState, phase: 'unlock'});
+      expect(getState(store)).toEqual({...initialState, phase: 'unlock', startFailed: true});
     });
 
     it('navigates to /unlock', (): void => {
@@ -49,10 +49,10 @@ describe('applyStartOutcome', (): void => {
       outcome = {reachable: false, startedFrom: 'scrypt'};
     });
 
-    it('enters the configure phase', (): void => {
+    it('enters the configure phase and marks the start as failed', (): void => {
       applyStartOutcome(store, router, outcome);
 
-      expect(getState(store)).toEqual({...initialState, phase: 'configure'});
+      expect(getState(store)).toEqual({...initialState, phase: 'configure', startFailed: true});
     });
 
     it('navigates to /configure', (): void => {
@@ -68,10 +68,10 @@ describe('applyStartOutcome', (): void => {
       outcome = {reachable: false, startedFrom: 'passwordless'};
     });
 
-    it('enters the configure phase', (): void => {
+    it('enters the configure phase and marks the start as failed', (): void => {
       applyStartOutcome(store, router, outcome);
 
-      expect(getState(store)).toEqual({...initialState, phase: 'configure'});
+      expect(getState(store)).toEqual({...initialState, phase: 'configure', startFailed: true});
     });
 
     it('navigates to /configure', (): void => {

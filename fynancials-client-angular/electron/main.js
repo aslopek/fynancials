@@ -296,7 +296,14 @@ function delay(milliseconds) {
 app.on('ready', () => {
   removePreviousLog();
   const startupState = startupMode.resolve();
-  createStartupBridge({ipcMain, startupState, backendProcess}).register();
+  createStartupBridge({
+    ipcMain,
+    startupState,
+    backendProcess,
+    authRegistry,
+    config,
+    quit: () => app.quit()
+  }).register();
   createMainWindow();
 });
 

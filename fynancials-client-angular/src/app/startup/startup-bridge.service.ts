@@ -28,6 +28,18 @@ export class StartupBridgeService {
     return defer((): Observable<BackendStartOutcome> => from(this.requireBridge().startBackend(password)));
   }
 
+  verifyPassword(password: string): Observable<boolean> {
+    return defer((): Observable<boolean> => from(this.requireBridge().verifyPassword(password)));
+  }
+
+  /**
+   * Fire-and-forget: `ipcRenderer.send` returns synchronously and `app.quit()` is vetoable in Electron, so nothing
+   * here may depend on the app still running afterward.
+   */
+  quit(): void {
+    this.requireBridge().quit();
+  }
+
   private requireBridge(): FynancialsBridge {
     if (this.bridge == null) {
       throw new Error("The fynancials bridge is not available");
