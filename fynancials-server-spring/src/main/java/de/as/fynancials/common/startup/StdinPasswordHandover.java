@@ -20,7 +20,7 @@ import org.apache.commons.logging.Log;
  * Reads the database password handed over on the given {@link InputStream} to EOF, exactly once. The
  * bytes are treated as an opaque payload from first to last: read, decode, return - no trimming, no delimiter, no
  * format. A second read after the stream has already reached EOF would see it as an empty password, which is a
- * silent lockout, so the outcome of the first {@link #read} is memoized and returned to every later caller.
+ * silent lockout, so the outcome of the first {@link #read} is memoized and every later invocation repeats it.
  */
 @RequiredArgsConstructor
 class StdinPasswordHandover {

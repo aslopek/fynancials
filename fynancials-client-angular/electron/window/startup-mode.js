@@ -1,18 +1,17 @@
 /** @import {AuthRegistry} from '../config/auth-registry.js' */
 /** @import {AuthState} from '../config/auth.js' */
-/** @import {ConfigFile} from '../config/config-file.js' */
+/** @import {ConfigFile, ConfigFileState} from '../config/config-file.js' */
 /** @import {FynancialsConfig} from '../config/config-schema.js' */
 
 /**
  * Computes which startup mode the window opens into, from the loaded config plus the auth registry. Consuming the
- * one-shot `configureOnNextStart` flag lives here too (epic ADR-006): it is read and deleted from the config in the
- * same step that decides the mode, before the window renders anything, so no way of leaving the configuration screen
- * can ever leave it dangling.
+ * one-shot `configureOnNextStart` flag lives here too: it is read and deleted from the config in the
+ * same step that decides the mode, so the flag cannot outlive the run it was written for.
  *
- * `resolve()` runs once, at `app.on('ready')`, and the `authState` it reports is what the bridge hands the renderer
- * for the whole run. That value cannot go stale: a failed start leaves the config untouched (epic ADR-003), and every
- * path that would change it - a proven start, a database switch - leaves the unlock screen for good. There is nothing
- * for a refresh channel to do.
+ * `resolve()` is a one-shot snapshot rather than a live view - it consumes that flag on the way, so a second call is
+ * not equivalent to the first. What it reports describes the database the app started against, and stays true for
+ * the whole run on its own terms: a failed start leaves the config untouched, and a proven start only ever fills a
+ * pending entry.
  */
 
 /** @typedef {'boot' | 'configure' | 'unlock'} StartupMode */
@@ -26,7 +25,8 @@
 
 /**
  * @typedef {Object} StartupModeOptions
- * @property {Pick<ConfigFile, 'exists' | 'save'>} configFile
+ * @property {Pick<ConfigFile, 'save'>} configFile
+ * @property {ConfigFileState} configFileState what the single `load()` at start observed about the file
  * @property {FynancialsConfig} config
  * @property {Pick<AuthRegistry, 'stateOf'>} authRegistry
  */
@@ -38,7 +38,7 @@
  * @returns {StartupModeResolver}
  */
 function createStartupMode(options) {
-  const {configFile, config, authRegistry} = options;
+  const {configFile, configFileState, config, authRegistry} = options;
 
   /**
    * @returns {StartupState}
@@ -49,13 +49,16 @@ function createStartupMode(options) {
     /** @type {AuthState | null} */
     const authState = databasePath == null ? null : authRegistry.stateOf(databasePath);
 
-    if (config.configureOnNextStart === true) {
-      delete config.configureOnNextStart;
-      configFile.save(config);
+    // first, so that no ordering of later edits can make a config file we failed to read get written to. The two
+    // branches can never both apply - a file that could not be read yields the default, which carries no flag -
+    // so the order costs nothing and makes the one branch below that writes unreachable for such a file.
+    if (configFileState !== 'read') {
       return {authState, databasePath, mode: 'configure'};
     }
 
-    if (!configFile.exists()) {
+    if (config.configureOnNextStart === true) {
+      delete config.configureOnNextStart;
+      configFile.save(config);
       return {authState, databasePath, mode: 'configure'};
     }
 

@@ -1,4 +1,3 @@
-const path = require('node:path');
 const {fynancialsConfigSchema} = require('./config-schema.js');
 
 /** @import {FynancialsConfig} from './config-schema.js' */
@@ -7,10 +6,24 @@ const {fynancialsConfigSchema} = require('./config-schema.js');
  * Reads and writes `fynancials.config.json`. The file system and the file's location are injected, so this module is
  * exercisable without touching a real disk.
  *
- * A missing file returns the default configuration without writing it - the caller (the startup-mode computation)
- * is what decides a missing file means `configure` mode, and that mode must not leave a write behind. An unreadable,
- * unparsable or schema-violating file falls back to the default and overwrites it rather than crashing the app on
- * startup; a failed write is logged, never thrown.
+ * `load()` never writes, in any of its three outcomes. A missing file and an unreadable one - unparsable JSON, a
+ * schema violation, a failed read - both yield the default configuration in memory, so the rest of the main process
+ * has something well-formed to work with, while the file on disk is left exactly as it is.
+ *
+ * The default configuration deliberately names no database: a proposed path would be one save away from becoming a
+ * decision the user never made, so the absence stays explicit and has to be answered before a database is opened.
+ */
+
+/**
+ * What `load()` observed about the file on disk.
+ *
+ * @typedef {'read' | 'missing' | 'unreadable'} ConfigFileState
+ */
+
+/**
+ * @typedef {Object} LoadedConfig
+ * @property {FynancialsConfig} config the parsed configuration, or the default one when it could not be read
+ * @property {ConfigFileState} state
  */
 
 /**
@@ -27,16 +40,13 @@ const {fynancialsConfigSchema} = require('./config-schema.js');
  * @typedef {Object} ConfigFileOptions
  * @property {ConfigFileSystem} fileSystem
  * @property {string} configFilePath
- * @property {string} homeDirectory
  * @property {Pick<Console, 'error'>} [logger]
  */
 
 /**
  * @typedef {Object} ConfigFile
  * @property {string} path
- * @property {() => FynancialsConfig} defaultConfig
- * @property {() => boolean} exists
- * @property {() => FynancialsConfig} load
+ * @property {() => LoadedConfig} load
  * @property {(config: FynancialsConfig) => void} save
  */
 
@@ -45,7 +55,7 @@ const {fynancialsConfigSchema} = require('./config-schema.js');
  * @returns {ConfigFile}
  */
 function createConfigFile(options) {
-  const {fileSystem, configFilePath, homeDirectory} = options;
+  const {fileSystem, configFilePath} = options;
   const logger = options.logger ?? console;
 
   /**
@@ -53,7 +63,7 @@ function createConfigFile(options) {
    */
   function defaultConfig() {
     return {
-      env: {FY_DB_FILE_PATH: path.join(homeDirectory, 'fynancials')},
+      env: {},
       auth: {}
     };
   }
@@ -72,28 +82,19 @@ function createConfigFile(options) {
 
   /**
    * @param {unknown} reason
-   * @returns {FynancialsConfig}
+   * @returns {LoadedConfig}
    */
   function fallBackToDefault(reason) {
     logger.error(`Failed to read config from ${configFilePath}, falling back to defaults:`, reason);
-    const config = defaultConfig();
-    save(config);
-    return config;
+    return {config: defaultConfig(), state: 'unreadable'};
   }
 
   /**
-   * @returns {boolean}
-   */
-  function exists() {
-    return fileSystem.existsSync(configFilePath);
-  }
-
-  /**
-   * @returns {FynancialsConfig}
+   * @returns {LoadedConfig}
    */
   function load() {
-    if (!exists()) {
-      return defaultConfig();
+    if (!fileSystem.existsSync(configFilePath)) {
+      return {config: defaultConfig(), state: 'missing'};
     }
 
     let contents;
@@ -104,13 +105,11 @@ function createConfigFile(options) {
     }
 
     const parsedConfig = fynancialsConfigSchema.safeParse(contents);
-    return parsedConfig.success ? parsedConfig.data : fallBackToDefault(parsedConfig.error);
+    return parsedConfig.success ? {config: parsedConfig.data, state: 'read'} : fallBackToDefault(parsedConfig.error);
   }
 
   return {
     path: configFilePath,
-    defaultConfig,
-    exists,
     load,
     save
   };

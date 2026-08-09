@@ -21,7 +21,7 @@ describe('setStartupState', (): void => {
     expect(getState(store)).toEqual({authState: 'passwordless', databasePath, mode: 'boot', phase: 'booting', startFailed: false});
   });
 
-  it('enters the unlock phase for unlock mode', (): void => {
+  it('enters the unlock phase for unlock mode (pending database)', (): void => {
     const state: StartupState = {authState: 'pending', databasePath, mode: 'unlock'};
 
     setStartupState(store, state);
@@ -29,7 +29,7 @@ describe('setStartupState', (): void => {
     expect(getState(store)).toEqual({authState: 'pending', databasePath, mode: 'unlock', phase: 'unlock', startFailed: false});
   });
 
-  it('carries the auth state through for an scrypt record', (): void => {
+  it('\'enters the unlock phase for unlock mode (scrypt database)', (): void => {
     const state: StartupState = {authState: 'scrypt', databasePath, mode: 'unlock'};
 
     setStartupState(store, state);

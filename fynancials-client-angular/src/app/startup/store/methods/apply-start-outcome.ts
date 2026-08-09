@@ -6,8 +6,9 @@ import {phaseAfterFailedStart, startupRouteFor} from "../routing/startup-route";
 import {StartupComputed, StartupPhase, StartupStoreState} from "../startup.store";
 
 /**
- * On a reachable outcome this does nothing - the shell's own splash gate owns the handover to the app. A failed
- * start routes on the state it was started from.
+ * On a reachable outcome this does nothing: the phase stays as it was and nothing is navigated, because a reachable
+ * backend needs no startup routing at all. A failed start routes on the state it was started from, and is the only
+ * thing that ever sets `startFailed`.
  */
 export function applyStartOutcome(signalStore: WritableSignalStore<StartupStoreState, StartupComputed>,
                                   router: Pick<Router, 'navigate'>, outcome: BackendStartOutcome): void {

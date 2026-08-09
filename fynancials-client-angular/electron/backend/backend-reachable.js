@@ -4,14 +4,14 @@
  * connection during context refresh, which is where H2 validates the file password, so a serving HTTP port cannot
  * happen with a wrong password.
  *
- * The renderer polls the backend as well, to know when to leave the splash screen. This poll is separate on purpose -
- * writing an auth record must not depend on a renderer being there.
+ * The poll is the main process' own, and duplicating whatever else watches that port is the point: recording a proven
+ * start must not depend on another observer being there to report reachability.
  */
 
 /** @type {string} */
 const BACKEND_PID_URL = 'http://127.0.0.1:23726/config/pid';
 
-/** @type {number} mirror's the renderer's own polling interval */
+/** @type {number} how often the port is probed while waiting */
 const POLL_INTERVAL_MILLISECONDS = 500;
 
 /**

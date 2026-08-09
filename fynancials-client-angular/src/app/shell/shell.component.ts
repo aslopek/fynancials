@@ -70,8 +70,8 @@ export class ShellComponent implements OnInit {
    * The packaged app spawns the backend as a child process; it needs several seconds to boot. Dispatching the initial
    * load actions before it accepts connections would fail without retry and leave the app empty.
    *
-   * The loop ends with the component: a failed backend start routes the app back to a startup screen and destroys
-   * this shell, and a poll outliving it would dispatch the initial loads a second time once a later start succeeds.
+   * The loop is bounded by this component's own lifetime: it stops on destroy, so a shell torn down while still
+   * waiting never dispatches the initial loads afterwards - which would duplicate those of the shell that replaces it.
    */
   private async waitForBackend(): Promise<void> {
     while (!this.destroyed) {

@@ -58,4 +58,14 @@ function createMainWindow() {
   });
 }
 
-module.exports = {createMainWindow};
+/**
+ * The window native dialogs are parented to, so none of them can end up behind the app. Null before `createMainWindow`
+ * and after the window was closed.
+ *
+ * @returns {import('electron').BrowserWindow | null}
+ */
+function getMainWindow() {
+  return frontend;
+}
+
+module.exports = {createMainWindow, getMainWindow};

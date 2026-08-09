@@ -5,9 +5,10 @@ import {StartupState} from "./startup-bridge.type";
 import {ReadableStartupStore, StartupStore} from "./store/startup.store";
 
 /**
- * Resolves the startup state from the bridge before the router's first navigation, registered via
- * `provideAppInitializer` in `app.config.ts`. Without that, the shell would mount first, start its backend poll,
- * and then be navigated away from - the double-dispatch the startup guard exists to avoid.
+ * Resolves the startup state from the bridge into the store, as an app initializer: it has to complete before the
+ * router's first navigation, or every routing decision would still read the store's initial phase.
+ *
+ * Without a bridge (`ng serve`) it completes immediately and writes nothing, leaving the store at its defaults.
  */
 export function initializeStartup(): Observable<void> {
   const bridge: StartupBridgeService = inject(StartupBridgeService);

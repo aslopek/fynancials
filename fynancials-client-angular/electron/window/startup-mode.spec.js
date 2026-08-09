@@ -3,7 +3,7 @@ const {createStartupMode} = require('./startup-mode.js');
 
 /** @import {AuthRegistry} from '../config/auth-registry.js' */
 /** @import {AuthState} from '../config/auth.js' */
-/** @import {ConfigFile} from '../config/config-file.js' */
+/** @import {ConfigFile, ConfigFileState} from '../config/config-file.js' */
 /** @import {FynancialsConfig} from '../config/config-schema.js' */
 /** @import {StartupModeResolver} from './startup-mode.js' */
 
@@ -13,30 +13,37 @@ describe('startupMode', () => {
   /** @type {FynancialsConfig} */
   let config;
 
-  const exists = jest.fn(() => true);
+  /** @type {ConfigFileState} */
+  let configFileState;
+
   const save = jest.fn(/** @type {(config: FynancialsConfig) => void} */ (() => undefined));
   const stateOf = jest.fn(/** @type {(databasePath: string) => AuthState} */ (() => 'pending'));
 
   /** @type {StartupModeResolver} */
   let startupMode;
 
+  /** @returns {StartupModeResolver} */
+  function createResolver() {
+    /** @type {Pick<ConfigFile, 'save'>} */
+    const configFile = {save};
+
+    /** @type {Pick<AuthRegistry, 'stateOf'>} */
+    const authRegistry = {stateOf};
+
+    return createStartupMode({configFile, configFileState, config, authRegistry});
+  }
+
   beforeEach(() => {
     jest.clearAllMocks();
-    exists.mockReturnValue(true);
     stateOf.mockReturnValue('pending');
+    configFileState = 'read';
 
     config = {
       env: {FY_DB_FILE_PATH: databasePath},
       auth: {}
     };
 
-    /** @type {Pick<ConfigFile, 'exists' | 'save'>} */
-    const configFile = {exists, save};
-
-    /** @type {Pick<AuthRegistry, 'stateOf'>} */
-    const authRegistry = {stateOf};
-
-    startupMode = createStartupMode({configFile, config, authRegistry});
+    startupMode = createResolver();
   });
 
   it('resolves unlock for a pending database', () => {
@@ -63,15 +70,48 @@ describe('startupMode', () => {
     });
   });
 
-  describe('when the config file does not exist', () => {
+  describe('when the config file is missing', () => {
     beforeEach(() => {
-      exists.mockReturnValue(false);
+      configFileState = 'missing';
+      startupMode = createResolver();
     });
 
     it('resolves configure mode without saving', () => {
       const state = startupMode.resolve();
 
       expect(state).toEqual({authState: 'pending', databasePath, mode: 'configure'});
+      expect(save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('when the config file could not be read', () => {
+    beforeEach(() => {
+      configFileState = 'unreadable';
+      startupMode = createResolver();
+    });
+
+    it('resolves configure mode without saving', () => {
+      const state = startupMode.resolve();
+
+      expect(state).toEqual({authState: 'pending', databasePath, mode: 'configure'});
+      expect(save).not.toHaveBeenCalled();
+    });
+
+    it('reports no database for the default configuration it fell back to', () => {
+      config.env = {};
+
+      const state = startupMode.resolve();
+
+      expect(state).toEqual({authState: null, databasePath: null, mode: 'configure'});
+    });
+
+    it('consumes no flag and writes nothing even with configureOnNextStart set', () => {
+      config.configureOnNextStart = true;
+
+      const state = startupMode.resolve();
+
+      expect(state).toEqual({authState: 'pending', databasePath, mode: 'configure'});
+      expect(config.configureOnNextStart).toBe(true);
       expect(save).not.toHaveBeenCalled();
     });
   });
@@ -106,10 +146,11 @@ describe('startupMode', () => {
       stateOf.mockReturnValue('passwordless');
     });
 
-    it('resolves boot mode', () => {
+    it('resolves boot mode without saving', () => {
       const state = startupMode.resolve();
 
       expect(state).toEqual({authState: 'passwordless', databasePath, mode: 'boot'});
+      expect(save).not.toHaveBeenCalled();
     });
   });
 });

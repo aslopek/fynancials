@@ -92,6 +92,17 @@ describe('authRegistry', () => {
     expect(registry.stateOf(databasePath)).toBe('pending');
   });
 
+  it('lists nothing for an empty auth map', () => {
+    expect(registry.knownDatabases()).toEqual([]);
+  });
+
+  it('writes nothing when forgetting a database that has no entry', () => {
+    registry.forget(databasePath);
+
+    expect(config.auth).toEqual({});
+    expect(save).not.toHaveBeenCalled();
+  });
+
   it('verifies nothing against a database without an entry', () => {
     expect(registry.verify(databasePath, password)).toBe(false);
   });
@@ -180,6 +191,62 @@ describe('authRegistry', () => {
       registry.recordProvenStart(databasePath, '');
 
       expect(save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('with entries for two databases', () => {
+    const otherDatabasePath = 'D:\\backup\\fynancials-test';
+
+    beforeEach(() => {
+      config.auth[databasePath] = storedScryptEntry();
+      config.auth[otherDatabasePath] = {passwordless: true};
+    });
+
+    it('lists every database with a usable entry, each with its classified state', () => {
+      expect(registry.knownDatabases()).toEqual([
+        {
+          path: databasePath,
+          authState: 'scrypt'
+        },
+        {
+          path: otherDatabasePath,
+          authState: 'passwordless'
+        }
+      ]);
+    });
+
+    it('omits an entry that does not classify', () => {
+      config.auth['E:\\mangled'] = {scrypt: {cost: 16384}};
+
+      expect(registry.knownDatabases()).toEqual([
+        {
+          path: databasePath,
+          authState: 'scrypt'
+        },
+        {
+          path: otherDatabasePath,
+          authState: 'passwordless'
+        }
+      ]);
+    });
+
+    it('removes an scrypt entry and leaves every other one untouched', () => {
+      registry.forget(databasePath);
+
+      expect(config.auth).toEqual({[otherDatabasePath]: {passwordless: true}});
+    });
+
+    it('removes a passwordless entry and leaves every other one untouched', () => {
+      registry.forget(otherDatabasePath);
+
+      expect(config.auth).toEqual({[databasePath]: storedScryptEntry()});
+    });
+
+    it('persists the removal', () => {
+      registry.forget(databasePath);
+
+      expect(save).toHaveBeenCalledTimes(1);
+      expect(save).toHaveBeenCalledWith(config);
     });
   });
 

@@ -7,6 +7,8 @@ import {StartupBridgeService} from "../startup-bridge.service";
 import {AuthState, StartupMode, StartupState} from "../startup-bridge.type";
 import {startBackend} from "./effects/start-backend";
 import {enterConfigure} from "./methods/enter-configure";
+import {enterUnlock} from "./methods/enter-unlock";
+import {DatabaseSelection, selectDatabase} from "./methods/select-database";
 import {setStartupState} from "./methods/set-startup-state";
 
 /** Where the app currently is, distinct from `mode` (what the main process computed at start - see below). */
@@ -16,6 +18,8 @@ export type StartupComputed = {};
 
 export type StartupMethods = {
   enterConfigure: () => void
+  enterUnlock: () => void
+  selectDatabase: (selection: DatabaseSelection) => void
   setStartupState: (state: StartupState) => void
   startBackend: (password: string) => void
 };
@@ -23,7 +27,7 @@ export type StartupMethods = {
 export type StartupStoreState = {
   authState: AuthState | null
   databasePath: string | null
-  // null means no bridge (`ng serve` in a browser) - set once from `startup:getState`, never again afterwards
+  // null means no bridge (`ng serve` in a browser)
   mode: StartupMode | null
   phase: StartupPhase
   startFailed: boolean
@@ -49,6 +53,8 @@ export const StartupStore = signalStore(
     const startBackendMethod: RxMethod<string> = startBackend(signalStore, bridge, router);
     return {
       enterConfigure: (): void => enterConfigure(signalStore, router),
+      enterUnlock: (): void => enterUnlock(signalStore, router),
+      selectDatabase: (selection: DatabaseSelection): void => selectDatabase(signalStore, selection),
       setStartupState: (state: StartupState): void => setStartupState(signalStore, state),
       startBackend: startBackendMethod
     };
