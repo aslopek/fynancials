@@ -1,6 +1,5 @@
 const path = require('path');
 const fs = require('fs');
-const {execSync} = require('child_process');
 const {rimrafSync} = require('rimraf')
 
 // What ends up inside app.asar. electron-packager copies the whole package directory unless told otherwise, which
@@ -44,7 +43,7 @@ function isPackaged(filePath) {
 
 module.exports = {
     hooks: {
-        generateAssets: async (config, buildPath, electronVersion, platform, arch) => {
+        generateAssets: async (_config, _buildPath, _electronVersion, _platform, _arch) => {
             const fileName = `fynancials-server-spring-${require('./package.json').version}.jar`;
             const src = path.join(__dirname, '..', 'fynancials-server-spring', 'target', fileName);
             const resources = path.join(__dirname, 'resources');
@@ -53,30 +52,6 @@ module.exports = {
             rimrafSync(resources);
             fs.mkdirSync(resources);
             fs.cpSync(src, dst);
-        },
-        postPackage: async (forgeConfig, options) => {
-            const nodeModules = [
-                'custom-electron-prompt'
-            ];
-            let output = path.join(__dirname, 'out', `fynancials-${process.platform}-${process.arch}`,
-                'resources', 'node_modules');
-            if (process.platform === 'darwin') {
-                output = path.join(__dirname, 'out', `fynancials-${process.platform}-${process.arch}`, 'fynancials.app',
-                    'Contents', 'Resources', 'node_modules');
-            }
-            fs.mkdirSync(output, {
-                recursive: true
-            });
-            let src, dst;
-
-            for (const nodeModule of nodeModules) {
-                src = path.join(__dirname, 'node_modules', nodeModule);
-                dst = path.join(output, nodeModule);
-                fs.cpSync(src, dst, {
-                    recursive: true
-                });
-            }
-          execSync(`npm --prefix ${output} prune --omit=dev`);
         }
     },
     packagerConfig: {
