@@ -27,6 +27,16 @@
  */
 
 /**
+ * The subset of the child's stdin this module writes the password through - a one-shot, parent-to-child-private pipe.
+ *
+ * @typedef {Object} BackendStdin
+ * @property {(chunk: Buffer, callback: () => void) => boolean} write false signals backpressure, never a failed write
+ * @property {() => void} end
+ * @property {(event: 'error', listener: (error: Error) => void) => void} on
+ * @property {(event: 'drain', listener: () => void) => void} once
+ */
+
+/**
  * The subset of `ChildProcessWithoutNullStreams` this module actually touches - declared minimally,
  * according to the architecture guidelines.
  *
@@ -35,6 +45,7 @@
  * @property {{pipe: (destination: import('node:fs').WriteStream, options: {end: boolean}) => void}} stdout
  * @property {{pipe: (destination: import('node:fs').WriteStream, options: {end: boolean}) => void}} stderr
  * @property {(signal: NodeJS.Signals) => void} kill
+ * @property {BackendStdin} stdin
  */
 
 /**
@@ -82,6 +93,62 @@ function createBackendProcess(options) {
   }
 
   /**
+   * The child's environment: what the app runs with, the configured entries, and the marker that tells the backend to take
+   * the database password from its stdin instead. `FY_DB_FILE_PASSWORD` is deleted rather than merely left unset - an
+   * inherited one from the developer's own shell would put a plaintext password back into the very environment block this
+   * channel exists to keep it out of.
+   *
+   * @returns {NodeJS.ProcessEnv}
+   */
+  function backendEnvironment() {
+    /** @type {NodeJS.ProcessEnv} */
+    const environment = {
+      ...process.env,
+      ...config.env,
+      FY_DB_FILE_PASSWORD_STDIN: 'true'
+    };
+    delete environment['FY_DB_FILE_PASSWORD'];
+    return environment;
+  }
+
+  /**
+   * Hands the password to the child as the entire content of its stdin: UTF-8 bytes, no delimiter, terminated by closing
+   * the stream. A passwordless database writes nothing and only closes - zero bytes followed by EOF is the
+   * explicit passwordless handover.
+   *
+   * Returns synchronously, and the start deliberately does not await it: a child that never drains would otherwise stall
+   * `start` before the reachability poll - the one place a failed start is decided - ever gets to run.
+   *
+   * @param {Pick<SpawnedBackendProcess, 'stdin'>} spawnedProcess
+   * @param {string} password
+   * @returns {void}
+   */
+  function handOverPassword(spawnedProcess, password) {
+    const stdin = spawnedProcess.stdin;
+
+    // a JVM that died before reading (unusable java, corrupt jar) makes the write fail with EPIPE; an unhandled `error`
+    // event on the stream would take the main process down with it. The message never carries the payload.
+    stdin.on('error', (error) => logger.error('Failed to hand the database password to the backend:', error.message));
+
+    if (password.length === 0) {
+      stdin.end();
+      return;
+    }
+
+    /** @type {Buffer<ArrayBuffer>} */
+    const passwordBytes = Buffer.from(password, 'utf8');
+    // only end the stream after the password bytes have been flushed
+    const flushed = stdin.write(passwordBytes, () => passwordBytes.fill(0));
+    if (flushed) {
+      stdin.end();
+      return;
+    }
+
+    // if not flushed immediately, wait for the drain signal to end the stream
+    stdin.once('drain', () => stdin.end());
+  }
+
+  /**
    * @param {string} password
    * @returns {Promise<BackendStartOutcome>}
    */
@@ -96,15 +163,10 @@ function createBackendProcess(options) {
       const databasePath = config.env.FY_DB_FILE_PATH ?? null;
       /** @type {AuthState} */
       const startedFrom = databasePath == null ? 'pending' : authRegistry.stateOf(databasePath);
-
+      /** @type {string} */
       const java = await resolveJava();
-      const spawnedProcess = spawn(java, ['-jar', backendPath], {
-        env: {
-          ...process.env,
-          ...config.env,
-          FY_DB_FILE_PASSWORD: password
-        }
-      });
+      /** @type {SpawnedBackendProcess} */
+      const spawnedProcess = spawn(java, ['-jar', backendPath], {env: backendEnvironment()});
       child = spawnedProcess;
 
       /**
@@ -118,6 +180,7 @@ function createBackendProcess(options) {
 
       spawnedProcess.on('exit', forget);
       spawnedProcess.on('error', forget);
+      handOverPassword(spawnedProcess, password);
       pipeLog(spawnedProcess);
 
       // a backend that answers proves the H2 file was decrypted with this password - and only then is it recorded
