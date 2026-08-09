@@ -1,19 +1,24 @@
 import {beforeEach, describe, expect, it, jest} from '@jest/globals';
 import {signal, WritableSignal} from '@angular/core';
-import {getState, signalState, SignalState} from '@ngrx/signals';
+import {signalState, SignalState} from '@ngrx/signals';
 import {Observable} from 'rxjs';
 import {RunHelpers, TestScheduler} from 'rxjs/testing';
+import {HotObservable} from 'rxjs/internal/testing/HotObservable';
+import {WritableSignalStore} from '../../../../common/types/signal-store.type';
 import {StartupBridgeService} from '../../../startup/startup-bridge.service';
 import {AuthState} from '../../../startup/startup-bridge.type';
+import {setPasswordMatches} from '../methods/set-password-matches';
 import {initialState, UnlockState} from '../unlock.store';
 import {PASSWORD_VERIFY_DEBOUNCE_MS, verifyPasswordPipe} from './verify-password';
-import {HotObservable} from "rxjs/internal/testing/HotObservable";
+
+jest.mock('../methods/set-password-matches', () => ({
+  setPasswordMatches: jest.fn()
+}));
 
 type VerifyPassword = (password: string) => Observable<boolean>;
+type SetPasswordMatches = (signalStore: WritableSignalStore<UnlockState>, passwordMatches: boolean) => void;
 
 describe('verifyPasswordPipe', (): void => {
-  // 1 marble character = 1 virtual ms inside scheduler.run(), so this ties the debounce gap to the real constant
-  // rather than a hand-picked frame count
   const debounceGap: string = '-'.repeat(PASSWORD_VERIFY_DEBOUNCE_MS);
 
   let scheduler: TestScheduler;
@@ -22,6 +27,7 @@ describe('verifyPasswordPipe', (): void => {
   let bridge: Pick<StartupBridgeService, 'verifyPassword'>;
   let authState: WritableSignal<AuthState | null>;
   let startupStore: { authState: WritableSignal<AuthState | null> };
+  let setPasswordMatchesMock: jest.Mock<SetPasswordMatches>;
   let inputMarbles: string;
   let inputValues: Record<string, string>;
   let responseMarbles: string;
@@ -39,6 +45,9 @@ describe('verifyPasswordPipe', (): void => {
     verifyPasswordMock = jest.fn<VerifyPassword>();
     bridge = {verifyPassword: verifyPasswordMock};
 
+    setPasswordMatchesMock = setPasswordMatches as jest.Mock<SetPasswordMatches>;
+    setPasswordMatchesMock.mockReset();
+
     inputMarbles = 'a';
     inputValues = {a: 'hunter2'};
     responseMarbles = '(v|)';
@@ -53,10 +62,29 @@ describe('verifyPasswordPipe', (): void => {
     });
   }
 
-  it('patches passwordMatches to true on a matching answer', (): void => {
+  it('reports a matching answer', (): void => {
     run();
 
-    expect(getState(store)).toEqual({...initialState, passwordMatches: true});
+    expect(setPasswordMatchesMock).toHaveBeenCalledTimes(1);
+    expect(setPasswordMatchesMock).toHaveBeenCalledWith(store, true);
+  });
+
+  it('reports a non-matching answer', (): void => {
+    responseValues = {v: false};
+
+    run();
+
+    expect(setPasswordMatchesMock).toHaveBeenCalledTimes(1);
+    expect(setPasswordMatchesMock).toHaveBeenCalledWith(store, false);
+  });
+
+  it('reports a rejected bridge call as non-matching', (): void => {
+    responseMarbles = '#';
+
+    run();
+
+    expect(setPasswordMatchesMock).toHaveBeenCalledTimes(1);
+    expect(setPasswordMatchesMock).toHaveBeenCalledWith(store, false);
   });
 
   it('debounces a burst of input to one bridge call carrying the last value', (): void => {
@@ -69,26 +97,15 @@ describe('verifyPasswordPipe', (): void => {
     expect(verifyPasswordMock).toHaveBeenCalledWith('second');
   });
 
-  describe('when passwordMatches was already true', (): void => {
-    beforeEach((): void => {
-      store = signalState<UnlockState>({...initialState, passwordMatches: true});
-    });
+  it('verifies a value again once the input stands still for the debounce gap', (): void => {
+    inputMarbles = `a${debounceGap}b`;
+    inputValues = {a: 'first', b: 'second'};
 
-    it('patches passwordMatches to false on a non-matching answer', (): void => {
-      responseValues = {v: false};
+    run();
 
-      run();
-
-      expect(getState(store)).toEqual({...initialState, passwordMatches: false});
-    });
-
-    it('patches passwordMatches to false when the bridge call is rejected', (): void => {
-      responseMarbles = '#';
-
-      run();
-
-      expect(getState(store)).toEqual({...initialState, passwordMatches: false});
-    });
+    expect(verifyPasswordMock).toHaveBeenCalledTimes(2);
+    expect(verifyPasswordMock).toHaveBeenNthCalledWith(1, 'first');
+    expect(verifyPasswordMock).toHaveBeenNthCalledWith(2, 'second');
   });
 
   describe('when the auth state is pending', (): void => {
@@ -96,11 +113,11 @@ describe('verifyPasswordPipe', (): void => {
       authState.set('pending');
     });
 
-    it('makes no bridge call at all and leaves passwordMatches untouched', (): void => {
+    it('makes no bridge call at all and reports nothing', (): void => {
       run();
 
       expect(verifyPasswordMock).not.toHaveBeenCalled();
-      expect(getState(store)).toEqual(initialState);
+      expect(setPasswordMatchesMock).not.toHaveBeenCalled();
     });
   });
 });

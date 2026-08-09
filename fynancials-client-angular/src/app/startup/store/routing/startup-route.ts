@@ -2,17 +2,17 @@ import {AuthState} from "../../startup-bridge.type";
 import {StartupPhase} from "../startup.store";
 
 /**
- * The single source of truth for "which URL belongs to which phase" - the route guard and the store's own
- * navigation both go through this rather than encoding the mapping twice.
+ * The single source of truth for "which URL belongs to which phase", so the mapping is never encoded a second time.
+ * `booting` has no URL of its own and yields `null`: it is the shell at `/`.
  */
 export function startupRouteFor(phase: StartupPhase): string | null {
   switch (phase) {
-    case "booting":
-      return null;
     case "unlock":
       return "/unlock";
     case "configure":
       return "/configure";
+    default:
+      return null;
   }
 }
 

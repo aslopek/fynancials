@@ -23,19 +23,35 @@ electron/
     config-schema.js           zod schemas + inferred types for fynancials.config.json
     config-file.js             read/write fynancials.config.json
     auth.js                    pure scrypt records: create / classify / verify
-    auth-registry.js           the auth map over a loaded config, keyed by database base path
+    auth-registry.js           the auth map over a loaded config, keyed by database base path: classify, verify,
+                               record a proven start, list the known databases, remove one entry
+    configuration-writer.js    the configuration screen's single config write, one section's slice per config key
   backend/
     backend-reachable.js       poll GET /config/pid until reachable or child exit
     backend-process.js         spawn, stdin password handover, log piping, single-instance guard, proven-start recording
   java/                        (#38) resolve-java.js, download-corretto.js
   ipc/
     ipc-schema.js              zod schema for IPC input crossing the renderer boundary
-    startup-bridge.js          registers `startup:getState`, `backend:start`, `auth:verify` (request/response) and `app:quit` (one-way)
+    startup-bridge.js          registers the nine IPC channels listed below
   window/
     startup-mode.js            computes the startup mode (`boot` | `configure` | `unlock`) and consumes `configureOnNextStart`
-    main-window.js             `BrowserWindow` creation, wired to `preload.js`
+    main-window.js             `BrowserWindow` creation, wired to `preload.js`; `getMainWindow()` exposes it as a
+                               dialog parent
+    database-dialogs.js        native open/save dialogs for the database file, normalizing to base paths
   testing/                     shared spec-only helpers (custom matchers, ...) used by more than one *.spec.js
 ```
+
+The nine channels `ipc/startup-bridge.js` registers — eight request/response via `ipcMain.handle`, one one-way via `ipcMain.on`:
+
+- `startup:getState`
+- `backend:start`
+- `auth:verify`
+- `configure:getState`
+- `database:pickExisting`
+- `database:pickNew`
+- `auth:forget`
+- `config:apply`
+- `app:quit` (one-way)
 
 Modules marked with an issue number do not exist yet; the story bringing them is named in brackets. Keep this map current as they land — it
 is what a reader starts from.
@@ -55,14 +71,26 @@ write callback, because Node queues the chunk by reference rather than copying i
 never reads its stdin surfaces as a failed start through the existing reachability poll instead of hanging the IPC call.
 
 The preload (`preload.js`) runs in Electron's sandboxed preload context, where `require` is a limited polyfill resolving only `electron`
-and a handful of Node built-ins — it cannot `require` a module of this app. That is why the four IPC channel names (`startup:getState`,
-`backend:start`, `auth:verify`, `app:quit`) are literals duplicated in both `preload.js` and `ipc/startup-bridge.js` rather than shared via
-an import. Nothing checks that the two copies agree — a renamed channel compiles, passes the suite, and fails only at runtime, so a change
-to one literal is a change to two files.
+and a handful of Node built-ins — it cannot `require` a module of this app. That is why the nine IPC channel names listed above are
+literals duplicated in both `preload.js` and `ipc/startup-bridge.js` rather than shared via an import. Nothing checks that the two copies
+agree — a renamed channel compiles, passes the suite, and fails only at runtime, so a change to one literal is a change to two files.
 
-`config/config-file.js`'s `load()` no longer creates and writes the config file when none exists — it returns the default configuration
-without saving. Distinguishing "file missing" from "file present" is `exists()`, added to `ConfigFile` for that purpose: the startup-mode
-computation is what decides a missing file means `configure` mode, and that mode must leave no write behind.
+`config/config-file.js`'s `load()` writes nothing, ever. It reports which of three things it observed — `read`, `missing` or `unreadable`
+(unparsable JSON, a schema violation, a failed read) — alongside the configuration it hands back, and a file it could not read is left on
+disk exactly as it is, with the reason logged to `fynancials.log` and nowhere else. `missing` and `unreadable` both mean `configure` mode,
+which is the one mode that needs no readable config and spawns no backend. The default configuration `load()` falls back to for either
+**names no database at all**: a proposed path is one "Save & start" away from becoming a decision the user never made, so the configuration
+screen asks for one instead of inheriting a silent `~/fynancials`.
+
+Exactly two channels write `fynancials.config.json`: `auth:forget` removes one `auth` entry immediately, while the screen is still up, and
+`config:apply` persists the configuration screen on finish, touching `env.FY_DB_FILE_PATH` and nothing else. Both reach the disk through a
+collaborator of their own (`config/auth-registry.js`'s `forget`, `config/configuration-writer.js`'s `apply`); no `ConfigFile` is injected
+into the bridge, so no other channel can write at all. Nothing in the main process ever *writes* an `auth` entry outside
+`recordProvenStart`, which is what keeps epic ADR-003's "a failed start never discards a record" structural rather than conventional.
+
+A database is identified everywhere by its **base path without extension** — `env.FY_DB_FILE_PATH`, the `auth` map's keys and
+`StartupState.databasePath` are all that shape. The `.mv.db` suffix H2 materializes exists only at the dialog boundary, where
+`window/database-dialogs.js` strips it, and in the renderer's presentation, where a pipe re-appends it.
 
 ## Structure rule
 
@@ -119,7 +147,9 @@ JSDoc rules:
 7. **Electron and Node types come from the real packages**: `/** @type {import('electron').BrowserWindow | null} */`,
    `/** @type {import('node:child_process').ChildProcessWithoutNullStreams | null} */`.
 8. Document *meaning* in prose only where the type cannot carry it (encodings, units, "base path without extension"). A comment restating
-   the type is noise.
+   the type is noise. **A comment naming the module's callers is worse than noise** — see the root `LLM.md`, "Dependency inversion binds
+   the docs too". A module here documents its own contract (the channel it serves, what it writes, what it returns); which part of the
+   boot order reaches it, and why, is documented in the boot order above, not in the module.
 
 ## The zod boundary rule
 

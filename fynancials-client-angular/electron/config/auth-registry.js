@@ -10,7 +10,22 @@ const {authStateOf, createScryptRecord, passwordlessEntry, verifyPassword} = req
  */
 
 /**
+ * The states a *known* database can be in. `pending` is not one of them: an entry that does not classify is not a
+ * database the app knows anything about.
+ *
+ * @typedef {Exclude<AuthState, 'pending'>} KnownAuthState
+ */
+
+/**
+ * @typedef {Object} KnownDatabase
+ * @property {string} path database base path without extension, exactly as it is keyed in the `auth` map
+ * @property {KnownAuthState} authState
+ */
+
+/**
  * @typedef {Object} AuthRegistry
+ * @property {() => KnownDatabase[]} knownDatabases
+ * @property {(databasePath: string) => void} forget
  * @property {(databasePath: string) => AuthState} stateOf
  * @property {(databasePath: string, candidate: string) => boolean} verify
  * @property {(databasePath: string, password: string) => void} recordProvenStart
@@ -28,6 +43,41 @@ const {authStateOf, createScryptRecord, passwordlessEntry, verifyPassword} = req
  */
 function createAuthRegistry(options) {
   const {configFile, config} = options;
+
+  /**
+   * The databases the app knows: every `auth` key whose entry classifies into a non-pending state.
+   *
+   * @returns {KnownDatabase[]}
+   */
+  function knownDatabases() {
+    /** @type {KnownDatabase[]} */
+    const known = [];
+
+    /** @type {AuthState} */
+    let authState;
+
+    for (const databasePath of Object.keys(config.auth)) {
+      authState = stateOf(databasePath);
+      if (authState !== 'pending') {
+        known.push({path: databasePath, authState});
+      }
+    }
+    return known;
+  }
+
+  /**
+   * Returns a database to pending, discarding an scrypt record and the `passwordless` marker alike.
+   *
+   * @param {string} databasePath
+   * @returns {void}
+   */
+  function forget(databasePath) {
+    if (!(databasePath in config.auth)) {
+      return;
+    }
+    delete config.auth[databasePath];
+    configFile.save(config);
+  }
 
   /**
    * @param {string} databasePath
@@ -66,6 +116,8 @@ function createAuthRegistry(options) {
   }
 
   return {
+    knownDatabases,
+    forget,
     stateOf,
     verify,
     recordProvenStart

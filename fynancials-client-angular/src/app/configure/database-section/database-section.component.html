@@ -1,0 +1,119 @@
+<section class="database-section">
+    <h2 class="section-title">Database</h2>
+
+    @if (configureStore.selectedDatabasePath(); as selectedDatabasePath) {
+        <div class="selection">
+            <p class="selection-file-name">{{ selectedDatabasePath | fileName:'.mv.db' }}</p>
+            <p class="selection-directory">{{ selectedDatabasePath | fileDirectory }}</p>
+            <p class="selection-state">
+                @if (configureStore.definesPassword()) {
+                    new file, created on first start
+                } @else {
+                    @switch (configureStore.selectedAuthState()) {
+                        @case ('scrypt') {
+                            password remembered
+                        }
+                        @case ('passwordless') {
+                            no password
+                        }
+                        @default {
+                            existing file · its password is asked on start
+                        }
+                    }
+                }
+            </p>
+        </div>
+    } @else {
+        <div class="selection">
+            <p class="selection-file-name">No database selected</p>
+            <p class="selection-directory">Choose one below to continue</p>
+        </div>
+    }
+
+    <mat-form-field>
+        <mat-label>Known databases</mat-label>
+        <mat-select [value]="configureStore.selectedKnownDatabasePath()"
+                    [disabled]="configureStore.knownDatabasesDisabled()"
+                    (selectionChange)="configureStore.selectKnownDatabase($event.value)">
+            @for (knownDatabase of configureStore.knownDatabases(); track knownDatabase.path) {
+                <mat-option [value]="knownDatabase.path">
+                    {{ knownDatabase.path | fileName:'.mv.db' }}
+                    <span class="option-directory">{{ knownDatabase.path | fileDirectory }}</span>
+                </mat-option>
+            }
+        </mat-select>
+    </mat-form-field>
+
+    <div class="database-actions">
+        <button mat-stroked-button
+                (click)="configureStore.pickExistingDatabase()">
+            Use existing…
+        </button>
+        <button mat-stroked-button
+                (click)="configureStore.pickNewDatabase()">
+            Create new…
+        </button>
+    </div>
+
+    @if (configureStore.definesPassword()) {
+        <div class="password-inputs">
+            <mat-form-field [class.password-field-error]="configureStore.passwordMismatch()"
+                            [class.password-field-warning]="configureStore.passwordlessWarning()">
+                <mat-label>Password</mat-label>
+                <input matInput
+                       [type]="configureStore.passwordVisible() ? 'text' : 'password'"
+                       [value]="configureStore.password()"
+                       (input)="configureStore.setPassword($any($event.target).value)">
+                <button matSuffix
+                        mat-icon-button
+                        type="button"
+                        [attr.aria-label]="configureStore.passwordVisible() ? 'Hide password' : 'Show password'"
+                        (click)="configureStore.togglePasswordVisibility()">
+                    <mat-icon>{{ configureStore.passwordVisible() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+            </mat-form-field>
+
+            <mat-form-field [class.password-field-error]="configureStore.passwordMismatch()"
+                            [class.password-field-warning]="configureStore.passwordlessWarning()">
+                <mat-label>Confirm password</mat-label>
+                <input matInput
+                       [type]="configureStore.passwordVisible() ? 'text' : 'password'"
+                       [value]="configureStore.passwordConfirmation()"
+                       (input)="configureStore.setPasswordConfirmation($any($event.target).value)">
+                <button matSuffix
+                        mat-icon-button
+                        type="button"
+                        [attr.aria-label]="configureStore.passwordVisible() ? 'Hide password' : 'Show password'"
+                        (click)="configureStore.togglePasswordVisibility()">
+                    <mat-icon>{{ configureStore.passwordVisible() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+            </mat-form-field>
+
+            @if (configureStore.passwordMismatch()) {
+                <p class="password-mismatch">
+                    <mat-icon class="message-icon">error</mat-icon>
+                    <span>The confirmation does not match the password.</span>
+                </p>
+            }
+
+            @if (configureStore.passwordlessWarning()) {
+                <p class="passwordless-warning">
+                    <mat-icon class="message-icon">warning</mat-icon>
+                    <span>Leave both empty and this database will be accessible without a password.</span>
+                </p>
+            }
+        </div>
+    }
+
+    <div class="re-verify">
+        <button mat-stroked-button
+                [disabled]="!configureStore.canForgetPassword()"
+                (click)="configureStore.forgetPassword()">
+            Re-verify the password on next start
+        </button>
+        <p class="re-verify-hint">
+            Discards what this app remembers about the selected database's password, so it is asked for again and the
+            database file itself decides.
+        </p>
+    </div>
+</section>

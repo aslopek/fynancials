@@ -1,19 +1,21 @@
-import {Component, inject, Signal} from "@angular/core";
+import {Component, inject} from "@angular/core";
+import {MatButtonModule} from "@angular/material/button";
+import {MatIconModule} from "@angular/material/icon";
+import {FileDirectoryPipe} from "../../common/pipe/file-directory.pipe";
+import {FileNamePipe} from "../../common/pipe/file-name.pipe";
 import {ReadableStartupStore, StartupStore} from "../startup/store/startup.store";
-import {StartupMode} from "../startup/startup-bridge.type";
+import {DatabaseSectionComponent} from "./database-section/database-section.component";
+import {ConfigureStore, ReadableConfigureStore} from "./store/configure.store";
 
-/**
- * Story #35 creates this component with only what its own ACs need to be exercised: a heading and a line naming
- * the mode. #37 fills it in with the real database/Java configuration screen (sections, file dialogs, "Save &
- * start" / "Discard & start", "Forget the remembered password").
- */
 @Component({
   selector: "app-configure",
+  imports: [FileDirectoryPipe, FileNamePipe, DatabaseSectionComponent, MatButtonModule, MatIconModule],
+  providers: [ConfigureStore],
   templateUrl: "configure.component.html",
   styleUrls: ["configure.component.scss"],
 })
 export class ConfigureComponent {
 
-  private readonly startupStore: ReadableStartupStore = inject(StartupStore);
-  protected readonly mode: Signal<StartupMode | null> = this.startupStore.mode;
+  protected readonly configureStore: ReadableConfigureStore = inject(ConfigureStore);
+  protected readonly startupStore: ReadableStartupStore = inject(StartupStore);
 }

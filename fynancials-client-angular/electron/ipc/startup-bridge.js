@@ -1,20 +1,29 @@
-const {authVerifyPasswordSchema, backendStartPasswordSchema} = require('./ipc-schema.js');
+const {
+  authVerifyPasswordSchema,
+  backendStartPasswordSchema,
+  configurationChangesSchema,
+  databasePathSchema,
+  databaseSelectionSchema
+} = require('./ipc-schema.js');
 
-/** @import {AuthRegistry} from '../config/auth-registry.js' */
+/** @import {AuthRegistry, KnownDatabase} from '../config/auth-registry.js' */
+/** @import {AuthState} from '../config/auth.js' */
 /** @import {BackendProcess, BackendStartOutcome} from '../backend/backend-process.js' */
+/** @import {ConfigFileState} from '../config/config-file.js' */
+/** @import {ConfigurationWriter} from '../config/configuration-writer.js' */
+/** @import {DatabaseDialogs} from '../window/database-dialogs.js' */
 /** @import {FynancialsConfig} from '../config/config-schema.js' */
 /** @import {StartupState} from '../window/startup-mode.js' */
 
 /**
- * Registers the IPC channels the preload's `contextBridge` surface calls into. Exactly four channels, no generic
- * `invoke(channel, ...)` passthrough, ever - a wider surface would let the renderer reach into the main process in
- * ways nothing here has reviewed. Three are request/response (`startup:getState`, `backend:start`, `auth:verify`,
- * registered via `ipcMain.handle`); one is one-way (`app:quit`, registered via `ipcMain.on`) because it has no
- * answer to give.
+ * Registers the IPC channels the preload's `contextBridge` surface calls into. Exactly nine channels, no generic
+ * `invoke(channel, ...)` passthrough, ever. A wider surface would let the renderer reach into the main process in
+ * uncontrolled manner. Eight are request/response (registered via `ipcMain.handle`); one is one-way
+ * (`app:quit`, registered via `ipcMain.on`) because it has no answer to give.
  *
- * The `config` this module holds is read-only in practice: no `ConfigFile` is injected, so no channel registered here
- * can write `fynancials.config.json`. That is what makes "no changes to the config file are written" structural for
- * every renderer-triggered path through this bridge rather than something a spec has to keep watching.
+ * Exactly two of them write `fynancials.config.json`, and neither can write more than its own key: `auth:forget`
+ * removes one `auth` entry through `authRegistry.forget`, `config:apply` sets `env.FY_DB_FILE_PATH` through
+ * `configurationWriter.apply`. Nothing here ever *writes* an `auth` entry: recording one is a proven start's job.
  */
 
 /**
@@ -27,12 +36,33 @@ const {authVerifyPasswordSchema, backendStartPasswordSchema} = require('./ipc-sc
  */
 
 /**
+ * What `configure:getState` answers with, beyond `StartupState`. `configFileState` is the snapshot of the single
+ * `load()` at start, deliberately not re-derived: `auth:forget` writes the config file later in the run, and this
+ * value has to keep describing what the start observed rather than what the file looks like now.
+ *
+ * @typedef {Object} ConfigureState
+ * @property {ConfigFileState} configFileState
+ * @property {KnownDatabase[]} knownDatabases
+ * @property {string} logPath where the main process writes `fynancials.log`
+ */
+
+/**
+ * @typedef {Object} AppliedConfiguration
+ * @property {string} databasePath
+ * @property {AuthState} authState
+ */
+
+/**
  * @typedef {Object} StartupBridgeOptions
  * @property {IpcMainLike} ipcMain
  * @property {StartupState} startupState
+ * @property {ConfigFileState} configFileState
  * @property {Pick<BackendProcess, 'start'>} backendProcess
- * @property {Pick<AuthRegistry, 'verify'>} authRegistry
- * @property {FynancialsConfig} config read live, so #37's database switch is picked up without re-registering
+ * @property {Pick<AuthRegistry, 'verify' | 'knownDatabases' | 'forget'>} authRegistry
+ * @property {Pick<ConfigurationWriter, 'apply'>} configurationWriter
+ * @property {DatabaseDialogs} databaseDialogs
+ * @property {FynancialsConfig} config
+ * @property {string} logPath
  * @property {() => void} quit
  */
 
@@ -41,7 +71,18 @@ const {authVerifyPasswordSchema, backendStartPasswordSchema} = require('./ipc-sc
  * @returns {{register: () => void}}
  */
 function createStartupBridge(options) {
-  const {ipcMain, startupState, backendProcess, authRegistry, config, quit} = options;
+  const {
+    ipcMain,
+    startupState,
+    configFileState,
+    backendProcess,
+    authRegistry,
+    configurationWriter,
+    databaseDialogs,
+    config,
+    logPath,
+    quit
+  } = options;
 
   /**
    * @returns {void}
@@ -65,6 +106,53 @@ function createStartupBridge(options) {
       /** @type {string | null} */
       const databasePath = config.env.FY_DB_FILE_PATH ?? null;
       return databasePath != null && authRegistry.verify(databasePath, parsedPassword.data);
+    });
+
+    ipcMain.handle('configure:getState', () => {
+      /** @type {ConfigureState} */
+      const configureState = {
+        configFileState,
+        knownDatabases: authRegistry.knownDatabases(),
+        logPath
+      };
+      return configureState;
+    });
+
+    ipcMain.handle('database:pickExisting', (_event, currentSelection) => {
+      const parsedSelection = databaseSelectionSchema.safeParse(currentSelection);
+      if (!parsedSelection.success) {
+        throw new Error('Invalid currentSelection argument for database:pickExisting');
+      }
+      return databaseDialogs.pickExisting(parsedSelection.data);
+    });
+
+    ipcMain.handle('database:pickNew', (_event, currentSelection) => {
+      const parsedSelection = databaseSelectionSchema.safeParse(currentSelection);
+      if (!parsedSelection.success) {
+        throw new Error('Invalid currentSelection argument for database:pickNew');
+      }
+      return databaseDialogs.pickNew(parsedSelection.data);
+    });
+
+    ipcMain.handle('auth:forget', (_event, databasePath) => {
+      const parsedDatabasePath = databasePathSchema.safeParse(databasePath);
+      if (!parsedDatabasePath.success) {
+        throw new Error('Invalid databasePath argument for auth:forget');
+      }
+      authRegistry.forget(parsedDatabasePath.data);
+    });
+
+    ipcMain.handle('config:apply', (_event, changes) => {
+      const parsedChanges = configurationChangesSchema.safeParse(changes);
+      if (!parsedChanges.success) {
+        throw new Error('Invalid changes argument for config:apply');
+      }
+      /** @type {AppliedConfiguration} */
+      const applied = {
+        databasePath: parsedChanges.data.databasePath,
+        authState: configurationWriter.apply(parsedChanges.data)
+      };
+      return applied;
     });
 
     ipcMain.on('app:quit', () => quit());

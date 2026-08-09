@@ -5,8 +5,8 @@
 
 /**
  * Owns the backend child process: spawning it, piping its log, guarding against a second concurrent spawn, and
- * recording a proven start. The config is read live at spawn time (epic story #37 mutates the loaded config object
- * before triggering a start; a value captured at construction would silently spawn against an old database).
+ * recording a proven start. The config is read live at spawn time rather than captured at construction: the loaded
+ * config object is mutated during a run, and a captured value would silently spawn against an old database.
  *
  * Never logs the password, not even in an error path - `config/auth.js`'s rule applies here too.
  */
@@ -51,7 +51,7 @@
 /**
  * @typedef {Object} BackendProcessOptions
  * @property {(command: string, args: string[], options: {env: NodeJS.ProcessEnv}) => SpawnedBackendProcess} spawn
- * @property {() => Promise<string>} resolveJava injected so `verifyJava` stays in main.js and #38 can replace it
+ * @property {() => Promise<string>} resolveJava injected, so how a JVM is found stays outside this module
  * @property {string} backendPath
  * @property {FynancialsConfig} config read live at spawn time
  * @property {Pick<AuthRegistry, 'recordProvenStart' | 'stateOf'>} authRegistry
@@ -191,7 +191,7 @@ function createBackendProcess(options) {
       return {reachable, startedFrom};
     } finally {
       // a start that got as far as a running child leaves `child` to answer `isRunning`; a failed one has already
-      // cleared it from the child's own `exit`/`error`, which is what lets the renderer retry
+      // cleared it from the child's own `exit`/`error`, so a later start never finds a stale one
       starting = false;
     }
   }

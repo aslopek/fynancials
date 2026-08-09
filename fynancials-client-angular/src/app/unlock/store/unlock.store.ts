@@ -5,7 +5,6 @@ import {ReadableSignalStore, WritableSignalStore} from "../../../common/types/si
 import {StartupBridgeService} from "../../startup/startup-bridge.service";
 import {ReadableStartupStore, StartupStore} from "../../startup/store/startup.store";
 import {canSubmit} from "./computed/can-submit";
-import {databaseFileName} from "./computed/database-file-name";
 import {verifyPassword} from "./effects/verify-password";
 import {setPassword} from "./methods/set-password";
 import {submit} from "./methods/submit";
@@ -25,7 +24,6 @@ export const initialState: UnlockState = {
 
 export type UnlockComputed = {
   canSubmit: Signal<boolean>
-  databaseFileName: Signal<string>
 };
 
 export type UnlockMethods = {
@@ -43,8 +41,7 @@ export const UnlockStore = signalStore(
   withComputed((signalStore: ReadableSignalStore<UnlockState>): UnlockComputed => {
     const startupStore: ReadableStartupStore = inject(StartupStore);
     return {
-      canSubmit: canSubmit(signalStore, startupStore),
-      databaseFileName: databaseFileName(startupStore)
+      canSubmit: canSubmit(signalStore, startupStore)
     };
   }),
   withMethods((signalStore: WritableSignalStore<UnlockState, UnlockComputed>): UnlockMethods => {
