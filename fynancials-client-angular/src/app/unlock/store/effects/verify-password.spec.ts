@@ -103,9 +103,10 @@ describe('verifyPasswordPipe', (): void => {
 
     run();
 
-    expect(verifyPasswordMock).toHaveBeenCalledTimes(2);
-    expect(verifyPasswordMock).toHaveBeenNthCalledWith(1, 'first');
-    expect(verifyPasswordMock).toHaveBeenNthCalledWith(2, 'second');
+    expect(verifyPasswordMock.mock.calls).toEqual([
+      ['first'],
+      ['second']
+    ]);
   });
 
   describe('when the auth state is pending', (): void => {

@@ -76,6 +76,7 @@ describe('databaseDialogs', () => {
     it('opens without a default path when nothing is selected yet', async () => {
       await dialogs.pickExisting(null);
 
+      expect(showOpenDialog).toHaveBeenCalledTimes(1);
       expect(showOpenDialog).toHaveBeenCalledWith(parentWindow, {
         title: 'Use existing database',
         filters: [

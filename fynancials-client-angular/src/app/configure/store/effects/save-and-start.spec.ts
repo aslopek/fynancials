@@ -1,4 +1,5 @@
 import {beforeEach, describe, expect, it, jest} from '@jest/globals';
+import {signal} from '@angular/core';
 import {signalState, SignalState} from '@ngrx/signals';
 import {Observable} from 'rxjs';
 import {RunHelpers, TestScheduler} from 'rxjs/testing';
@@ -67,7 +68,8 @@ describe('saveAndStartPipe', (): void => {
         a: undefined,
         b: undefined
       });
-      saveAndStartPipe(store, bridge, startupStore, store.selectedDatabasePath)(source$).subscribe();
+      saveAndStartPipe(store, bridge, startupStore, store.selectedDatabasePath, signal<string | null>(null), signal<string | null>(null))
+      (source$).subscribe();
     });
   }
 
@@ -75,9 +77,23 @@ describe('saveAndStartPipe', (): void => {
     run();
 
     expect(applyConfiguration).toHaveBeenCalledTimes(1);
-    expect(applyConfiguration).toHaveBeenCalledWith({databasePath});
+    expect(applyConfiguration).toHaveBeenCalledWith({databasePath, javaPath: null, javaSignature: null});
     expect(continueStartupMock).toHaveBeenCalledTimes(1);
     expect(continueStartupMock).toHaveBeenCalledWith(startupStore, {databasePath, authState: 'pending'}, 'created', 'hunter2');
+  });
+
+  it('includes the java path and signature in the changes', (): void => {
+    scheduler.run(({cold, hot}: RunHelpers): void => {
+      applyConfiguration.mockReturnValue(cold(responseMarbles, responseValues));
+      const source$: HotObservable<void> = hot<void>(inputMarbles, {a: undefined, b: undefined});
+      const javaPath = signal<string | null>('C:\\jdk\\bin\\java.exe');
+      const javaSignature = signal<string | null>('c2ln');
+
+      saveAndStartPipe(store, bridge, startupStore, store.selectedDatabasePath, javaPath, javaSignature)(source$).subscribe();
+    });
+
+    expect(applyConfiguration).toHaveBeenCalledTimes(1);
+    expect(applyConfiguration).toHaveBeenCalledWith({databasePath, javaPath: 'C:\\jdk\\bin\\java.exe', javaSignature: 'c2ln'});
   });
 
   // the origin decides whether that password may be used at all, so it travels with the handover
@@ -95,6 +111,7 @@ describe('saveAndStartPipe', (): void => {
 
     run();
 
+    expect(continueStartupMock).toHaveBeenCalledTimes(1);
     expect(continueStartupMock).toHaveBeenCalledWith(startupStore, {databasePath, authState: 'passwordless'}, 'created', 'hunter2');
   });
 
@@ -112,6 +129,7 @@ describe('saveAndStartPipe', (): void => {
     run();
 
     expect(applyConfiguration).toHaveBeenCalledTimes(1);
+    expect(applyConfiguration).toHaveBeenCalledWith({databasePath, javaPath: null, javaSignature: null});
   });
 
   it('writes nothing while no database is selected', (): void => {

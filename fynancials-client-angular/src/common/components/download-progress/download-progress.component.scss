@@ -1,0 +1,11 @@
+.download-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.download-progress-line {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
+}

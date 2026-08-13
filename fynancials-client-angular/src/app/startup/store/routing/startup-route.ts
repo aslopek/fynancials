@@ -11,6 +11,8 @@ export function startupRouteFor(phase: StartupPhase): string | null {
       return "/unlock";
     case "configure":
       return "/configure";
+    case "insecure":
+      return "/insecure";
     default:
       return null;
   }

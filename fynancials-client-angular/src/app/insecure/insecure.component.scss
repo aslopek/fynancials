@@ -1,0 +1,41 @@
+.insecure-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.insecure-content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 32rem;
+  padding: 2rem;
+}
+
+.insecure-icon {
+  align-self: center;
+  width: 3rem;
+  height: 3rem;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: var(--mat-sys-error);
+}
+
+.insecure-title {
+  margin: 0 0 1rem;
+  text-align: center;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}

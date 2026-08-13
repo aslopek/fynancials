@@ -4,13 +4,15 @@ import {enableSaveAndStart} from './enable-save-and-start';
 
 describe('enableSaveAndStart', (): void => {
   let databaseValid: WritableSignal<boolean>;
+  let javaValid: WritableSignal<boolean>;
 
   beforeEach((): void => {
     databaseValid = signal<boolean>(true);
+    javaValid = signal<boolean>(true);
   });
 
   it('is enabled while every section reports itself valid', (): void => {
-    const result: Signal<boolean> = enableSaveAndStart(databaseValid);
+    const result: Signal<boolean> = enableSaveAndStart(databaseValid, javaValid);
 
     expect(result()).toBe(true);
   });
@@ -18,7 +20,15 @@ describe('enableSaveAndStart', (): void => {
   it('is disabled while the database section reports itself incomplete', (): void => {
     databaseValid.set(false);
 
-    const result: Signal<boolean> = enableSaveAndStart(databaseValid);
+    const result: Signal<boolean> = enableSaveAndStart(databaseValid, javaValid);
+
+    expect(result()).toBe(false);
+  });
+
+  it('is disabled while the java section reports itself incomplete', (): void => {
+    javaValid.set(false);
+
+    const result: Signal<boolean> = enableSaveAndStart(databaseValid, javaValid);
 
     expect(result()).toBe(false);
   });

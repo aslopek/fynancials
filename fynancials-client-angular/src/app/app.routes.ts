@@ -2,6 +2,7 @@ import {Routes} from '@angular/router';
 import {ConfigureComponent} from './configure/configure.component';
 import {DepotPageComponent} from '../depot/depot-page/depot-page.component';
 import {DividendsPageComponent} from '../dividends/dividends-page/dividends-page.component';
+import {InsecureComponent} from './insecure/insecure.component';
 import {SecurityPageComponent} from '../security/security-page/security-page.component';
 import {SettingsPageComponent} from '../settings/settings-page/settings-page.component';
 import {ShellComponent} from './shell/shell.component';
@@ -16,6 +17,10 @@ export const routes: Routes = [
   {
     path: 'configure',
     component: ConfigureComponent
+  },
+  {
+    path: 'insecure',
+    component: InsecureComponent
   },
   {
     path: '',

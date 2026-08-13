@@ -22,11 +22,11 @@ describe('backendProcess', () => {
 
   const spawn = jest.fn(/** @type {(command: string, args: string[], options: {env: NodeJS.ProcessEnv}) => SpawnedBackendProcess} */
     (() => child));
-  const resolveJava = jest.fn(() => Promise.resolve(java));
+  const resolveJava = jest.fn(/** @type {() => Promise<string | null>} */ (() => Promise.resolve(java)));
   const stateOf = jest.fn(/** @type {(databasePath: string) => AuthState} */ (() => 'pending'));
   const recordProvenStart = jest.fn(/** @type {AuthRegistry['recordProvenStart']} */ (() => undefined));
   const waitUntilReachable = jest.fn(() => Promise.resolve(true));
-  const createWriteStream = jest.fn(/** @type {(path: string, options: {flags: string}) => import('node:fs').WriteStream} */
+  const createWriteStream = jest.fn(/** @type {(path: string, options: {flags: string, mode: number}) => import('node:fs').WriteStream} */
     (() => logStream));
   const error = jest.fn(/** @type {(message: string, cause: unknown) => void} */ (() => undefined));
   // a minimal stand-in for `WriteStream` - only the members this module actually calls on it
@@ -93,8 +93,11 @@ describe('backendProcess', () => {
   });
 
   afterEach(() => {
-    // the test arranging a password inherited from the app's own shell must not leak it into the rest of the run
+    // the tests arranging an inherited environment must not leak it into the rest of the run
     delete process.env['FY_DB_FILE_PASSWORD'];
+    delete process.env['JAVA_TOOL_OPTIONS'];
+    delete process.env['JDK_JAVA_OPTIONS'];
+    delete process.env['_JAVA_OPTIONS'];
   });
 
   it('spawns the resolved java binary with the jar and the stdin marker', async () => {
@@ -141,6 +144,30 @@ describe('backendProcess', () => {
     expect(stringifiedEnv).not.toContain('from-the-shell');
   });
 
+  it('drops the variables the spawned JVM would take extra command-line arguments from', async () => {
+    process.env['JAVA_TOOL_OPTIONS'] = '-javaagent:/tmp/tool.jar';
+    process.env['JDK_JAVA_OPTIONS'] = '-javaagent:/tmp/jdk.jar';
+    process.env['_JAVA_OPTIONS'] = '-javaagent:/tmp/underscore.jar';
+
+    await backendProcess.start(password);
+
+    const env = /** @type {NodeJS.ProcessEnv} */ (spawn.mock.calls[0]?.[2]?.env ?? {});
+    expect(Object.keys(env)).not.toContain('JAVA_TOOL_OPTIONS');
+    expect(Object.keys(env)).not.toContain('JDK_JAVA_OPTIONS');
+    expect(Object.keys(env)).not.toContain('_JAVA_OPTIONS');
+    expect(JSON.stringify(env)).not.toContain('javaagent');
+  });
+
+  it('drops JVM option variables the config file carries in its env block', async () => {
+    config.env['_JAVA_OPTIONS'] = '-javaagent:/tmp/from-the-config-file.jar';
+
+    await backendProcess.start(password);
+
+    const env = /** @type {NodeJS.ProcessEnv} */ (spawn.mock.calls[0]?.[2]?.env ?? {});
+    expect(Object.keys(env)).not.toContain('_JAVA_OPTIONS');
+    expect(JSON.stringify(env)).not.toContain('from-the-config-file');
+  });
+
   it('resolves with a reachable outcome and the state it was started from', async () => {
     stateOf.mockReturnValue('scrypt');
 
@@ -184,7 +211,7 @@ describe('backendProcess', () => {
     await backendProcess.start(password);
 
     expect(createWriteStream).toHaveBeenCalledTimes(1);
-    expect(createWriteStream).toHaveBeenCalledWith(logPath, {flags: 'a'});
+    expect(createWriteStream).toHaveBeenCalledWith(logPath, {flags: 'a', mode: 0o600});
 
     expect(childStdoutPipe).toHaveBeenCalledTimes(1);
     expect(childStdoutPipe).toHaveBeenCalledWith(logStream, {end: false});
@@ -196,8 +223,7 @@ describe('backendProcess', () => {
   it('writes the password to stdin as UTF-8 bytes with no delimiter', async () => {
     await backendProcess.start(password);
 
-    expect(childStdinWrite).toHaveBeenCalledTimes(1);
-    expect(childStdinWrite.mock.calls[0]?.[0]).toEqual(Buffer.from(password, 'utf8'));
+    expect(childStdinWrite.mock.calls).toEqual([[Buffer.from(password, 'utf8'), expect.any(Function)]]);
   });
 
   it('writes a non-ASCII password as UTF-8', async () => {
@@ -212,6 +238,7 @@ describe('backendProcess', () => {
     await backendProcess.start(password);
 
     expect(childStdinEnd).toHaveBeenCalledTimes(1);
+    expect(childStdinEnd).toHaveBeenCalledWith();
     const writeOrder = childStdinWrite.mock.invocationCallOrder[0] ?? -1;
     const endOrder = childStdinEnd.mock.invocationCallOrder[0] ?? -1;
     expect(endOrder).toBeGreaterThan(writeOrder);
@@ -237,6 +264,7 @@ describe('backendProcess', () => {
     await backendProcess.start('');
 
     expect(childStdinEnd).toHaveBeenCalledTimes(1);
+    expect(childStdinEnd).toHaveBeenCalledWith();
   });
 
   it('survives a failed write to a child that died before reading', async () => {
@@ -248,6 +276,7 @@ describe('backendProcess', () => {
 
     expect(() => errorListener(new Error('write EPIPE'))).not.toThrow();
     expect(error).toHaveBeenCalledTimes(1);
+    expect(error).toHaveBeenCalledWith('Failed to hand the database password to the backend:', 'write EPIPE');
   });
 
   it('never logs the password when the write fails', async () => {
@@ -287,8 +316,7 @@ describe('backendProcess', () => {
       await backendProcess.start(password);
 
       expect(childStdinEnd).not.toHaveBeenCalled();
-      expect(childStdinOnce).toHaveBeenCalledTimes(1);
-      expect(childStdinOnce.mock.calls[0]?.[0]).toBe('drain');
+      expect(childStdinOnce.mock.calls).toEqual([['drain', expect.any(Function)]]);
     });
 
     it('ends the stream once the drain arrives', async () => {
@@ -300,13 +328,14 @@ describe('backendProcess', () => {
       drainListener();
 
       expect(childStdinEnd).toHaveBeenCalledTimes(1);
+      expect(childStdinEnd).toHaveBeenCalledWith();
     });
 
     it('resolves the start without waiting for a drain that never comes', async () => {
       const outcome = await backendProcess.start(password);
 
       expect(outcome).toEqual({reachable: true, startedFrom: 'pending'});
-      expect(childStdinOnce).toHaveBeenCalledTimes(1);
+      expect(childStdinOnce.mock.calls).toEqual([['drain', expect.any(Function)]]);
       expect(childStdinEnd).not.toHaveBeenCalled();
     });
 
@@ -319,6 +348,34 @@ describe('backendProcess', () => {
 
       expect(() => errorListener(new Error('write EPIPE'))).not.toThrow();
       expect(childStdinEnd).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('when Java does not resolve', () => {
+    beforeEach(() => {
+      resolveJava.mockResolvedValue(null);
+    });
+
+    it('spawns nothing and reports an unreachable outcome', async () => {
+      const outcome = await backendProcess.start(password);
+
+      expect(spawn).not.toHaveBeenCalled();
+      expect(outcome).toEqual({reachable: false, startedFrom: 'pending'});
+    });
+
+    it('logs to the log file', async () => {
+      await backendProcess.start(password);
+
+      expect(createWriteStream).toHaveBeenCalledTimes(1);
+      expect(createWriteStream).toHaveBeenCalledWith(logPath, {flags: 'a', mode: 0o600});
+      expect(logStream.end).toHaveBeenCalledTimes(1);
+      expect(logStream.end).toHaveBeenCalledWith('No Java runtime resolved; backend not started.\n');
+    });
+
+    it('records no proven start', async () => {
+      await backendProcess.start(password);
+
+      expect(recordProvenStart).not.toHaveBeenCalled();
     });
   });
 
@@ -373,6 +430,7 @@ describe('backendProcess', () => {
 
       await backendProcess.start(retryPassword);
 
+      expect(spawn).toHaveBeenCalledTimes(1);
       expect(spawn).toHaveBeenCalledWith(java, ['-jar', backendPath], {
         env: expect.objectContaining({FY_DB_FILE_PASSWORD_STDIN: 'true'})
       });
@@ -391,6 +449,7 @@ describe('backendProcess', () => {
 
       backendProcess.kill();
 
+      expect(childKill).toHaveBeenCalledTimes(1);
       expect(childKill).toHaveBeenCalledWith('SIGTERM');
     });
 
@@ -403,6 +462,12 @@ describe('backendProcess', () => {
       await backendProcess.start(password);
 
       expect(spawn).toHaveBeenCalledTimes(1);
+      expect(spawn).toHaveBeenCalledWith(java, ['-jar', backendPath], {
+        env: expect.objectContaining({
+          FY_DB_FILE_PATH: databasePath,
+          FY_DB_FILE_PASSWORD_STDIN: 'true'
+        })
+      });
     });
   });
 });

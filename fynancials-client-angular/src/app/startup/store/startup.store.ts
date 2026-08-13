@@ -12,7 +12,7 @@ import {DatabaseSelection, selectDatabase} from "./methods/select-database";
 import {setStartupState} from "./methods/set-startup-state";
 
 /** Where the app currently is, distinct from `mode` (what the main process computed at start - see below). */
-export type StartupPhase = 'booting' | 'configure' | 'unlock';
+export type StartupPhase = 'booting' | 'configure' | 'insecure' | 'unlock';
 
 export type StartupComputed = {};
 

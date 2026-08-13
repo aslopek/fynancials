@@ -117,6 +117,7 @@ describe('startBackendPipe', (): void => {
     run();
 
     expect(enterBootingMock).toHaveBeenCalledTimes(1);
+    expect(enterBootingMock).toHaveBeenCalledWith(store, router);
     expect(applyStartOutcomeMock).not.toHaveBeenCalled();
   });
 
@@ -126,6 +127,7 @@ describe('startBackendPipe', (): void => {
     run();
 
     expect(enterBootingMock).toHaveBeenCalledTimes(1);
+    expect(enterBootingMock).toHaveBeenCalledWith(store, router);
     expect(applyStartOutcomeMock).not.toHaveBeenCalled();
   });
 
@@ -134,10 +136,14 @@ describe('startBackendPipe', (): void => {
 
     run();
 
-    expect(enterBootingMock).toHaveBeenCalledTimes(2);
+    expect(enterBootingMock.mock.calls).toEqual([
+      [store, router],
+      [store, router]
+    ]);
     expect(startBackendMock).toHaveBeenCalledTimes(1);
     expect(startBackendMock).toHaveBeenCalledWith(inputValues['a']);
     expect(applyStartOutcomeMock).toHaveBeenCalledTimes(1);
+    expect(applyStartOutcomeMock).toHaveBeenCalledWith(store, router, responseValues['v']);
   });
 
   it('starts again once the previous start has finished', (): void => {
@@ -145,9 +151,13 @@ describe('startBackendPipe', (): void => {
 
     run();
 
-    expect(startBackendMock).toHaveBeenCalledTimes(2);
-    expect(startBackendMock).toHaveBeenNthCalledWith(1, inputValues['a']);
-    expect(startBackendMock).toHaveBeenNthCalledWith(2, inputValues['b']);
-    expect(applyStartOutcomeMock).toHaveBeenCalledTimes(2);
+    expect(startBackendMock.mock.calls).toEqual([
+      [inputValues['a']],
+      [inputValues['b']]
+    ]);
+    expect(applyStartOutcomeMock.mock.calls).toEqual([
+      [store, router, responseValues['v']],
+      [store, router, responseValues['v']]
+    ]);
   });
 });

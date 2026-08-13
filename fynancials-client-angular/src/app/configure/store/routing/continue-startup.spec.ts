@@ -36,6 +36,7 @@ describe('continueStartup', (): void => {
     expect(selectDatabase).toHaveBeenCalledTimes(1);
     expect(selectDatabase).toHaveBeenCalledWith({databasePath, authState: 'pending'});
     expect(enterUnlock).toHaveBeenCalledTimes(1);
+    expect(enterUnlock).toHaveBeenCalledWith();
     expect(startBackend).not.toHaveBeenCalled();
   });
 
@@ -59,6 +60,7 @@ describe('continueStartup', (): void => {
   it('adopts the selection before handing over to the unlock screen', (): void => {
     continueStartup(startupStore, {databasePath, authState: 'scrypt'}, 'known', '');
 
+    expect(selectDatabase).toHaveBeenCalledTimes(1);
     expect(selectDatabase).toHaveBeenCalledWith({databasePath, authState: 'scrypt'});
     expect(selectDatabase.mock.invocationCallOrder[0]).toBeLessThan(enterUnlock.mock.invocationCallOrder[0]);
   });

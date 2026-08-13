@@ -4,22 +4,23 @@ const spawnSync = require('child_process').spawnSync;
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const {Readable} = require('stream');
-const {pipeline} = require('stream/promises');
 const {createConfigFile} = require('./config/config-file.js');
 const {createAuthRegistry} = require('./config/auth-registry.js');
 const {createConfigurationWriter} = require('./config/configuration-writer.js');
 const {BACKEND_PID_URL, createBackendReachability} = require('./backend/backend-reachable.js');
 const {createBackendProcess} = require('./backend/backend-process.js');
 const {createDatabaseDialogs} = require('./window/database-dialogs.js');
+const {createJavaDialogs} = require('./window/java-dialogs.js');
 const {createStartupMode} = require('./window/startup-mode.js');
 const {createStartupBridge} = require('./ipc/startup-bridge.js');
 const {createMainWindow, getMainWindow} = require('./window/main-window.js');
-
-const title = 'Fynancials';
-const askForJavaDownload = 'Java not found. Do you want to download Amazon Corretto 25?';
-const javaDownloadLicenseNote = 'Amazon Corretto is licensed under the GPLv2 with the Classpath Exception. '
-  + 'The license terms are included in the downloaded archive. See https://aws.amazon.com/corretto/faqs/ for details.';
+const {findJavaOnPath, normalizeToJavaBinary} = require('./java/java-path.js');
+const {runJavaVersion} = require('./java/java-version.js');
+const {createJavaRuntime} = require('./java/java-runtime.js');
+const {downloadCorretto, downloadTarget, resolveTarPath} = require('./java/corretto-download.js');
+const {verifyDetachedSignature} = require('./java/corretto-signature.js');
+const {CORRETTO_PUBLIC_KEY} = require('./java/corretto-public-key.js');
+const {isTlsOverridden} = require('./security/tls-override.js');
 
 if (process.platform === 'darwin') {
   process.chdir(path.resolve(process.argv0, '..', '..', '..', '..'));
@@ -46,16 +47,49 @@ const databaseDialogs = createDatabaseDialogs({
   getParentWindow: getMainWindow,
   fileSystem: fs
 });
-const startupMode = createStartupMode({configFile, configFileState, config, authRegistry});
+const javaDialogs = createJavaDialogs({
+  dialog,
+  getParentWindow: getMainWindow,
+  fileSystem: fs
+});
+// `NodeJS.ProcessEnv` is a pure index signature (`interface ProcessEnv extends Dict<string> {}`), so it is never
+// structurally assignable to named keys a boundary declares as required, as a `Pick<>` of them does - the assertion
+// is what the real `process.env` needs there, not a sign of a wrong type upstream.
+const pathEnvironment = /** @type {Pick<NodeJS.ProcessEnv, 'PATH' | 'PATHEXT'>} */ (process.env);
+
+const javaRuntime = createJavaRuntime({
+  config,
+  findJavaOnPath: () => findJavaOnPath(pathEnvironment, fs, process.platform),
+  normalizeToJavaBinary: (pickedPath) => normalizeToJavaBinary(pickedPath, fs, process.platform),
+  runJavaVersion: (binaryPath) => runJavaVersion(binaryPath, {spawn: spawnJavaProbe})
+});
+
+/** @type {boolean} */
+const tlsOverridden = isTlsOverridden(process.env);
+
+// resolved once and reused by both the startup mode and a `backend:start` spawn, so a boot-straight-through start
+// probes Java exactly once; only `config:apply`'s re-resolution (below) ever reassigns this.
+/** @type {Promise<string | null>} */
+let javaPromise = tlsOverridden ? Promise.resolve(null) : javaRuntime.resolve();
+
 const backendProcess = createBackendProcess({
   spawn: spawnChildProcess,
-  resolveJava: verifyJava,
+  resolveJava: () => javaPromise,
   backendPath,
   config,
   authRegistry,
   backendReachability,
   logFileSystem: {createWriteStream: fs.createWriteStream},
   logPath
+});
+
+const startupMode = createStartupMode({
+  configFile,
+  configFileState,
+  config,
+  authRegistry,
+  resolveJava: () => javaPromise,
+  tlsOverridden
 });
 
 /**
@@ -73,193 +107,39 @@ function spawnChildProcess(command, args, spawnOptions) {
 }
 
 /**
- * Runs an external command without a shell (no string interpolation into a shell command line, so paths/args with spaces or
- * special characters can't break or inject into the invocation). Throws on a non-zero exit or a spawn failure, mirroring
- * execSync's throw-on-failure behavior.
+ * The same wrapper for the java probe's own three-argument call - its `stdio` tuple is what selects the overload
+ * whose `stdout`/`stderr` are streams rather than `null`.
  *
  * @param {string} command
  * @param {string[]} args
- * @returns {void}
+ * @param {import('./java/java-version.js').JavaVersionSpawnOptions} spawnOptions
+ * @returns {import('./java/java-version.js').JavaVersionChildProcess}
  */
-function runSync(command, args) {
-  /** @type {import('node:child_process').SpawnSyncReturns<Buffer<ArrayBuffer>>} */
-  const result = spawnSync(command, args);
-  if (result.error) {
-    throw result.error;
-  }
-  if (result.status !== 0) {
-    throw new Error(`${command} ${args.join(' ')} exited with code ${result.status}`);
-  }
+function spawnJavaProbe(command, args, spawnOptions) {
+  return spawn(command, args, spawnOptions);
 }
 
 /**
- * @param {string} fileUrl
- * @param {string} destinationPath
- * @returns {Promise<void>}
+ * @param {(progress: import('./java/corretto-download.js').JavaDownloadProgress) => void} onProgress
+ * @returns {Promise<import('./java/corretto-download.js').JavaDownloadResult>}
  */
-async function downloadFile(fileUrl, destinationPath) {
-  /** @type {Response} */
-  const response = await fetch(fileUrl);
-  if (!response.ok || response.body == null) {
-    throw new Error(`Failed to download ${fileUrl}: HTTP ${response.status}`);
-  }
-  await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(destinationPath));
-}
-
-/**
- * @returns {string}
- */
-function resolveTarPath() {
-  if (process.platform === 'win32') {
-    return path.join(process.env['SystemRoot'] ?? 'C:\\Windows', 'System32', 'tar.exe');
-  }
-  return '/usr/bin/tar';
-}
-
-/**
- * @param {string | Error} [message]
- * @returns {never}
- */
-function showErrorMessage(message) {
-  dialog.showMessageBoxSync({
-    type: 'error',
-    title: title,
-    message: message == null ? 'An error has occurred' : String(message),
-    buttons: ['OK']
-  });
-  app.quit();
-  process.exit(1);
-}
-
-/**
- * @returns {Promise<string>}
- */
-async function verifyJava() {
-  const downloadJavaForWindows = async () => {
-    const pathToJava = path.resolve('.', 'java', 'bin', 'java.exe');
-    if (fs.existsSync(pathToJava)) {
-      return pathToJava;
-    }
-    const clickedButton = dialog.showMessageBoxSync({
-      type: 'question',
-      title: title,
-      message: askForJavaDownload,
-      detail: javaDownloadLicenseNote,
-      buttons: ['Yes', 'No']
-    });
-    if (clickedButton === 1) {
-      process.exit(1);
-    }
-
-    const file = 'amazon-corretto-25-x64-windows-jdk.zip';
-    const url = `https://corretto.aws/downloads/latest/${file}`;
-    await downloadFile(url, file);
-    runSync(resolveTarPath(), ['-xf', file]);
-    fs.rmSync(file);
-    fs.readdirSync('.').forEach(directoryEntry => {
-      if (directoryEntry.match(/^jdk/)) {
-        fs.renameSync(directoryEntry, 'java');
-      }
-    })
-    return pathToJava;
-  }
-
-  const downloadJavaForMac = async () => {
-    const pathToJava = path.resolve('.', 'java', 'bin', 'java');
-    if (fs.existsSync(pathToJava)) {
-      return pathToJava;
-    }
-    const clickedButton = dialog.showMessageBoxSync({
-      type: 'question',
-      title: title,
-      message: askForJavaDownload,
-      detail: javaDownloadLicenseNote,
-      buttons: ['Yes', 'No']
-    });
-    if (clickedButton === 1) {
-      process.exit(1);
-    }
-
-    const file = 'amazon-corretto-25-aarch64-macos-jdk.tar.gz';
-    const url = `https://corretto.aws/downloads/latest/${file}`;
-    await downloadFile(url, file);
-    runSync(resolveTarPath(), ['-xvf', file]);
-    fs.rmSync(file, {recursive: true, force: true});
-
-    for (let directoryEntry of fs.readdirSync('.')) {
-      if (directoryEntry.match(/^amazon-corretto-[0-9]+\.jdk$/)) {
-        fs.renameSync(path.resolve(process.cwd(), directoryEntry, 'Contents', 'Home'), 'java');
-        fs.rmSync(directoryEntry, {recursive: true, force: true});
-      }
-    }
-    return pathToJava;
-  }
-
-  const downloadJavaForLinux = async () => {
-    const javaHome = path.join(os.homedir(), '.fynancials', 'java');
-    const pathToJava = path.join(javaHome, 'bin', 'java');
-    if (fs.existsSync(pathToJava)) {
-      return pathToJava;
-    }
-    const clickedButton = dialog.showMessageBoxSync({
-      type: 'question',
-      title: title,
-      message: askForJavaDownload,
-      detail: javaDownloadLicenseNote,
-      buttons: ['Yes', 'No']
-    });
-    if (clickedButton === 1) {
-      process.exit(1);
-    }
-
-    const file = 'amazon-corretto-25-x64-linux-jdk.tar.gz';
-    const url = `https://corretto.aws/downloads/latest/${file}`;
-    const tmpFile = path.join(os.tmpdir(), file);
-    await downloadFile(url, tmpFile);
-
-    const fynancialsHome = path.join(os.homedir(), '.fynancials');
-    fs.mkdirSync(fynancialsHome, {recursive: true});
-    runSync(resolveTarPath(), ['-xf', tmpFile, '-C', fynancialsHome]);
-    fs.rmSync(tmpFile);
-
-    fs.readdirSync(fynancialsHome).forEach(directoryEntry => {
-      if (directoryEntry.match(/^amazon-corretto-.*-linux-x64$/)) {
-        fs.renameSync(path.join(fynancialsHome, directoryEntry), javaHome);
-      }
-    })
-    return pathToJava;
-  }
-
-  const downloadJava = async () => {
-    try {
-      if (process.platform === 'win32' && process.arch === 'x64') {
-        return downloadJavaForWindows();
-      } else if (process.platform === 'darwin') {
-        return downloadJavaForMac();
-      } else if (process.platform === 'linux' && process.arch === 'x64') {
-        return downloadJavaForLinux();
-      } else {
-        showErrorMessage(`Java not found on your system. No automatic download available for ${process.platform}/${process.arch}`);
-      }
-    } catch (error) {
-      showErrorMessage(error instanceof Error ? error : String(error));
-    }
-  };
-
-  return new Promise(resolve => {
-    const java = spawn('java', ['-version'], {
-      env: {...process.env}
-    });
-    java.on('error', () => {
-      downloadJava().then(pathToJava => resolve(pathToJava));
-    });
-    java.on('exit', (exitCode) => {
-      if (exitCode === 0) {
-        resolve('java');
-      } else {
-        downloadJava().then(pathToJava => resolve(pathToJava));
-      }
-    });
+function downloadJava(onProgress) {
+  return downloadCorretto({
+    fetch,
+    fileSystem: fs,
+    spawnSync,
+    resolveTarPath,
+    now: () => Date.now(),
+    delay,
+    verifySignature: (archivePath, signatureBytes) => verifyDetachedSignature({
+      archivePath,
+      signatureBytes,
+      publicKey: CORRETTO_PUBLIC_KEY,
+      createReadStream: filePath => fs.createReadStream(filePath)
+    }),
+    onProgress,
+    platform: process.platform,
+    arch: process.arch
   });
 }
 
@@ -302,18 +182,27 @@ function delay(milliseconds) {
 
 app.on('ready', () => {
   removePreviousLog();
-  const startupState = startupMode.resolve();
+  const startupStatePromise = startupMode.resolve();
   createStartupBridge({
     ipcMain,
-    startupState,
+    startupState: startupStatePromise,
     configFileState,
     backendProcess,
     authRegistry,
     configurationWriter,
     databaseDialogs,
+    javaDialogs,
+    javaRuntime,
+    downloadJava,
+    javaDownloadTarget: downloadTarget(),
     config,
     logPath,
-    quit: () => app.quit()
+    quit: () => app.quit(),
+    getMainWindow,
+    tlsOverridden,
+    reresolveJava: () => {
+      javaPromise = javaRuntime.resolve();
+    }
   }).register();
   createMainWindow();
 });

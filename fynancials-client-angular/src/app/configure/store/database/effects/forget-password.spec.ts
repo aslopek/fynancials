@@ -57,7 +57,8 @@ describe('forgetPasswordPipe', (): void => {
             authState: 'passwordless'
           }
         ],
-        logPath: 'C:\\apps\\fynancials\\fynancials.log'
+        logPath: 'C:\\apps\\fynancials\\fynancials.log',
+        java: {path: null, signature: null}
       }
     };
   });
@@ -106,6 +107,7 @@ describe('forgetPasswordPipe', (): void => {
     run();
 
     expect(forgetPassword).toHaveBeenCalledTimes(1);
+    expect(forgetPassword).toHaveBeenCalledWith(databasePath);
   });
 
   it('discards nothing while no database is selected', (): void => {
