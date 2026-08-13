@@ -71,6 +71,7 @@ describe('setPositionGroupBy', (): void => {
 
   it('dispatches Set Position Group By Done once the config value is stored', (): void => {
     expectEffect('----d', {d: DepotActions.setPositionGroupByDone({groupBy: 'sector'})});
+    expect(setClientConfigValue).toHaveBeenCalledTimes(1);
     expect(setClientConfigValue).toHaveBeenCalledWith(clientId, positionGroupByConfigKey.key, 'sector');
   });
 
@@ -82,13 +83,17 @@ describe('setPositionGroupBy', (): void => {
   it('stores the group by from the store rather than the one carried by the action', (): void => {
     actionMarbles = '-b';
     expectEffect('----d', {d: DepotActions.setPositionGroupByDone({groupBy: 'sector'})});
+    expect(setClientConfigValue).toHaveBeenCalledTimes(1);
     expect(setClientConfigValue).toHaveBeenCalledWith(clientId, positionGroupByConfigKey.key, 'sector');
   });
 
   it('cancels an in-flight config call when the next Set Position Group By arrives', (): void => {
     actionMarbles = '-a-b';
     expectEffect('------d', {d: DepotActions.setPositionGroupByDone({groupBy: 'sector'})});
-    expect(setClientConfigValue).toHaveBeenCalledTimes(2);
+    expect(setClientConfigValue.mock.calls).toEqual([
+      [clientId, positionGroupByConfigKey.key, 'sector'],
+      [clientId, positionGroupByConfigKey.key, 'sector']
+    ]);
   });
 
   it('ignores actions of other types', (): void => {

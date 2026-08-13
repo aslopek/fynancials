@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, jest} from '@jest/globals';
-import {firstValueFrom} from 'rxjs';
+import {firstValueFrom, Subscription} from 'rxjs';
 import {BridgeHost} from './bridge-host.token';
 import {StartupBridgeService} from './startup-bridge.service';
 import {
@@ -8,6 +8,10 @@ import {
   ConfigurationChanges,
   ConfigureState,
   FynancialsBridge,
+  JavaDownloadOutcome,
+  JavaDownloadProgress,
+  JavaPickResult,
+  JavaVerification,
   PickedDatabase,
   StartupState
 } from './startup-bridge.type';
@@ -20,15 +24,24 @@ type PickExistingDatabase = (currentSelection: string | null) => Promise<string 
 type PickNewDatabase = (currentSelection: string | null) => Promise<PickedDatabase | null>;
 type ForgetPassword = (databasePath: string) => Promise<void>;
 type ApplyConfiguration = (changes: ConfigurationChanges) => Promise<AppliedConfiguration>;
+type VerifyJava = (setting: string | null) => Promise<JavaVerification>;
+type PickJava = (currentSetting: string | null) => Promise<JavaPickResult | null>;
+type DownloadJava = () => Promise<JavaDownloadOutcome>;
+type OnJavaDownloadProgress = (listener: (progress: JavaDownloadProgress) => void) => () => void;
 
 describe('StartupBridgeService', (): void => {
   const databasePath: string = 'C:\\Users\\x\\fynancials';
+  const javaPath: string = 'C:\\jdk\\bin\\java.exe';
+  const changes: ConfigurationChanges = {databasePath, javaPath: null, javaSignature: null};
 
   let startupState: StartupState;
   let startOutcome: BackendStartOutcome;
   let configureState: ConfigureState;
   let pickedDatabase: PickedDatabase;
   let appliedConfiguration: AppliedConfiguration;
+  let javaVerification: JavaVerification;
+  let javaPickResult: JavaPickResult;
+  let javaDownloadOutcome: JavaDownloadOutcome;
   let getStartupState: jest.Mock<GetStartupState>;
   let startBackend: jest.Mock<StartBackend>;
   let verifyPassword: jest.Mock<VerifyPassword>;
@@ -37,6 +50,11 @@ describe('StartupBridgeService', (): void => {
   let pickNewDatabase: jest.Mock<PickNewDatabase>;
   let forgetPassword: jest.Mock<ForgetPassword>;
   let applyConfiguration: jest.Mock<ApplyConfiguration>;
+  let verifyJava: jest.Mock<VerifyJava>;
+  let pickJava: jest.Mock<PickJava>;
+  let downloadJava: jest.Mock<DownloadJava>;
+  let onJavaDownloadProgress: jest.Mock<OnJavaDownloadProgress>;
+  let unsubscribeJavaDownloadProgress: jest.Mock<() => void>;
   let quit: jest.Mock<() => void>;
   let service: StartupBridgeService;
 
@@ -51,10 +69,14 @@ describe('StartupBridgeService', (): void => {
           authState: 'scrypt'
         }
       ],
-      logPath: 'C:\\apps\\fynancials\\fynancials.log'
+      logPath: 'C:\\apps\\fynancials\\fynancials.log',
+      java: {path: null, signature: null}
     };
     pickedDatabase = {basePath: 'D:\\backup\\fynancials-test', fileExists: false};
     appliedConfiguration = {databasePath, authState: 'passwordless'};
+    javaVerification = {status: 'ok', javaPath, versionOutput: 'openjdk 25'};
+    javaPickResult = {setting: javaPath, verification: javaVerification};
+    javaDownloadOutcome = {status: 'completed', javaPath, signature: 'c2ln', verification: javaVerification};
 
     getStartupState = jest.fn<GetStartupState>(() => Promise.resolve(startupState));
     startBackend = jest.fn<StartBackend>(() => Promise.resolve(startOutcome));
@@ -64,6 +86,11 @@ describe('StartupBridgeService', (): void => {
     pickNewDatabase = jest.fn<PickNewDatabase>(() => Promise.resolve(pickedDatabase));
     forgetPassword = jest.fn<ForgetPassword>(() => Promise.resolve());
     applyConfiguration = jest.fn<ApplyConfiguration>(() => Promise.resolve(appliedConfiguration));
+    verifyJava = jest.fn<VerifyJava>(() => Promise.resolve(javaVerification));
+    pickJava = jest.fn<PickJava>(() => Promise.resolve(javaPickResult));
+    downloadJava = jest.fn<DownloadJava>(() => Promise.resolve(javaDownloadOutcome));
+    unsubscribeJavaDownloadProgress = jest.fn<() => void>();
+    onJavaDownloadProgress = jest.fn<OnJavaDownloadProgress>(() => unsubscribeJavaDownloadProgress);
     quit = jest.fn<() => void>();
 
     const fynancials: FynancialsBridge = {
@@ -75,6 +102,10 @@ describe('StartupBridgeService', (): void => {
       pickNewDatabase,
       forgetPassword,
       applyConfiguration,
+      verifyJava,
+      pickJava,
+      downloadJava,
+      onJavaDownloadProgress,
       quit
     };
     const bridgeHost: BridgeHost = {fynancials};
@@ -104,6 +135,7 @@ describe('StartupBridgeService', (): void => {
   it('starts the backend through the bridge with the given password', async (): Promise<void> => {
     const outcome: BackendStartOutcome = await firstValueFrom(service.startBackend('hunter2'));
 
+    expect(startBackend).toHaveBeenCalledTimes(1);
     expect(startBackend).toHaveBeenCalledWith('hunter2');
     expect(outcome).toBe(startOutcome);
   });
@@ -141,6 +173,7 @@ describe('StartupBridgeService', (): void => {
   it('resolves the configure state through the bridge', async (): Promise<void> => {
     await expect(firstValueFrom(service.getConfigureState())).resolves.toBe(configureState);
     expect(getConfigureState).toHaveBeenCalledTimes(1);
+    expect(getConfigureState).toHaveBeenCalledWith();
   });
 
   it('does not call the bridge before subscription for pickExistingDatabase', (): void => {
@@ -201,23 +234,118 @@ describe('StartupBridgeService', (): void => {
   });
 
   it('does not call the bridge before subscription for applyConfiguration', (): void => {
-    service.applyConfiguration({databasePath});
+    service.applyConfiguration(changes);
 
     expect(applyConfiguration).not.toHaveBeenCalled();
   });
 
   it('applies the configuration through the bridge and emits what was applied', async (): Promise<void> => {
-    const applied: AppliedConfiguration = await firstValueFrom(service.applyConfiguration({databasePath}));
+    const applied: AppliedConfiguration = await firstValueFrom(service.applyConfiguration(changes));
 
     expect(applyConfiguration).toHaveBeenCalledTimes(1);
-    expect(applyConfiguration).toHaveBeenCalledWith({databasePath});
+    expect(applyConfiguration).toHaveBeenCalledWith(changes);
     expect(applied).toBe(appliedConfiguration);
+  });
+
+  it('does not call the bridge before subscription for verifyJava', (): void => {
+    service.verifyJava(javaPath);
+
+    expect(verifyJava).not.toHaveBeenCalled();
+  });
+
+  it('verifies a java setting through the bridge', async (): Promise<void> => {
+    const verification: JavaVerification = await firstValueFrom(service.verifyJava(javaPath));
+
+    expect(verifyJava).toHaveBeenCalledTimes(1);
+    expect(verifyJava).toHaveBeenCalledWith(javaPath);
+    expect(verification).toBe(javaVerification);
+  });
+
+  it('verifies the PATH candidate for a null setting', async (): Promise<void> => {
+    await firstValueFrom(service.verifyJava(null));
+
+    expect(verifyJava).toHaveBeenCalledTimes(1);
+    expect(verifyJava).toHaveBeenCalledWith(null);
+  });
+
+  it('does not call the bridge before subscription for pickJava', (): void => {
+    service.pickJava(null);
+
+    expect(pickJava).not.toHaveBeenCalled();
+  });
+
+  it('picks java through the bridge with the current setting', async (): Promise<void> => {
+    const picked: JavaPickResult | null = await firstValueFrom(service.pickJava(javaPath));
+
+    expect(pickJava).toHaveBeenCalledTimes(1);
+    expect(pickJava).toHaveBeenCalledWith(javaPath);
+    expect(picked).toBe(javaPickResult);
+  });
+
+  it('passes a cancelled java picker through', async (): Promise<void> => {
+    pickJava.mockReturnValue(Promise.resolve(null));
+
+    await expect(firstValueFrom(service.pickJava(null))).resolves.toBeNull();
+  });
+
+  it('does not call the bridge before subscription for downloadJava', (): void => {
+    service.downloadJava();
+
+    expect(downloadJava).not.toHaveBeenCalled();
+  });
+
+  it('downloads java through the bridge', async (): Promise<void> => {
+    const result: JavaDownloadOutcome = await firstValueFrom(service.downloadJava());
+
+    expect(downloadJava).toHaveBeenCalledTimes(1);
+    expect(downloadJava).toHaveBeenCalledWith();
+    expect(result).toBe(javaDownloadOutcome);
+  });
+
+  it('registers no download progress listener before subscription', (): void => {
+    const observable = service.javaDownloadProgress$;
+    void observable;
+
+    expect(onJavaDownloadProgress).not.toHaveBeenCalled();
+  });
+
+  it('emits progress events pushed by the bridge', (): void => {
+    let received: JavaDownloadProgress | undefined;
+    const progress: JavaDownloadProgress = {phase: 'downloading', receivedBytes: 1, totalBytes: 2, bytesPerSecond: 1, secondsRemaining: 1};
+
+    service.javaDownloadProgress$.subscribe((value) => {
+      received = value;
+    });
+    const listener = onJavaDownloadProgress.mock.calls[0]?.[0];
+    listener(progress);
+
+    expect(received).toBe(progress);
+  });
+
+  it('unsubscribes from the bridge on unsubscribe', (): void => {
+    const subscription: Subscription = service.javaDownloadProgress$.subscribe();
+    subscription.unsubscribe();
+
+    expect(unsubscribeJavaDownloadProgress).toHaveBeenCalledTimes(1);
+    expect(unsubscribeJavaDownloadProgress).toHaveBeenCalledWith();
+  });
+
+  it('registers a separate listener per subscription', (): void => {
+    service.javaDownloadProgress$.subscribe();
+    service.javaDownloadProgress$.subscribe();
+
+    expect(onJavaDownloadProgress.mock.calls).toEqual([
+      [expect.any(Function)],
+      [expect.any(Function)]
+    ]);
+    expect(onJavaDownloadProgress.mock.calls[0][0]).not.toBe(onJavaDownloadProgress.mock.calls[1][0]);
   });
 
   it('reaches the bridge eagerly for quit, with no subscription involved', (): void => {
     service.quit();
 
     expect(quit).toHaveBeenCalledTimes(1);
+    expect(quit).toHaveBeenCalledWith();
   });
 
   describe('without a bridge', (): void => {
@@ -230,7 +358,11 @@ describe('StartupBridgeService', (): void => {
       ['pickExistingDatabase', (): unknown => firstValueFrom(service.pickExistingDatabase(null))],
       ['pickNewDatabase', (): unknown => firstValueFrom(service.pickNewDatabase(null))],
       ['forgetPassword', (): unknown => firstValueFrom(service.forgetPassword(databasePath))],
-      ['applyConfiguration', (): unknown => firstValueFrom(service.applyConfiguration({databasePath}))]
+      ['applyConfiguration', (): unknown => firstValueFrom(service.applyConfiguration(changes))],
+      ['verifyJava', (): unknown => firstValueFrom(service.verifyJava(null))],
+      ['pickJava', (): unknown => firstValueFrom(service.pickJava(null))],
+      ['downloadJava', (): unknown => firstValueFrom(service.downloadJava())],
+      ['javaDownloadProgress$', (): unknown => firstValueFrom(service.javaDownloadProgress$)]
     ])('rejects %s', async (_name: string, call: () => unknown): Promise<void> => {
       await expect(call()).rejects.toThrow('The fynancials bridge is not available');
     });

@@ -47,9 +47,11 @@ The Angular + NgRx frontend, packaged as the Electron desktop app that ships to 
   and one term in `enableSaveAndStart` — the frame itself is not touched. That split is what the store's folders express: a section's own
   computeds/effects/methods sit under `store/<section>/` (`store/database/computed|effects|methods`, and
   `store/java/computed|effects|methods`), while `store/computed|effects|methods` hold only the frame's own. The same split shapes the
-  store's types, as a reading aid only: private `Frame*`/`Database*` slices that the exported
-  `ConfigureStoreState`/`ConfigureComputed`/`ConfigureMethods` intersect back into one flat object. Both are sibling top-level routes with
-  no chrome, rendered instead of the shell while the startup mode the main process computed is `unlock` or `configure`.
+  store's types, as a reading aid only: private `Frame*`/`Database*`/`Java*` slices that the exported
+  `ConfigureStoreState`/`ConfigureComputed`/`ConfigureMethods` intersect back into one flat object. `/unlock`, `/configure` and `/insecure`
+  (`src/app/insecure/`, admitted while the startup mode is `insecure` — see `electron/LLM.md`'s boot order for the
+  `NODE_TLS_REJECT_UNAUTHORIZED` guard that produces it) are three sibling top-level routes with no chrome, rendered instead of the shell
+  while the startup mode the main process computed calls for one of them.
   `src/app/startup/` is the renderer's only door to the main process: `StartupBridgeService` wraps the `contextBridge` surface
   (`window.fynancials`, exposed by `electron/preload.js`) as observables, and `StartupStore` (a root-provided `@ngrx/signals` Signal Store,
   not a global-store slice — it is read by an app initializer, a route guard and both startup screens) holds the startup mode, phase,
@@ -194,9 +196,6 @@ container component's `providers: [XStore]`, then have descendant components
 - When no existing type fits exactly, define a new, narrowly-scoped one (e.g. a `Get<X>State` selector input, an
   `<X>ActionArgs`/`<X>EffectArgs` type) rather than widening an existing type or leaving it inferred.
 - Use `type` over `interface`. Use `interface` if and only if there is a class implementing the interface.
-- One-line JSON objects and arrays are allowed if and only if they are empty or contain maximum one key / item.
-  - `[]`, `['foo']` are okay, `['foo', 'bar']` needs to be multi-line
-  - `{}`, `{foo: 'bar'}` are okay, `{foo: 'bar', baz: 1}` needs to be multi-line
 - **Doc comments obey dependency inversion** (root `LLM.md`, "Dependency inversion binds the docs too"): a selector, computed, method,
   effect or store helper documents its own contract, never which component or screen calls it, in which order the callers run, or what
   another slice/screen does with the result afterwards.
@@ -292,8 +291,25 @@ The focus on testing in the angular app is on logic. Use `jest` to test:
     - Mechanics: `jest.mock('<path>', () => ({<fn>: jest.fn()}))` at the top of the file, the mocked function's signature as a local
       `type`, and a `let <fn>Mock: jest.Mock<Signature>` assigned from the imported binding in `beforeEach()`. Module mocks live for the
       whole file, so reset it there too, or call counts leak from one test into the next.
+  - **A call assertion states both what and how often**: every `toHaveBeenCalledWith(...)` is accompanied by a `toHaveBeenCalledTimes(n)`
+    on the same mock, and every `toHaveBeenCalledTimes(n)` by the arguments of those calls. Each half alone leaves the other free: `With`
+    passes as long as *one* of the calls matched, so a unit calling a collaborator three times when it should call it once stays green;
+    `Times` passes for the right number of entirely wrong calls. Together they are one claim about the handover. `not.toHaveBeenCalled()`
+    is exempt — it already says both — and is what a zero count is written as, never `toHaveBeenCalledTimes(0)`. A collaborator taking no
+    arguments gets `toHaveBeenCalledWith()`, which asserts exactly that none were passed; there is no such thing as a mock too small for
+    the pairing.
+  - For **n > 1 calls**, don't write n `toHaveBeenCalledWith(...)` lines: assert the whole log at once with
+    `expect(fn.mock.calls).toEqual([[...], [...]])`. One array literal covers count, arguments and order, and order is usually part of what
+    the test claims (a directory removed before the rename that replaces it, not after). This is the same "prefer one `toEqual` on the whole
+    expected result" rule the assertion list below states, applied to a mock's calls.
   - `beforeEach()` sets up the baseline. The **first test function** in the file is the baseline case itself - no extra arrange, just act +
     assert. Every other test changes exactly one precondition in its own arrange step, then does act + assert.
+  - **A complex object shared across a `describe()`'s tests is declared `let` at `describe()` scope and assigned inside `beforeEach()`,
+    never `const`.** A `const` initialized in the `describe()` body (or in a nested one) is one mutable object instance reused by
+    reference across every test in that block; a mutation by one test, or by the code under test, then leaks into the next test's arrange
+    step, and the leak only shows up as a failure that depends on run order. Assigning a fresh instance in `beforeEach()` gives every test
+    its own copy. This applies to any complex/mutable object — plain objects, arrays, factory-produced fixtures, mocks — a primitive
+    (`string`, `number`, `boolean`) is fine as `const` at `describe()` scope, since it cannot be mutated in place.
   - Use nested `describe()` if you want multiple tests with the same alteration from the baseline: the shared alteration goes into the
     nested `describe()`'s own `beforeEach()` — never into the `describe()` body, which runs at collection time, before any `beforeEach()`.
     E.g. if tests only make sense if they alter n > 1 preconditions, then the nested `describe()`'s `beforeEach()` may alter up to n-1

@@ -35,7 +35,8 @@ describe('configurationWriter', () => {
       auth: {
         [databasePath]: storedScryptEntry(),
         [otherDatabasePath]: {passwordless: true}
-      }
+      },
+      java: {path: null}
     };
 
     /** @type {Pick<ConfigFile, 'save'>} */
@@ -48,7 +49,7 @@ describe('configurationWriter', () => {
   });
 
   it('writes the selected database into the environment and persists the config', () => {
-    writer.apply({databasePath: otherDatabasePath});
+    writer.apply({databasePath: otherDatabasePath, javaPath: null, javaSignature: null});
 
     expect(config.env.FY_DB_FILE_PATH).toBe(otherDatabasePath);
     expect(save).toHaveBeenCalledTimes(1);
@@ -56,7 +57,7 @@ describe('configurationWriter', () => {
   });
 
   it('leaves every auth entry as it was', () => {
-    writer.apply({databasePath: otherDatabasePath});
+    writer.apply({databasePath: otherDatabasePath, javaPath: null, javaSignature: null});
 
     expect(config.auth).toEqual({
       [databasePath]: storedScryptEntry(),
@@ -65,11 +66,39 @@ describe('configurationWriter', () => {
   });
 
   it('returns the state of the newly selected database', () => {
-    expect(writer.apply({databasePath: otherDatabasePath})).toBe('passwordless');
+    expect(writer.apply({databasePath: otherDatabasePath, javaPath: null, javaSignature: null})).toBe('passwordless');
   });
 
   it('returns pending for a database with no entry', () => {
-    expect(writer.apply({databasePath: 'E:\\fresh'})).toBe('pending');
+    expect(writer.apply({databasePath: 'E:\\fresh', javaPath: null, javaSignature: null})).toBe('pending');
+  });
+
+  it('writes a custom java path with no signature', () => {
+    writer.apply({databasePath: otherDatabasePath, javaPath: 'C:\\jdk\\bin\\java.exe', javaSignature: null});
+
+    expect(config.java).toEqual({path: 'C:\\jdk\\bin\\java.exe', signature: null});
+  });
+
+  it('writes a downloaded java path together with its signature', () => {
+    writer.apply({databasePath: otherDatabasePath, javaPath: 'C:\\java\\bin\\java.exe', javaSignature: 'c2ln'});
+
+    expect(config.java).toEqual({path: 'C:\\java\\bin\\java.exe', signature: 'c2ln'});
+  });
+
+  it('writes null as null for automatic resolution, not omitted', () => {
+    config.java = {path: 'C:\\jdk\\bin\\java.exe', signature: 'c2ln'};
+
+    writer.apply({databasePath: otherDatabasePath, javaPath: null, javaSignature: null});
+
+    expect(config.java).toEqual({path: null, signature: null});
+  });
+
+  it('keeps unknown sub-keys of java', () => {
+    config.java = {path: null, extra: 'kept'};
+
+    writer.apply({databasePath: otherDatabasePath, javaPath: 'C:\\jdk\\bin\\java.exe', javaSignature: null});
+
+    expect(config.java).toEqual({path: 'C:\\jdk\\bin\\java.exe', signature: null, extra: 'kept'});
   });
 
   describe('with a further environment entry', () => {
@@ -78,7 +107,7 @@ describe('configurationWriter', () => {
     });
 
     it('leaves it as it was', () => {
-      writer.apply({databasePath: otherDatabasePath});
+      writer.apply({databasePath: otherDatabasePath, javaPath: null, javaSignature: null});
 
       expect(config.env).toEqual({
         FY_DB_FILE_PATH: otherDatabasePath,
@@ -93,7 +122,7 @@ describe('configurationWriter', () => {
     });
 
     it('never touches it', () => {
-      writer.apply({databasePath: otherDatabasePath});
+      writer.apply({databasePath: otherDatabasePath, javaPath: null, javaSignature: null});
 
       expect(config.configureOnNextStart).toBe(true);
     });

@@ -7,6 +7,7 @@ import {WritableSignalStore} from '../../../../common/types/signal-store.type';
 import {StartupBridgeService} from '../../../startup/startup-bridge.service';
 import {ConfigureState} from '../../../startup/startup-bridge.type';
 import {ConfigureStoreState, initialState} from '../configure.store';
+import {JavaSettingToVerify} from '../java/effects/verify-java-setting';
 import {setConfigureState} from '../methods/set-configure-state';
 import {loadConfigureStatePipe} from './load-configure-state';
 
@@ -25,6 +26,7 @@ describe('loadConfigureStatePipe', (): void => {
   let getConfigureState: jest.Mock<GetConfigureState>;
   let bridge: Pick<StartupBridgeService, 'getConfigureState'>;
   let setConfigureStateMock: jest.Mock<SetConfigureState>;
+  let triggerJavaVerification: jest.Mock<(setting: JavaSettingToVerify) => void>;
   let inputMarbles: string;
   let responseMarbles: string;
   let responseValues: Record<string, ConfigureState>;
@@ -37,6 +39,7 @@ describe('loadConfigureStatePipe', (): void => {
     store = signalState<ConfigureStoreState>({...initialState});
     getConfigureState = jest.fn<GetConfigureState>();
     bridge = {getConfigureState};
+    triggerJavaVerification = jest.fn<(setting: JavaSettingToVerify) => void>();
 
     setConfigureStateMock = setConfigureState as jest.Mock<SetConfigureState>;
     setConfigureStateMock.mockReset();
@@ -52,7 +55,8 @@ describe('loadConfigureStatePipe', (): void => {
             authState: 'scrypt'
           }
         ],
-        logPath: 'C:\\apps\\fynancials\\fynancials.log'
+        logPath: 'C:\\apps\\fynancials\\fynancials.log',
+        java: {path: 'C:\\jdk\\bin\\java.exe', signature: 'c2ln'}
       }
     };
   });
@@ -61,7 +65,7 @@ describe('loadConfigureStatePipe', (): void => {
     scheduler.run(({cold, hot}: RunHelpers): void => {
       getConfigureState.mockReturnValue(cold(responseMarbles, responseValues));
       const source$: HotObservable<void> = hot<void>(inputMarbles, {a: undefined});
-      loadConfigureStatePipe(store, bridge)(source$).subscribe();
+      loadConfigureStatePipe(store, bridge, triggerJavaVerification)(source$).subscribe();
     });
   }
 
@@ -69,8 +73,16 @@ describe('loadConfigureStatePipe', (): void => {
     run();
 
     expect(getConfigureState).toHaveBeenCalledTimes(1);
+    expect(getConfigureState).toHaveBeenCalledWith();
     expect(setConfigureStateMock).toHaveBeenCalledTimes(1);
     expect(setConfigureStateMock).toHaveBeenCalledWith(store, responseValues['v']);
+  });
+
+  it('triggers the java section\'s literal check of the stored setting', (): void => {
+    run();
+
+    expect(triggerJavaVerification).toHaveBeenCalledTimes(1);
+    expect(triggerJavaVerification).toHaveBeenCalledWith({path: 'C:\\jdk\\bin\\java.exe', signature: 'c2ln'});
   });
 
   it('adopts nothing before the bridge answers', (): void => {
@@ -79,5 +91,6 @@ describe('loadConfigureStatePipe', (): void => {
     run();
 
     expect(setConfigureStateMock).not.toHaveBeenCalled();
+    expect(triggerJavaVerification).not.toHaveBeenCalled();
   });
 });

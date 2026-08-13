@@ -1,12 +1,15 @@
 const {beforeEach, describe, expect, it, jest} = require('@jest/globals');
 const {createBackendReachability} = require('./backend-reachable.js');
 
-/** @import {BackendReachability, SpawnedProcess} from './backend-reachable.js' */
+/** @import {BackendReachability, BackendReachabilityOptions, SpawnedProcess} from './backend-reachable.js' */
 
 describe('backendReachability', () => {
   const fetchPid = jest.fn(async () => true);
-  const delay = jest.fn(async () => {
-  });
+  const delay = jest.fn(/** @type {BackendReachabilityOptions['delay']} */ (async (_milliseconds) => {
+  }));
+
+  /** @type {number} the interval the module waits between two polls, restated here because it is module-private */
+  const pollIntervalMillis = 500;
 
   /** @type {Map<'exit' | 'error', () => void>} */
   let listeners;
@@ -31,6 +34,7 @@ describe('backendReachability', () => {
     await expect(reachability.waitUntilReachable(child)).resolves.toBe(true);
 
     expect(fetchPid).toHaveBeenCalledTimes(1);
+    expect(fetchPid).toHaveBeenCalledWith();
     expect(delay).not.toHaveBeenCalled();
   });
 
@@ -40,7 +44,10 @@ describe('backendReachability', () => {
     await expect(reachability.waitUntilReachable(child)).resolves.toBe(true);
 
     expect(fetchPid).toHaveBeenCalledTimes(2);
+    expect(fetchPid).toHaveBeenNthCalledWith(1);
+    expect(fetchPid).toHaveBeenNthCalledWith(2);
     expect(delay).toHaveBeenCalledTimes(1);
+    expect(delay).toHaveBeenCalledWith(pollIntervalMillis);
   });
 
   it('treats a failing poll as not reachable rather than as an error', async () => {
@@ -49,7 +56,9 @@ describe('backendReachability', () => {
     await expect(reachability.waitUntilReachable(child)).resolves.toBe(true);
 
     expect(fetchPid).toHaveBeenCalledTimes(2);
+    expect(fetchPid).toHaveBeenCalledWith();
     expect(delay).toHaveBeenCalledTimes(1);
+    expect(delay).toHaveBeenCalledWith(pollIntervalMillis);
   });
 
   describe('with a backend that never answers', () => {
@@ -65,7 +74,8 @@ describe('backendReachability', () => {
 
       await flushPendingWork();
       expect(fetchPid).toHaveBeenCalledTimes(1);
-      expect(delay).toHaveBeenCalledTimes(0);
+      expect(fetchPid).toHaveBeenCalledWith();
+      expect(delay).not.toHaveBeenCalled();
     });
 
     it('reports a child that never spawned as not reachable and stops polling', async () => {
@@ -76,7 +86,8 @@ describe('backendReachability', () => {
 
       await flushPendingWork();
       expect(fetchPid).toHaveBeenCalledTimes(1);
-      expect(delay).toHaveBeenCalledTimes(0);
+      expect(fetchPid).toHaveBeenCalledWith();
+      expect(delay).not.toHaveBeenCalled();
     });
 
     it('keeps waiting while the child is alive', async () => {
@@ -92,6 +103,7 @@ describe('backendReachability', () => {
 
       expect(outcome).toBe('still waiting');
       expect(delay).toHaveBeenCalledTimes(1);
+      expect(delay).toHaveBeenCalledWith(pollIntervalMillis);
     });
   });
 

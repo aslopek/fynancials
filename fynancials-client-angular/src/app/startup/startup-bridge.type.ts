@@ -1,4 +1,4 @@
-export type StartupMode = 'boot' | 'configure' | 'unlock';
+export type StartupMode = 'boot' | 'configure' | 'insecure' | 'unlock';
 export type AuthState = 'passwordless' | 'pending' | 'scrypt';
 
 export type StartupState = {
@@ -29,6 +29,7 @@ export type ConfigureState = {
   configFileState: ConfigFileState
   knownDatabases: KnownDatabase[]
   logPath: string
+  java: { path: string | null, signature: string | null }
 };
 
 export type PickedDatabase = {
@@ -38,7 +39,36 @@ export type PickedDatabase = {
 
 export type ConfigurationChanges = {
   databasePath: string
+  javaPath: string | null
+  javaSignature: string | null
 };
+
+export type JavaVerification =
+  | { status: 'ok', javaPath: string, versionOutput: string }
+  | { status: 'error', message: string };
+
+export type JavaPickResult = {
+  setting: string
+  verification: JavaVerification
+};
+
+export type JavaDownloadPhase = 'downloading' | 'verifying' | 'extracting';
+
+export type JavaDownloadProgress = {
+  phase: JavaDownloadPhase
+  receivedBytes: number
+  totalBytes: number | null
+  bytesPerSecond: number
+  secondsRemaining: number | null
+};
+
+/**
+ * A completed download carries the `-version` run that proved the extracted binary runs, so adopting it as the
+ * current setting costs no second run and reports the banner that runtime actually printed.
+ */
+export type JavaDownloadOutcome =
+  | { status: 'completed', javaPath: string, signature: string, verification: JavaVerification }
+  | { status: 'failed', message: string };
 
 /**
  * `authState` stays the full `AuthState`: `config:apply` reports the state of whatever database was just selected,
@@ -58,5 +88,9 @@ export type FynancialsBridge = {
   pickNewDatabase: (currentSelection: string | null) => Promise<PickedDatabase | null>
   forgetPassword: (databasePath: string) => Promise<void>
   applyConfiguration: (changes: ConfigurationChanges) => Promise<AppliedConfiguration>
+  verifyJava: (setting: string | null) => Promise<JavaVerification>
+  pickJava: (currentSetting: string | null) => Promise<JavaPickResult | null>
+  downloadJava: () => Promise<JavaDownloadOutcome>
+  onJavaDownloadProgress: (listener: (progress: JavaDownloadProgress) => void) => () => void
   quit: () => void
 };

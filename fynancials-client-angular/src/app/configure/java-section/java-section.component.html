@@ -1,0 +1,91 @@
+<section class="java-section">
+    <h2 class="section-title">Java</h2>
+
+    <div class="status-line">
+        @if (configureStore.javaVerifying()) {
+            <mat-icon>hourglass_empty</mat-icon>
+            <div class="status-text">
+                <p>Verifying the configured runtime…</p>
+                <mat-progress-bar mode="indeterminate"/>
+            </div>
+        } @else if (configureStore.javaVerification(); as verification) {
+            @if (verification.status === 'ok') {
+                <mat-icon class="status-icon-ok">check_circle</mat-icon>
+                <div class="status-text">
+                    <p class="status-version">{{ verification.versionOutput }}</p>
+                    <p class="status-path">{{ verification.javaPath }}</p>
+                </div>
+            } @else {
+                <mat-icon class="status-icon-error">error</mat-icon>
+                <p class="status-message">{{ verification.message }}</p>
+            }
+        }
+    </div>
+
+    <mat-radio-group class="java-options"
+                     [value]="configureStore.javaSelection()"
+                     (change)="chooseOption($event.value)">
+        <mat-radio-button value="automatic">
+            Automatic
+            <span class="option-hint">resolve java from the PATH</span>
+        </mat-radio-button>
+
+        <mat-radio-button value="custom">
+            Custom path…
+            <span class="option-hint">pick a JDK/JRE home or the java binary itself</span>
+            @if (configureStore.javaSelection() === 'custom' && configureStore.javaPath(); as selectedJavaPath) {
+                <p class="option-detail">{{ selectedJavaPath }}</p>
+            }
+            @if (configureStore.javaPickError(); as pickError) {
+                <p class="option-error">
+                    <mat-icon class="message-icon">error</mat-icon>
+                    <span>{{ pickError.setting }} — {{ pickError.message }}</span>
+                </p>
+            }
+        </mat-radio-button>
+
+        <mat-radio-button value="download">
+            Download Corretto
+            <span class="option-hint">≈ 200 MiB</span>
+            @if (configureStore.javaDownloadError(); as downloadError) {
+                <p class="option-error">
+                    <mat-icon class="message-icon">error</mat-icon>
+                    <span>{{ downloadError }}</span>
+                </p>
+            }
+        </mat-radio-button>
+    </mat-radio-group>
+
+    @if (configureStore.licenseNoteVisible()) {
+        <div class="license-note">
+            <p>
+                Amazon Corretto is licensed under the GNU General Public License v2 with the Classpath Exception. The
+                licence terms are included in the downloaded archive.
+            </p>
+            <a href="https://aws.amazon.com/corretto/faqs/"
+               target="_blank"
+               rel="noopener">
+                https://aws.amazon.com/corretto/faqs/
+            </a>
+            <div class="license-actions">
+                <button mat-stroked-button
+                        (click)="configureStore.dismissJavaLicenseNote()">
+                    Cancel
+                </button>
+                <button mat-raised-button
+                        color="primary"
+                        (click)="configureStore.confirmJavaDownload()">
+                    Download
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (configureStore.javaDownload(); as download) {
+        <app-download-progress [receivedBytes]="download.receivedBytes ?? undefined"
+                               [totalBytes]="download.totalBytes ?? undefined"
+                               [bytesPerSecond]="download.bytesPerSecond"
+                               [secondsRemaining]="download.secondsRemaining ?? undefined"
+                               [label]="download.phase | javaDownloadPhaseLabel"/>
+    }
+</section>

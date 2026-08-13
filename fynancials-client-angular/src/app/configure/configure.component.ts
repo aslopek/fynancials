@@ -5,11 +5,12 @@ import {FileDirectoryPipe} from "../../common/pipe/file-directory.pipe";
 import {FileNamePipe} from "../../common/pipe/file-name.pipe";
 import {ReadableStartupStore, StartupStore} from "../startup/store/startup.store";
 import {DatabaseSectionComponent} from "./database-section/database-section.component";
+import {JavaSectionComponent} from "./java-section/java-section.component";
 import {ConfigureStore, ReadableConfigureStore} from "./store/configure.store";
 
 @Component({
   selector: "app-configure",
-  imports: [FileDirectoryPipe, FileNamePipe, DatabaseSectionComponent, MatButtonModule, MatIconModule],
+  imports: [FileDirectoryPipe, FileNamePipe, DatabaseSectionComponent, JavaSectionComponent, MatButtonModule, MatIconModule],
   providers: [ConfigureStore],
   templateUrl: "configure.component.html",
   styleUrls: ["configure.component.scss"],

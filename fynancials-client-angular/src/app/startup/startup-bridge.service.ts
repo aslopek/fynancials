@@ -7,6 +7,10 @@ import {
   ConfigurationChanges,
   ConfigureState,
   FynancialsBridge,
+  JavaDownloadOutcome,
+  JavaDownloadProgress,
+  JavaPickResult,
+  JavaVerification,
   PickedDatabase,
   StartupState
 } from "./startup-bridge.type";
@@ -59,6 +63,26 @@ export class StartupBridgeService {
   applyConfiguration(changes: ConfigurationChanges): Observable<AppliedConfiguration> {
     return defer((): Observable<AppliedConfiguration> => from(this.requireBridge().applyConfiguration(changes)));
   }
+
+  verifyJava(setting: string | null): Observable<JavaVerification> {
+    return defer((): Observable<JavaVerification> => from(this.requireBridge().verifyJava(setting)));
+  }
+
+  pickJava(currentSetting: string | null): Observable<JavaPickResult | null> {
+    return defer((): Observable<JavaPickResult | null> => from(this.requireBridge().pickJava(currentSetting)));
+  }
+
+  downloadJava(): Observable<JavaDownloadOutcome> {
+    return defer((): Observable<JavaDownloadOutcome> => from(this.requireBridge().downloadJava()));
+  }
+
+  /**
+   * A fresh subscription registers its own listener on the bridge and unregisters it on unsubscribe - two concurrent
+   * subscribers do not share one registration.
+   */
+  readonly javaDownloadProgress$: Observable<JavaDownloadProgress> = new Observable<JavaDownloadProgress>((subscriber) => {
+    return this.requireBridge().onJavaDownloadProgress((progress: JavaDownloadProgress): void => subscriber.next(progress));
+  });
 
   /**
    * Fire-and-forget: `ipcRenderer.send` returns synchronously and `app.quit()` is vetoable in Electron, so nothing

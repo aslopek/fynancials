@@ -102,5 +102,6 @@ describe('pickExistingDatabasePipe', (): void => {
     run();
 
     expect(pickExistingDatabase).toHaveBeenCalledTimes(1);
+    expect(pickExistingDatabase).toHaveBeenCalledWith(currentSelection);
   });
 });

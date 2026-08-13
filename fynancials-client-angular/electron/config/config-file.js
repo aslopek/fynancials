@@ -27,13 +27,14 @@ const {fynancialsConfigSchema} = require('./config-schema.js');
  */
 
 /**
- * The three functions this module needs from `fs` - declared minimally, so that a test stub made of exactly these
- * three `jest.fn()`s is assignable without a cast, and a stub that drifts from the real dependency fails `tsc`.
+ * The four functions this module needs from `fs` - declared minimally, so that a test stub made of exactly these
+ * four `jest.fn()`s is assignable without a cast, and a stub that drifts from the real dependency fails `tsc`.
  *
  * @typedef {Object} ConfigFileSystem
  * @property {(path: string) => boolean} existsSync
  * @property {(path: string, encoding: 'utf-8') => string} readFileSync
- * @property {(path: string, data: string, options: {flag: string}) => void} writeFileSync
+ * @property {(path: string, data: string, options: {flag: string, mode: number}) => void} writeFileSync
+ * @property {(path: string, mode: number) => void} chmodSync
  */
 
 /**
@@ -69,15 +70,41 @@ function createConfigFile(options) {
   }
 
   /**
+   * The mode a `chmod` sets on the file after every write, and the one it is created with: readable and writable by
+   * its owner only. The file carries the scrypt record of a database password, and a hash that can be read can be
+   * attacked offline for as long as the attacker likes - a default umask leaves it readable to every local account.
+   *
+   * @type {number}
+   */
+  const CONFIG_FILE_MODE = 0o600;
+
+  /**
+   * A `mode` passed to a write only applies to a file being created, so the `chmod` is what covers a file that is
+   * already there - written by an earlier version, or restored from a backup. It runs after the write and reports its
+   * own failure: a config that could not be narrowed is still a config that was saved.
+   *
+   * @returns {void}
+   */
+  function restrictToOwner() {
+    try {
+      fileSystem.chmodSync(configFilePath, CONFIG_FILE_MODE);
+    } catch (error) {
+      logger.error(`Failed to restrict permissions of ${configFilePath}:`, error);
+    }
+  }
+
+  /**
    * @param {FynancialsConfig} config
    * @returns {void}
    */
   function save(config) {
     try {
-      fileSystem.writeFileSync(configFilePath, JSON.stringify(config, null, 2), {flag: 'w'});
+      fileSystem.writeFileSync(configFilePath, JSON.stringify(config, null, 2), {flag: 'w', mode: CONFIG_FILE_MODE});
     } catch (error) {
       logger.error(`Failed to save config to ${configFilePath}:`, error);
+      return;
     }
+    restrictToOwner();
   }
 
   /**

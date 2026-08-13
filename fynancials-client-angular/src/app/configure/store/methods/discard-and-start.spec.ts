@@ -57,6 +57,7 @@ describe('discardAndStart', (): void => {
   it('hands the started-against database over unchanged, without a password defined here', (): void => {
     discardAndStart(store, startupStore);
 
+    expect(authStateInMock).toHaveBeenCalledTimes(1);
     expect(authStateInMock).toHaveBeenCalledWith(arrangedKnownDatabases, startedAgainst);
     expect(continueStartupMock).toHaveBeenCalledTimes(1);
     expect(continueStartupMock).toHaveBeenCalledWith(startupStore, {databasePath: startedAgainst, authState: 'scrypt'}, 'unchanged');
@@ -81,6 +82,7 @@ describe('discardAndStart', (): void => {
 
     discardAndStart(store, startupStore);
 
+    expect(authStateInMock).toHaveBeenCalledTimes(1);
     expect(authStateInMock).toHaveBeenCalledWith(arrangedKnownDatabases, startedAgainst);
     expect(continueStartupMock).toHaveBeenCalledTimes(1);
     expect(continueStartupMock).toHaveBeenCalledWith(startupStore, {databasePath: startedAgainst, authState: 'scrypt'}, 'unchanged');

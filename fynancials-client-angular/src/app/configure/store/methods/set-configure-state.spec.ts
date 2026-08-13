@@ -20,7 +20,8 @@ describe('setConfigureState', (): void => {
           authState: 'scrypt'
         }
       ],
-      logPath: 'C:\\apps\\fynancials\\fynancials.log'
+      logPath: 'C:\\apps\\fynancials\\fynancials.log',
+      java: {path: null, signature: null}
     };
   });
 

@@ -147,10 +147,7 @@ describe('PositionGroupArcsPipe', (): void => {
     });
 
     it('builds the text once per group, including the absolute size, and uses it for both the label and the tooltip', (): void => {
-      expect(transform).toHaveBeenCalledTimes(groups.length);
-      expect(transform).toHaveBeenNthCalledWith(1, groups[0], false, false, true, 'USD');
-      expect(transform).toHaveBeenNthCalledWith(2, groups[1], false, false, true, 'USD');
-      expect(transform).toHaveBeenNthCalledWith(3, groups[2], false, false, true, 'USD');
+      expect(transform.mock.calls).toEqual(groups.map((group: PositionGroup): unknown[] => [group, false, false, true, 'USD']));
     });
   });
 
