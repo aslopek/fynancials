@@ -16,6 +16,9 @@
 /**
  * @typedef {Object} ConfigurationChanges
  * @property {string} databasePath database base path without extension
+ * @property {string | null} javaPath the verified custom binary, null for the automatically resolved one
+ * @property {string | null} javaSignature base64 of a downloaded archive's detached signature, null when the path was
+ *   not written by a download this app performed
  */
 
 /**
@@ -43,6 +46,7 @@ function createConfigurationWriter(options) {
    */
   function apply(changes) {
     config.env.FY_DB_FILE_PATH = changes.databasePath;
+    config.java = {...config.java, path: changes.javaPath, signature: changes.javaSignature};
     configFile.save(config);
     return authRegistry.stateOf(changes.databasePath);
   }

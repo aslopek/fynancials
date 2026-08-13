@@ -7,13 +7,19 @@ const {createStartupBridge} = require('./startup-bridge.js');
 /** @import {ConfigurationChanges, ConfigurationWriter} from '../config/configuration-writer.js' */
 /** @import {DatabaseDialogs, PickedDatabase} from '../window/database-dialogs.js' */
 /** @import {FynancialsConfig} from '../config/config-schema.js' */
+/** @import {JavaDownloadProgress, JavaDownloadResult} from '../java/corretto-download.js' */
+/** @import {JavaDialogs} from '../window/java-dialogs.js' */
+/** @import {JavaRuntime} from '../java/java-runtime.js' */
+/** @import {JavaVerification} from '../java/java-version.js' */
 /** @import {StartupState} from '../window/startup-mode.js' */
-/** @import {IpcMainLike} from './startup-bridge.js' */
+/** @import {IpcMainLike, ProgressWindowLike} from './startup-bridge.js' */
 
 describe('startupBridge', () => {
   const databasePath = 'C:\\Users\\x\\fynancials';
   const otherDatabasePath = 'D:\\backup\\fynancials-test';
   const logPath = 'C:\\apps\\fynancials\\fynancials.log';
+  const javaPath = 'C:\\jdk\\bin\\java.exe';
+  const javaDownloadTarget = 'C:\\apps\\fynancials\\java';
 
   /** @type {StartupState} */
   let startupState;
@@ -35,7 +41,18 @@ describe('startupBridge', () => {
     (() => Promise.resolve(otherDatabasePath)));
   const pickNew = jest.fn(/** @type {DatabaseDialogs['pickNew']} */
     (() => Promise.resolve({basePath: otherDatabasePath, fileExists: false})));
+  const pickJavaBinary = jest.fn(/** @type {JavaDialogs['pickJavaBinary']} */ (() => Promise.resolve(javaPath)));
+  const verifySetting = jest.fn(/** @type {JavaRuntime['verifySetting']} */
+    (() => Promise.resolve(javaVerification)));
+  const downloadJava = jest.fn(/** @type {(onProgress: (progress: JavaDownloadProgress) => void) => Promise<JavaDownloadResult>} */
+    (() => Promise.resolve({status: 'completed', javaPath, signature: 'c2ln'})));
   const quit = jest.fn();
+  const reresolveJava = jest.fn();
+  const send = jest.fn(/** @type {ProgressWindowLike['webContents']['send']} */ (() => undefined));
+  const getMainWindow = jest.fn(/** @type {() => ProgressWindowLike | null} */ (() => ({webContents: {send}})));
+
+  /** @type {JavaVerification} */
+  let javaVerification;
 
   /** @type {IpcMainLike} */
   let ipcMain;
@@ -52,8 +69,17 @@ describe('startupBridge', () => {
   /** @type {DatabaseDialogs} */
   let databaseDialogs;
 
+  /** @type {Pick<JavaDialogs, 'pickJavaBinary'>} */
+  let javaDialogs;
+
+  /** @type {Pick<JavaRuntime, 'verifySetting'>} */
+  let javaRuntime;
+
   /** @type {FynancialsConfig} */
   let config;
+
+  /** @type {boolean} */
+  let tlsOverridden;
 
   /**
    * @param {string} channel
@@ -79,6 +105,31 @@ describe('startupBridge', () => {
     return call[1];
   }
 
+  /**
+   * @returns {void}
+   */
+  function createBridge() {
+    createStartupBridge({
+      ipcMain,
+      startupState: Promise.resolve(startupState),
+      configFileState: 'read',
+      backendProcess,
+      authRegistry,
+      configurationWriter,
+      databaseDialogs,
+      javaDialogs,
+      javaRuntime,
+      downloadJava,
+      javaDownloadTarget,
+      config,
+      logPath,
+      quit,
+      getMainWindow,
+      tlsOverridden,
+      reresolveJava
+    }).register();
+  }
+
   beforeEach(() => {
     startupState = {authState: 'scrypt', databasePath, mode: 'unlock'};
     known = [
@@ -89,38 +140,36 @@ describe('startupBridge', () => {
     ];
 
     jest.clearAllMocks();
+    javaVerification = {status: 'ok', javaPath, versionOutput: 'openjdk 25'};
     start.mockResolvedValue({reachable: true, startedFrom: 'pending'});
     verify.mockReturnValue(true);
     knownDatabases.mockReturnValue(known);
     apply.mockReturnValue('passwordless');
     pickExisting.mockResolvedValue(otherDatabasePath);
     pickNew.mockResolvedValue({basePath: otherDatabasePath, fileExists: false});
+    pickJavaBinary.mockResolvedValue(javaPath);
+    verifySetting.mockResolvedValue(javaVerification);
+    downloadJava.mockResolvedValue({status: 'completed', javaPath, signature: 'c2ln'});
+    getMainWindow.mockReturnValue({webContents: {send}});
+    tlsOverridden = false;
 
     ipcMain = {handle, on};
     backendProcess = {start};
     authRegistry = {verify, knownDatabases, forget};
     configurationWriter = {apply};
     databaseDialogs = {pickExisting, pickNew};
+    javaDialogs = {pickJavaBinary};
+    javaRuntime = {verifySetting};
     config = {
       env: {FY_DB_FILE_PATH: databasePath},
-      auth: {}
+      auth: {},
+      java: {path: null, signature: null}
     };
 
-    createStartupBridge({
-      ipcMain,
-      startupState,
-      configFileState: 'read',
-      backendProcess,
-      authRegistry,
-      configurationWriter,
-      databaseDialogs,
-      config,
-      logPath,
-      quit
-    }).register();
+    createBridge();
   });
 
-  it('registers exactly the eight request/response channels via handle', () => {
+  it('registers exactly the eleven request/response channels via handle', () => {
     expect(handle.mock.calls.map(([channel]) => channel)).toEqual([
       'startup:getState',
       'backend:start',
@@ -129,7 +178,10 @@ describe('startupBridge', () => {
       'database:pickExisting',
       'database:pickNew',
       'auth:forget',
-      'config:apply'
+      'config:apply',
+      'java:verify',
+      'java:pick',
+      'java:download'
     ]);
   });
 
@@ -137,19 +189,21 @@ describe('startupBridge', () => {
     expect(on.mock.calls.map(([channel]) => channel)).toEqual(['app:quit']);
   });
 
-  it('resolves startup:getState with the given startup state', () => {
-    expect(handleListenerFor('startup:getState')(undefined)).toBe(startupState);
+  it('resolves startup:getState with the given startup state', async () => {
+    await expect(handleListenerFor('startup:getState')(undefined)).resolves.toBe(startupState);
   });
 
   it('delegates a string password to backendProcess.start', async () => {
     await handleListenerFor('backend:start')(undefined, 'hunter2');
 
+    expect(start).toHaveBeenCalledTimes(1);
     expect(start).toHaveBeenCalledWith('hunter2');
   });
 
   it('delegates an empty password when none is given', async () => {
     await handleListenerFor('backend:start')(undefined);
 
+    expect(start).toHaveBeenCalledTimes(1);
     expect(start).toHaveBeenCalledWith('');
   });
 
@@ -166,6 +220,7 @@ describe('startupBridge', () => {
 
   it('delegates auth:verify to authRegistry.verify with the config database path and returns its result', () => {
     expect(handleListenerFor('auth:verify')(undefined, 'hunter2')).toBe(true);
+    expect(verify).toHaveBeenCalledTimes(1);
     expect(verify).toHaveBeenCalledWith(databasePath, 'hunter2');
   });
 
@@ -196,22 +251,41 @@ describe('startupBridge', () => {
     expect(verify).not.toHaveBeenCalled();
   });
 
-  it('resolves configure:getState with the read outcome, the known databases and the log path', () => {
+  it('resolves configure:getState with the read outcome, the known databases, the log path and the java setting', () => {
     expect(handleListenerFor('configure:getState')(undefined)).toEqual({
       configFileState: 'read',
       knownDatabases: known,
-      logPath
+      logPath,
+      java: {path: null, signature: null}
+    });
+  });
+
+  describe('with a stored java setting', () => {
+    beforeEach(() => {
+      config.java = {path: javaPath, signature: 'c2ln'};
+      createBridge();
+    });
+
+    it('reports it from configure:getState', () => {
+      expect(handleListenerFor('configure:getState')(undefined)).toEqual({
+        configFileState: 'read',
+        knownDatabases: known,
+        logPath,
+        java: {path: javaPath, signature: 'c2ln'}
+      });
     });
   });
 
   it('delegates database:pickExisting to the dialogs and returns the picked base path', async () => {
     await expect(handleListenerFor('database:pickExisting')(undefined, databasePath)).resolves.toBe(otherDatabasePath);
+    expect(pickExisting).toHaveBeenCalledTimes(1);
     expect(pickExisting).toHaveBeenCalledWith(databasePath);
   });
 
   it('passes a null selection to database:pickExisting', async () => {
     await handleListenerFor('database:pickExisting')(undefined, null);
 
+    expect(pickExisting).toHaveBeenCalledTimes(1);
     expect(pickExisting).toHaveBeenCalledWith(null);
   });
 
@@ -226,6 +300,7 @@ describe('startupBridge', () => {
       basePath: otherDatabasePath,
       fileExists: false
     });
+    expect(pickNew).toHaveBeenCalledTimes(1);
     expect(pickNew).toHaveBeenCalledWith(databasePath);
   });
 
@@ -248,23 +323,196 @@ describe('startupBridge', () => {
   });
 
   it('applies the changes for config:apply and reports the selected database with its state', () => {
-    expect(handleListenerFor('config:apply')(undefined, {databasePath: otherDatabasePath})).toEqual({
+    const changes = {databasePath: otherDatabasePath, javaPath: null, javaSignature: null};
+
+    expect(handleListenerFor('config:apply')(undefined, changes)).toEqual({
       databasePath: otherDatabasePath,
       authState: 'passwordless'
     });
-    expect(apply).toHaveBeenCalledWith({databasePath: otherDatabasePath});
+    expect(apply).toHaveBeenCalledTimes(1);
+    expect(apply).toHaveBeenCalledWith(changes);
+  });
+
+  it('re-resolves java after applying the changes for config:apply', () => {
+    handleListenerFor('config:apply')(undefined, {databasePath: otherDatabasePath, javaPath: null, javaSignature: null});
+
+    expect(reresolveJava).toHaveBeenCalledTimes(1);
+    expect(reresolveJava).toHaveBeenCalledWith();
   });
 
   it('rejects changes carrying an unknown key for config:apply without applying anything', () => {
     expect(() => handleListenerFor('config:apply')(undefined, {databasePath: otherDatabasePath, auth: {}}))
       .toThrow('Invalid changes argument for config:apply');
     expect(apply).not.toHaveBeenCalled();
+    expect(reresolveJava).not.toHaveBeenCalled();
   });
 
-  // the two dialog channels reach no writing collaborator at all - there is none among the ones they can call
-  it('writes nothing when a dialog is opened', async () => {
+  it('delegates java:verify to javaRuntime.verifySetting', async () => {
+    await expect(handleListenerFor('java:verify')(undefined, javaPath)).resolves.toEqual({
+      status: 'ok',
+      javaPath,
+      versionOutput: 'openjdk 25'
+    });
+    expect(verifySetting).toHaveBeenCalledTimes(1);
+    expect(verifySetting).toHaveBeenCalledWith(javaPath);
+  });
+
+  it('verifies the PATH candidate for a null java:verify setting', async () => {
+    await handleListenerFor('java:verify')(undefined, null);
+
+    expect(verifySetting).toHaveBeenCalledTimes(1);
+    expect(verifySetting).toHaveBeenCalledWith(null);
+  });
+
+  it('rejects an empty string setting for java:verify', () => {
+    expect(() => handleListenerFor('java:verify')(undefined, '')).toThrow('Invalid setting argument for java:verify');
+    expect(verifySetting).not.toHaveBeenCalled();
+  });
+
+  describe('java:pick', () => {
+    it('composes the dialog and the verification into a single result', async () => {
+      await expect(handleListenerFor('java:pick')(undefined, null)).resolves.toEqual({
+        setting: javaPath,
+        verification: javaVerification
+      });
+      expect(pickJavaBinary).toHaveBeenCalledTimes(1);
+      expect(pickJavaBinary).toHaveBeenCalledWith(null, javaDownloadTarget);
+      expect(verifySetting).toHaveBeenCalledTimes(1);
+      expect(verifySetting).toHaveBeenCalledWith(javaPath);
+    });
+
+    it('returns null on a cancelled dialog without verifying anything', async () => {
+      pickJavaBinary.mockResolvedValue(null);
+
+      await expect(handleListenerFor('java:pick')(undefined, null)).resolves.toBeNull();
+      expect(verifySetting).not.toHaveBeenCalled();
+    });
+
+    it('reports the raw picked path alongside a failed verification', async () => {
+      const pickedPath = 'C:\\not-java\\bin\\java.exe';
+      pickJavaBinary.mockResolvedValue(pickedPath);
+      verifySetting.mockResolvedValue({status: 'error', message: 'not a JVM'});
+
+      await expect(handleListenerFor('java:pick')(undefined, null)).resolves.toEqual({
+        setting: pickedPath,
+        verification: {status: 'error', message: 'not a JVM'}
+      });
+    });
+
+    it('rejects a non-string, non-null current setting', () => {
+      expect(() => handleListenerFor('java:pick')(undefined, 42)).toThrow('Invalid currentSetting argument for java:pick');
+      expect(pickJavaBinary).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('java:download', () => {
+    it('answers a completed download with its path, its signature and the verification of the extracted binary', async () => {
+      await expect(handleListenerFor('java:download')(undefined)).resolves.toEqual({
+        status: 'completed',
+        javaPath,
+        signature: 'c2ln',
+        verification: javaVerification
+      });
+    });
+
+    it('verifies the extracted binary before reporting completion', async () => {
+      await handleListenerFor('java:download')(undefined);
+
+      expect(verifySetting).toHaveBeenCalledTimes(1);
+      expect(verifySetting).toHaveBeenCalledWith(javaPath);
+    });
+
+    it('folds a failed post-download verification into a failed download', async () => {
+      verifySetting.mockResolvedValue({status: 'error', message: 'does not run'});
+
+      await expect(handleListenerFor('java:download')(undefined)).resolves.toEqual({
+        status: 'failed',
+        message: 'does not run'
+      });
+    });
+
+    it('returns the failed download unchanged without verifying anything', async () => {
+      downloadJava.mockResolvedValue({status: 'failed', message: 'HTTP 503'});
+
+      await expect(handleListenerFor('java:download')(undefined)).resolves.toEqual({status: 'failed', message: 'HTTP 503'});
+      expect(verifySetting).not.toHaveBeenCalled();
+    });
+
+    it('sends progress events to the main window', async () => {
+      /** @type {JavaDownloadProgress} */
+      const progress = {phase: 'downloading', receivedBytes: 1, totalBytes: 2, bytesPerSecond: 1, secondsRemaining: 1};
+      downloadJava.mockImplementation((onProgress) => {
+        onProgress(progress);
+        return Promise.resolve({status: 'completed', javaPath, signature: 'c2ln'});
+      });
+
+      await handleListenerFor('java:download')(undefined);
+
+      expect(send).toHaveBeenCalledTimes(1);
+      expect(send).toHaveBeenCalledWith('java:downloadProgress', progress);
+    });
+
+    it('refuses a second download while one is running, without starting it', async () => {
+      /** @type {() => void} */
+      let finishFirstDownload = () => undefined;
+      downloadJava.mockImplementation(() => new Promise(resolve => {
+        finishFirstDownload = () => resolve({status: 'failed', message: 'HTTP 503'});
+      }));
+
+      const firstDownload = handleListenerFor('java:download')(undefined);
+
+      await expect(handleListenerFor('java:download')(undefined)).resolves.toEqual({
+        status: 'failed',
+        message: 'A Java download is already running'
+      });
+      expect(downloadJava).toHaveBeenCalledTimes(1);
+      expect(downloadJava).toHaveBeenCalledWith(expect.any(Function));
+
+      finishFirstDownload();
+      await firstDownload;
+    });
+
+    it('allows a further download once the running one has ended', async () => {
+      downloadJava.mockResolvedValue({status: 'failed', message: 'HTTP 503'});
+      await handleListenerFor('java:download')(undefined);
+
+      await expect(handleListenerFor('java:download')(undefined)).resolves.toEqual({status: 'failed', message: 'HTTP 503'});
+      expect(downloadJava.mock.calls).toEqual([[expect.any(Function)], [expect.any(Function)]]);
+    });
+
+    it('allows a further download after a rejected one', async () => {
+      downloadJava.mockRejectedValueOnce(new Error('unreachable'));
+      await expect(handleListenerFor('java:download')(undefined)).rejects.toThrow('unreachable');
+
+      await expect(handleListenerFor('java:download')(undefined)).resolves.toEqual({
+        status: 'completed',
+        javaPath,
+        signature: 'c2ln',
+        verification: javaVerification
+      });
+    });
+
+    it('sends no progress when the window is gone', async () => {
+      getMainWindow.mockReturnValue(null);
+      downloadJava.mockImplementation((onProgress) => {
+        onProgress({phase: 'downloading', receivedBytes: 1, totalBytes: 2, bytesPerSecond: 1, secondsRemaining: 1});
+        return Promise.resolve({status: 'completed', javaPath, signature: 'c2ln'});
+      });
+
+      await expect(handleListenerFor('java:download')(undefined)).resolves.toEqual({
+        status: 'completed',
+        javaPath,
+        signature: 'c2ln',
+        verification: javaVerification
+      });
+      expect(send).not.toHaveBeenCalled();
+    });
+  });
+
+  it('writes nothing when a dialog is opened or a setting is merely verified', async () => {
     await handleListenerFor('database:pickExisting')(undefined, databasePath);
     await handleListenerFor('database:pickNew')(undefined, databasePath);
+    await handleListenerFor('java:verify')(undefined, null);
 
     expect(forget).not.toHaveBeenCalled();
     expect(apply).not.toHaveBeenCalled();
@@ -274,7 +522,31 @@ describe('startupBridge', () => {
     onListenerFor('app:quit')(undefined);
 
     expect(quit).toHaveBeenCalledTimes(1);
+    expect(quit).toHaveBeenCalledWith();
     expect(start).not.toHaveBeenCalled();
     expect(verify).not.toHaveBeenCalled();
+  });
+
+  describe('when TLS verification is overridden', () => {
+    beforeEach(() => {
+      tlsOverridden = true;
+      jest.clearAllMocks();
+      createBridge();
+    });
+
+    it('registers only startup:getState via handle', () => {
+      expect(handle.mock.calls.map(([channel]) => channel)).toEqual(['startup:getState']);
+    });
+
+    it('registers only app:quit via on', () => {
+      expect(on.mock.calls.map(([channel]) => channel)).toEqual(['app:quit']);
+    });
+
+    it('still quits on app:quit', () => {
+      onListenerFor('app:quit')(undefined);
+
+      expect(quit).toHaveBeenCalledTimes(1);
+      expect(quit).toHaveBeenCalledWith();
+    });
   });
 });

@@ -1,0 +1,21 @@
+<div class="insecure-screen">
+    <div class="insecure-content">
+        <mat-icon class="insecure-icon">gpp_bad</mat-icon>
+        <h1 class="insecure-title">TLS verification is disabled</h1>
+        <p>
+            The environment variable <code>NODE_TLS_REJECT_UNAUTHORIZED</code> is set to a value other than
+            <code>1</code>. Fynancials downloads files over HTTPS and relies on certificate verification to do so
+            safely, so it will not start like this.
+        </p>
+        <p>
+            Unset <code>NODE_TLS_REJECT_UNAUTHORIZED</code>, or set it to <code>1</code>, then start the app again.
+        </p>
+        <div class="actions">
+            <button mat-raised-button
+                    color="primary"
+                    (click)="close()">
+                Close
+            </button>
+        </div>
+    </div>
+</div>

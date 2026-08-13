@@ -45,6 +45,14 @@ describe('setStartupState', (): void => {
     expect(getState(store)).toEqual({authState: 'pending', databasePath, mode: 'configure', phase: 'configure', startFailed: false});
   });
 
+  it('enters the insecure phase for insecure mode, with a null database path and null auth state', (): void => {
+    const state: StartupState = {authState: null, databasePath: null, mode: 'insecure'};
+
+    setStartupState(store, state);
+
+    expect(getState(store)).toEqual({authState: null, databasePath: null, mode: 'insecure', phase: 'insecure', startFailed: false});
+  });
+
   it('records a null database path and null auth state when the config names no database', (): void => {
     const state: StartupState = {authState: null, databasePath: null, mode: 'configure'};
 

@@ -3,7 +3,8 @@ const {
   backendStartPasswordSchema,
   configurationChangesSchema,
   databasePathSchema,
-  databaseSelectionSchema
+  databaseSelectionSchema,
+  javaSettingSchema
 } = require('./ipc-schema.js');
 
 /** @import {AuthRegistry, KnownDatabase} from '../config/auth-registry.js' */
@@ -13,17 +14,26 @@ const {
 /** @import {ConfigurationWriter} from '../config/configuration-writer.js' */
 /** @import {DatabaseDialogs} from '../window/database-dialogs.js' */
 /** @import {FynancialsConfig} from '../config/config-schema.js' */
+/** @import {JavaDownloadProgress, JavaDownloadResult} from '../java/corretto-download.js' */
+/** @import {JavaDialogs} from '../window/java-dialogs.js' */
+/** @import {JavaRuntime} from '../java/java-runtime.js' */
+/** @import {JavaVerification} from '../java/java-version.js' */
 /** @import {StartupState} from '../window/startup-mode.js' */
 
 /**
- * Registers the IPC channels the preload's `contextBridge` surface calls into. Exactly nine channels, no generic
- * `invoke(channel, ...)` passthrough, ever. A wider surface would let the renderer reach into the main process in
- * uncontrolled manner. Eight are request/response (registered via `ipcMain.handle`); one is one-way
- * (`app:quit`, registered via `ipcMain.on`) because it has no answer to give.
+ * Registers the IPC channels the preload's `contextBridge` surface calls into. No generic `invoke(channel, ...)`
+ * passthrough, ever - a wider surface would let the renderer reach into the main process in uncontrolled manner. All
+ * but one are request/response (registered via `ipcMain.handle`); `app:quit` is one-way (`ipcMain.on`) because it has
+ * no answer to give, and `java:downloadProgress` is the one push the main process makes into the renderer, sent
+ * straight to the window that invoked `java:download` rather than broadcast.
  *
- * Exactly two of them write `fynancials.config.json`, and neither can write more than its own key: `auth:forget`
- * removes one `auth` entry through `authRegistry.forget`, `config:apply` sets `env.FY_DB_FILE_PATH` through
- * `configurationWriter.apply`. Nothing here ever *writes* an `auth` entry: recording one is a proven start's job.
+ * Exactly two channels write `fynancials.config.json`: `auth:forget` removes one `auth` entry through
+ * `authRegistry.forget`, `config:apply` sets `env.FY_DB_FILE_PATH` and `java` through `configurationWriter.apply`.
+ * Nothing here ever *writes* an `auth` entry: recording one is a proven start's job.
+ *
+ * A TLS-overridden environment collapses the registration to two channels - `startup:getState` and `app:quit` -
+ * before anything else is registered: with no `java:download`, no `backend:start` and no `config:apply` registered,
+ * "nothing can be done" is enforced by architecture.
  */
 
 /**
@@ -36,14 +46,25 @@ const {
  */
 
 /**
+ * The one member `java:download` needs off the main window, to push progress to exactly the renderer that asked for
+ * it rather than broadcasting.
+ *
+ * @typedef {Object} ProgressWindowLike
+ * @property {{send: (channel: string, progress: JavaDownloadProgress) => void}} webContents
+ */
+
+/**
  * What `configure:getState` answers with, beyond `StartupState`. `configFileState` is the snapshot of the single
  * `load()` at start, deliberately not re-derived: `auth:forget` writes the config file later in the run, and this
- * value has to keep describing what the start observed rather than what the file looks like now.
+ * value has to keep describing what the start observed rather than what the file looks like now. `java` is the raw
+ * setting straight out of the config, path and signature together, so a configuration that never touches Java can be
+ * written back exactly as it was read.
  *
  * @typedef {Object} ConfigureState
  * @property {ConfigFileState} configFileState
  * @property {KnownDatabase[]} knownDatabases
  * @property {string} logPath where the main process writes `fynancials.log`
+ * @property {{path: string | null, signature: string | null}} java
  */
 
 /**
@@ -53,17 +74,41 @@ const {
  */
 
 /**
+ * @typedef {Object} JavaPickResult
+ * @property {string} setting the raw picked path, or the verified binary it normalized to when verification succeeded
+ * @property {JavaVerification} verification
+ */
+
+/**
+ * What `java:download` answers with: the downloader's own result, plus - for a completed one - the `-version` run
+ * that proved the extracted binary runs. The two travel together because the verification happens here, and a
+ * completed download is adopted as a setting like any other, with the banner that setting reports.
+ *
+ * @typedef {{status: 'completed', javaPath: string, signature: string, verification: JavaVerification}
+ *   | {status: 'failed', message: string}} JavaDownloadOutcome
+ */
+
+/**
  * @typedef {Object} StartupBridgeOptions
  * @property {IpcMainLike} ipcMain
- * @property {StartupState} startupState
+ * @property {Promise<StartupState>} startupState
  * @property {ConfigFileState} configFileState
  * @property {Pick<BackendProcess, 'start'>} backendProcess
  * @property {Pick<AuthRegistry, 'verify' | 'knownDatabases' | 'forget'>} authRegistry
  * @property {Pick<ConfigurationWriter, 'apply'>} configurationWriter
  * @property {DatabaseDialogs} databaseDialogs
+ * @property {Pick<JavaDialogs, 'pickJavaBinary'>} javaDialogs
+ * @property {Pick<JavaRuntime, 'verifySetting'>} javaRuntime
+ * @property {(onProgress: (progress: JavaDownloadProgress) => void) => Promise<JavaDownloadResult>} downloadJava
+ * @property {string} javaDownloadTarget where a download puts a runtime, offered as the picker's starting point when
+ *   nothing is configured yet
  * @property {FynancialsConfig} config
  * @property {string} logPath
  * @property {() => void} quit
+ * @property {() => ProgressWindowLike | null} getMainWindow
+ * @property {boolean} tlsOverridden
+ * @property {() => void} reresolveJava called once `config:apply` has saved, so a later boot-time resolution reuse
+ *   sees whatever the save just wrote
  */
 
 /**
@@ -79,16 +124,31 @@ function createStartupBridge(options) {
     authRegistry,
     configurationWriter,
     databaseDialogs,
+    javaDialogs,
+    javaRuntime,
+    downloadJava,
+    javaDownloadTarget,
     config,
     logPath,
-    quit
+    quit,
+    getMainWindow,
+    tlsOverridden,
+    reresolveJava
   } = options;
+
+  // set for as long as a download runs, so `java:download` stays single-flight whatever the renderer does
+  let downloading = false;
 
   /**
    * @returns {void}
    */
   function register() {
     ipcMain.handle('startup:getState', () => startupState);
+
+    if (tlsOverridden) {
+      ipcMain.on('app:quit', () => quit());
+      return;
+    }
 
     ipcMain.handle('backend:start', (_event, password) => {
       const parsedPassword = backendStartPasswordSchema.safeParse(password);
@@ -113,7 +173,8 @@ function createStartupBridge(options) {
       const configureState = {
         configFileState,
         knownDatabases: authRegistry.knownDatabases(),
-        logPath
+        logPath,
+        java: {path: config.java?.path ?? null, signature: config.java?.signature ?? null}
       };
       return configureState;
     });
@@ -152,7 +213,63 @@ function createStartupBridge(options) {
         databasePath: parsedChanges.data.databasePath,
         authState: configurationWriter.apply(parsedChanges.data)
       };
+      reresolveJava();
       return applied;
+    });
+
+    ipcMain.handle('java:verify', (_event, setting) => {
+      const parsedSetting = javaSettingSchema.safeParse(setting);
+      if (!parsedSetting.success) {
+        throw new Error('Invalid setting argument for java:verify');
+      }
+      return javaRuntime.verifySetting(parsedSetting.data);
+    });
+
+    ipcMain.handle('java:pick', (_event, currentSetting) => {
+      const parsedSetting = javaSettingSchema.safeParse(currentSetting);
+      if (!parsedSetting.success) {
+        throw new Error('Invalid currentSetting argument for java:pick');
+      }
+      return javaDialogs.pickJavaBinary(parsedSetting.data, javaDownloadTarget).then(async (pickedPath) => {
+        if (pickedPath == null) {
+          return null;
+        }
+        const verification = await javaRuntime.verifySetting(pickedPath);
+        return {
+          setting: verification.status === 'ok' ? verification.javaPath : pickedPath,
+          verification
+        };
+      });
+    });
+
+    ipcMain.handle('java:download', async () => {
+      // a download replaces a directory: two of them at once would each remove what the other is extracting into. The
+      // guard is here rather than in whatever asks for one, so a second call is refused however it arrives.
+      if (downloading) {
+        return {status: 'failed', message: 'A Java download is already running'};
+      }
+      downloading = true;
+
+      /** @type {JavaDownloadResult} */
+      let result;
+      try {
+        result = await downloadJava(progress => {
+          const window = getMainWindow();
+          if (window != null) {
+            window.webContents.send('java:downloadProgress', progress);
+          }
+        });
+      } finally {
+        downloading = false;
+      }
+      if (result.status !== 'completed') {
+        return result;
+      }
+      const verification = await javaRuntime.verifySetting(result.javaPath);
+      if (verification.status !== 'ok') {
+        return {status: 'failed', message: verification.message};
+      }
+      return {...result, verification};
     });
 
     ipcMain.on('app:quit', () => quit());

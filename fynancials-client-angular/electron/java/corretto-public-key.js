@@ -1,0 +1,199 @@
+const crypto = require('node:crypto');
+
+/**
+ * Amazon's Corretto release signing key, pasted verbatim from
+ * `https://apt.corretto.aws/corretto.key` (byte-identical to `https://yum.corretto.aws/corretto.key`), fetched
+ * 2026-08-13. A reviewer can `curl https://apt.corretto.aws/corretto.key | diff - <this constant>` directly - which
+ * is why the armor is kept verbatim rather than as extracted modulus/exponent hex, nobody can eyeball-diff those.
+ *
+ * Fingerprint `6DC3 636D AE53 4049 C8B9 4623 A122 542A B04F 24E3`, RSA 4096, created 2019-12-05, user id
+ * "Amazon Services LLC (Amazon Corretto release) <corretto-team@amazon.com>", documented at
+ * https://docs.aws.amazon.com/corretto/latest/corretto-25-ug/generic-linux-install.html.
+ */
+const ARMORED_PUBLIC_KEY = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+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
+lEaAOCZPzhijXVQcbyhHilTqrg==
+=8wQI
+-----END PGP PUBLIC KEY BLOCK-----
+`;
+
+/**
+ * @typedef {Object} CorrettoPublicKey
+ * @property {import('node:crypto').KeyObject} key
+ * @property {string} fingerprint uppercase hex, no separators
+ */
+
+/**
+ * Strips ASCII armor down to its base64 payload: the header line, the blank line ending the (possibly absent) armor
+ * headers, and the trailing CRC24 checksum line are all dropped: only the key material itself is decoded.
+ *
+ * @param {string} armored
+ * @returns {Buffer}
+ */
+function dearmor(armored) {
+  const lines = armored.split('\n').map(line => line.trim());
+  const beginIndex = lines.indexOf('-----BEGIN PGP PUBLIC KEY BLOCK-----');
+  const endIndex = lines.indexOf('-----END PGP PUBLIC KEY BLOCK-----');
+  const blankIndex = lines.findIndex((line, index) => index > beginIndex && line.length === 0);
+  const base64Body = lines
+    .slice(blankIndex + 1, endIndex)
+    .filter(line => line.length > 0 && !line.startsWith('='))
+    .join('');
+  return Buffer.from(base64Body, 'base64');
+}
+
+/**
+ * One packet's tag and body, per RFC 4880 section 4.2 (both old- and new-format headers).
+ *
+ * @param {Buffer} data
+ * @param {number} offset
+ * @returns {{tag: number, body: Buffer, packetEnd: number}}
+ */
+function readPacket(data, offset) {
+  const first = data[offset];
+  if (first == null || (first & 0x80) === 0) {
+    throw new Error('Not an OpenPGP packet');
+  }
+
+  if ((first & 0x40) !== 0) {
+    const tag = first & 0x3f;
+    const firstLengthByte = data[offset + 1];
+    if (firstLengthByte == null) {
+      throw new Error('Truncated packet header');
+    }
+    if (firstLengthByte < 192) {
+      const bodyStart = offset + 2;
+      return {tag, body: data.subarray(bodyStart, bodyStart + firstLengthByte), packetEnd: bodyStart + firstLengthByte};
+    }
+    if (firstLengthByte === 255) {
+      const bodyLength = data.readUInt32BE(offset + 2);
+      const bodyStart = offset + 6;
+      return {tag, body: data.subarray(bodyStart, bodyStart + bodyLength), packetEnd: bodyStart + bodyLength};
+    }
+    throw new Error('Unsupported new-format packet length');
+  }
+
+  const tag = (first >> 2) & 0x0f;
+  const lengthType = first & 0x03;
+  if (lengthType === 0) {
+    const bodyStart = offset + 2;
+    const bodyLength = data[offset + 1] ?? 0;
+    return {tag, body: data.subarray(bodyStart, bodyStart + bodyLength), packetEnd: bodyStart + bodyLength};
+  }
+  if (lengthType === 1) {
+    const bodyStart = offset + 3;
+    const bodyLength = data.readUInt16BE(offset + 1);
+    return {tag, body: data.subarray(bodyStart, bodyStart + bodyLength), packetEnd: bodyStart + bodyLength};
+  }
+  if (lengthType === 2) {
+    const bodyStart = offset + 5;
+    const bodyLength = data.readUInt32BE(offset + 1);
+    return {tag, body: data.subarray(bodyStart, bodyStart + bodyLength), packetEnd: bodyStart + bodyLength};
+  }
+  throw new Error('Indeterminate-length packets are not supported');
+}
+
+/**
+ * One RFC 4880 section 3.2 multiprecision integer: a 2-byte bit count followed by its minimal big-endian bytes.
+ *
+ * @param {Buffer} data
+ * @param {number} offset
+ * @returns {{value: Buffer, nextOffset: number}}
+ */
+function readMpi(data, offset) {
+  const bitLength = data.readUInt16BE(offset);
+  const byteLength = Math.ceil(bitLength / 8);
+  const valueStart = offset + 2;
+  return {value: data.subarray(valueStart, valueStart + byteLength), nextOffset: valueStart + byteLength};
+}
+
+/**
+ * The v4 fingerprint (RFC 4880 section 12.2): SHA-1 over a synthetic `0x99` header plus a 2-byte big-endian length of
+ * the key material, followed by the key material itself - never the packet's own on-disk header bytes.
+ *
+ * @param {Buffer} publicKeyPacketBody
+ * @returns {string}
+ */
+function computeFingerprint(publicKeyPacketBody) {
+  const prefix = Buffer.alloc(3);
+  prefix[0] = 0x99;
+  prefix.writeUInt16BE(publicKeyPacketBody.length, 1);
+  return crypto.createHash('sha1').update(Buffer.concat([prefix, publicKeyPacketBody])).digest('hex').toUpperCase();
+}
+
+/** @type {number} tag 6: public-key packet */
+const PUBLIC_KEY_PACKET_TAG = 6;
+
+/**
+ * @param {string} armored
+ * @returns {CorrettoPublicKey}
+ */
+function loadPublicKey(armored) {
+  const data = dearmor(armored);
+
+  let offset = 0;
+  let keyPacketBody = null;
+  while (offset < data.length) {
+    const {tag, body, packetEnd} = readPacket(data, offset);
+    if (tag === PUBLIC_KEY_PACKET_TAG) {
+      keyPacketBody = body;
+      break;
+    }
+    offset = packetEnd;
+  }
+  if (keyPacketBody == null) {
+    throw new Error('No public-key packet found');
+  }
+
+  // version(1) + creation time(4) + algorithm(1), then the RSA modulus and exponent MPIs
+  const {value: n, nextOffset} = readMpi(keyPacketBody, 6);
+  const {value: e} = readMpi(keyPacketBody, nextOffset);
+
+  const key = crypto.createPublicKey({
+    format: 'jwk',
+    key: {kty: 'RSA', n: n.toString('base64url'), e: e.toString('base64url')}
+  });
+
+  return {key, fingerprint: computeFingerprint(keyPacketBody)};
+}
+
+/** @type {CorrettoPublicKey} */
+const CORRETTO_PUBLIC_KEY = loadPublicKey(ARMORED_PUBLIC_KEY);
+
+module.exports = {CORRETTO_PUBLIC_KEY};

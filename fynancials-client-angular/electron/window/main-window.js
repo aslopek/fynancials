@@ -1,6 +1,7 @@
 const {BrowserWindow, screen, shell} = require('electron');
 const path = require('path');
 const url = require('url');
+const {isOpenableExternally, isSameDocument} = require('./navigation-policy.js');
 
 /**
  * Creates the single `BrowserWindow` the packaged app ever opens, always loading the built Angular app. Requires
@@ -42,20 +43,40 @@ function createMainWindow() {
   });
   frontend.maximize();
 
-  frontend.loadURL(url.format({
-    pathname: frontendUrlPath,
-    protocol: 'file:',
-    slashes: true
-  }));
+  // `pathToFileURL` rather than a formatted `file:` URL: it is the canonical, percent-encoded form
+  const frontendUrl = url.pathToFileURL(frontendUrlPath).href;
+  frontend.loadURL(frontendUrl);
 
   frontend.on('closed', () => {
     frontend = null;
   });
 
-  frontend.webContents.setWindowOpenHandler(({url}) => {
-    shell.openExternal(url);
+  // the URL is data - a release page from an HTTP response, a link a user typed - and `openExternal` hands whatever
+  // scheme it carries to the OS, so what may not be opened is dropped rather than opened in the window instead
+  frontend.webContents.setWindowOpenHandler(({url: requestedUrl}) => {
+    if (isOpenableExternally(requestedUrl)) {
+      shell.openExternal(requestedUrl);
+    }
     return {action: 'deny'};
   });
+
+  // the preload's bridge belongs to this document alone: a window that navigates elsewhere would take every IPC
+  // channel along to whatever it lands on
+  frontend.webContents.on('will-navigate', (details) => {
+    if (!isSameDocument(details.url, frontendUrl)) {
+      details.preventDefault();
+    }
+  });
+
+  // nothing in this app embeds a webview, and one attached later would come with a preload of its own
+  frontend.webContents.on('will-attach-webview', (event) => {
+    event.preventDefault();
+  });
+
+  // a portfolio tracker asks for no camera, no microphone, no location and no notifications, so every request and
+  // every check is answered before it can reach a prompt
+  frontend.webContents.session.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
+  frontend.webContents.session.setPermissionCheckHandler(() => false);
 }
 
 /**

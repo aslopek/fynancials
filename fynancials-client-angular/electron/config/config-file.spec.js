@@ -1,6 +1,7 @@
 const {beforeEach, describe, expect, it, jest} = require('@jest/globals');
 const {createConfigFile} = require('./config-file.js');
 const {storedScryptEntry} = require('../testing/stored-scrypt-entry.js');
+const {MAXIMUM_SIGNATURE_LENGTH} = require('../security/signature-bounds.js');
 
 /** @import {ConfigFile, ConfigFileSystem} from './config-file.js' */
 /** @import {FynancialsConfig} from './config-schema.js' */
@@ -49,6 +50,7 @@ describe('configFile', () => {
   const existsSync = jest.fn(() => true);
   const readFileSync = jest.fn(() => storedContents);
   const writeFileSync = jest.fn();
+  const chmodSync = jest.fn();
   const error = jest.fn();
 
   beforeEach(() => {
@@ -65,7 +67,7 @@ describe('configFile', () => {
     });
 
     /** @type {ConfigFileSystem} */
-    const fileSystem = {existsSync, readFileSync, writeFileSync};
+    const fileSystem = {existsSync, readFileSync, writeFileSync, chmodSync};
 
     configFile = createConfigFile({
       fileSystem,
@@ -104,6 +106,39 @@ describe('configFile', () => {
     storedContents = JSON.stringify({env: {FY_DB_FILE_PATH: databasePath}});
 
     expect(configFile.load().config.auth).toEqual({});
+  });
+
+  it('reads a stored java setting', () => {
+    storedContents = JSON.stringify({
+      env: {FY_DB_FILE_PATH: databasePath},
+      auth: {},
+      java: {path: 'C:\\jdk\\bin\\java.exe', signature: 'c2lnbmF0dXJl'}
+    });
+
+    expect(configFile.load().config.java).toEqual({path: 'C:\\jdk\\bin\\java.exe', signature: 'c2lnbmF0dXJl'});
+  });
+
+  it('drops a java signature longer than the maximum length, keeping the path it belongs to', () => {
+    storedContents = JSON.stringify({
+      env: {FY_DB_FILE_PATH: databasePath},
+      auth: {},
+      java: {path: 'C:\\jdk\\bin\\java.exe', signature: 'A'.repeat(MAXIMUM_SIGNATURE_LENGTH + 4)}
+    });
+
+    expect(configFile.load().config.java).toEqual({path: 'C:\\jdk\\bin\\java.exe', signature: null});
+  });
+
+  it('falls back a java block that does not parse to automatic, without discarding the rest of the config', () => {
+    storedContents = JSON.stringify({
+      env: {FY_DB_FILE_PATH: databasePath},
+      auth: {},
+      java: {path: 42}
+    });
+
+    const {config, state} = configFile.load();
+
+    expect(state).toBe('read');
+    expect(config.java).toEqual({path: null});
   });
 
   it('keeps arbitrary environment entries', () => {
@@ -171,11 +206,19 @@ describe('configFile', () => {
     expect(writeFileSync).not.toHaveBeenCalled();
   });
 
-  it('writes on an explicit save', () => {
+  it('writes on an explicit save, readable by its owner only', () => {
     configFile.save(defaultConfiguration);
 
     expect(writeFileSync).toHaveBeenCalledTimes(1);
-    expect(writeFileSync).toHaveBeenCalledWith(configFilePath, JSON.stringify(defaultConfiguration, null, 2), {flag: 'w'});
+    expect(writeFileSync).toHaveBeenCalledWith(configFilePath, JSON.stringify(defaultConfiguration, null, 2),
+      {flag: 'w', mode: 0o600});
+  });
+
+  it('narrows the permissions of a file that already existed', () => {
+    configFile.save(defaultConfiguration);
+
+    expect(chmodSync).toHaveBeenCalledTimes(1);
+    expect(chmodSync).toHaveBeenCalledWith(configFilePath, 0o600);
   });
 
   it('logs a failing write rather than throwing', () => {
@@ -185,5 +228,27 @@ describe('configFile', () => {
 
     expect(() => configFile.save(defaultConfiguration)).not.toThrow();
     expect(error).toHaveBeenCalledTimes(1);
+    expect(error).toHaveBeenCalledWith(`Failed to save config to ${configFilePath}:`, new Error('EACCES'));
+  });
+
+  it('narrows nothing when the write itself failed', () => {
+    writeFileSync.mockImplementationOnce(() => {
+      throw new Error('EACCES');
+    });
+
+    configFile.save(defaultConfiguration);
+
+    expect(chmodSync).not.toHaveBeenCalled();
+  });
+
+  it('logs a failing permission change rather than throwing', () => {
+    const reason = new Error('EPERM');
+    chmodSync.mockImplementationOnce(() => {
+      throw reason;
+    });
+
+    expect(() => configFile.save(defaultConfiguration)).not.toThrow();
+    expect(error).toHaveBeenCalledTimes(1);
+    expect(error).toHaveBeenCalledWith(`Failed to restrict permissions of ${configFilePath}:`, reason);
   });
 });

@@ -29,19 +29,36 @@ electron/
   backend/
     backend-reachable.js       poll GET /config/pid until reachable or child exit
     backend-process.js         spawn, stdin password handover, log piping, single-instance guard, proven-start recording
-  java/                        (#38) resolve-java.js, download-corretto.js
+  java/
+    java-path.js               resolve `java` on `PATH`; normalize a picked path to a binary
+    java-version.js            async, timeout- and byte-bounded `java -version` run of one absolute path
+    java-runtime.js            the boot-time resolution chain and the configuration screen's literal check, both
+                               over the two modules above
+    jvm-environment.js         the environment every JVM this app spawns is allowed to see
+    corretto-public-key.js     the pinned Amazon Corretto release signing key, parsed from its armored form
+    corretto-signature.js      parses a detached OpenPGP signature and has `security/verify-hash.js` check it
+                               against that key
+    corretto-download.js       downloads, verifies and extracts the Corretto 25 JDK, reporting progress
   ipc/
     ipc-schema.js              zod schema for IPC input crossing the renderer boundary
-    startup-bridge.js          registers the nine IPC channels listed below
+    startup-bridge.js          registers the IPC channels listed below
+  security/
+    signature-bounds.js        how long a detached signature may be, for every schema that validates one
+    tls-override.js            whether `NODE_TLS_REJECT_UNAUTHORIZED` overrides the default, verifying behavior
+    verify-hash.js             verifies a detached signature over a file streamed into the hash, format-agnostic
   window/
-    startup-mode.js            computes the startup mode (`boot` | `configure` | `unlock`) and consumes `configureOnNextStart`
+    startup-mode.js            computes the startup mode (`boot` | `configure` | `insecure` | `unlock`) and consumes
+                               `configureOnNextStart`
     main-window.js             `BrowserWindow` creation, wired to `preload.js`; `getMainWindow()` exposes it as a
                                dialog parent
+    navigation-policy.js       whether a URL may be opened by the OS, and whether the window may navigate to it
     database-dialogs.js        native open/save dialogs for the database file, normalizing to base paths
+    java-dialogs.js            native picker for a java binary or its containing directory
   testing/                     shared spec-only helpers (custom matchers, ...) used by more than one *.spec.js
 ```
 
-The nine channels `ipc/startup-bridge.js` registers — eight request/response via `ipcMain.handle`, one one-way via `ipcMain.on`:
+The channels `ipc/startup-bridge.js` registers — eleven request/response via `ipcMain.handle`, one one-way via `ipcMain.on`, one push from
+the main process into the renderer:
 
 - `startup:getState`
 - `backend:start`
@@ -51,17 +68,47 @@ The nine channels `ipc/startup-bridge.js` registers — eight request/response v
 - `database:pickNew`
 - `auth:forget`
 - `config:apply`
+- `java:verify`
+- `java:pick`
+- `java:download`
 - `app:quit` (one-way)
+- `java:downloadProgress` (push, main → renderer)
 
-Modules marked with an issue number do not exist yet; the story bringing them is named in brackets. Keep this map current as they land — it
-is what a reader starts from.
+Keep this map current as new channels land — it is what a reader starts from.
 
 ## Boot order
 
 `app.on('ready')` loads the config, computes the startup mode (`window/startup-mode.js`), registers the IPC bridge (`ipc/startup-bridge.js`)
 and opens the single `BrowserWindow` (`window/main-window.js`). The backend is spawned only when the renderer calls `backend:start` over
-that bridge, handled by `backend/backend-process.js`, which resolves with an outcome (`reachable` or not) the renderer routes on. Java
-resolution (`verifyJava()` in `main.js`) still runs lazily, right before that spawn, and is otherwise untouched until #38 replaces it.
+that bridge, handled by `backend/backend-process.js`, which resolves with an outcome (`reachable` or not) the renderer routes on.
+
+Java resolution now decides the startup mode rather than running lazily at spawn time: `java/java-runtime.js`'s `resolve()` is kicked off
+once, its `Promise<string | null>` held in `main.js` as `javaPromise` and reused by both `window/startup-mode.js` (which yields `configure`
+mode when it resolves to `null`) and `backend/backend-process.js`'s `resolveJava`, so a boot-straight-through start probes Java exactly
+once. `startup:getState` therefore answers from a `Promise<StartupState>` rather than a plain value - `ipcMain.handle` awaits whatever its
+listener returns, so the window opens immediately while the probe runs concurrently with the renderer's own bootstrap. The one thing that
+invalidates `javaPromise` is `config:apply`, which reassigns it after saving, since that is the only write able to change `java.path`.
+
+That probe is one place this app runs a binary it did not ship, named by a config file or a file dialog, so
+`java/java-version.js` treats it as untrusted and every one of its bounds exists for a reason worth keeping: an absolute path named
+`java`/`java.exe` only — relative paths are resolved by the OS against the working directory before any `PATH` lookup, and the name is what
+keeps a channel that spawns a JVM from being a channel that spawns anything — no shell and an argument vector, no stdin, the environment
+`java/jvm-environment.js` allows, a timeout, and a byte budget across both output streams. Output is read in flowing mode, so nothing but
+that budget bounds what a chatty child can make this process accumulate, and V8's ~512 MiB string limit turns into an uncaught `RangeError`
+inside a `data` listener when it is reached. Every failure of the run resolves to an `error` verdict, since the promise is created before
+`app.on('ready')` and a rejection with no handler yet attached terminates the main process. `java/java-path.js` passes over a relative
+`PATH` entry for the same reason rather than letting it become a candidate the probe would then refuse.
+
+`java/jvm-environment.js` is what both JVM spawns — the probe and the backend — pass their environment through, which is what makes it one
+rule rather than two: a JVM appends `JAVA_TOOL_OPTIONS`, `JDK_JAVA_OPTIONS` and `_JAVA_OPTIONS` to its own command line, so an inherited
+one of those is an inherited argument (`-javaagent:` among them), and `FY_DB_FILE_PASSWORD` has no business in a block other processes can
+read. The backend's spawn sanitizes *after* merging the config file's own `env`, so a password written into the config cannot come back in
+through it either.
+
+`NODE_TLS_REJECT_UNAUTHORIZED` set to anything other than `1` (see `security/tls-override.js`) short-circuits all of this: the startup mode
+resolves to `insecure` before the auth registry is consulted or `configureOnNextStart` is consumed, `javaPromise` becomes
+`Promise.resolve(null)` so no JVM is ever spawned, and the bridge registers only `startup:getState` and `app:quit` - two channels only, so
+"nothing can be done" is enforced.
 
 The spawn passes the database password as the entire content of the child's stdin, closed right after, rather than through the child's
 environment: the environment carries `FY_DB_FILE_PASSWORD_STDIN=true` as a marker and no password at all. A few rules govern
@@ -71,9 +118,18 @@ write callback, because Node queues the chunk by reference rather than copying i
 never reads its stdin surfaces as a failed start through the existing reachability poll instead of hanging the IPC call.
 
 The preload (`preload.js`) runs in Electron's sandboxed preload context, where `require` is a limited polyfill resolving only `electron`
-and a handful of Node built-ins — it cannot `require` a module of this app. That is why the nine IPC channel names listed above are
+and a handful of Node built-ins — it cannot `require` a module of this app. That is why the IPC channel names listed above are
 literals duplicated in both `preload.js` and `ipc/startup-bridge.js` rather than shared via an import. Nothing checks that the two copies
 agree — a renamed channel compiles, passes the suite, and fails only at runtime, so a change to one literal is a change to two files.
+
+The window itself is locked down in `window/main-window.js`, and the two decisions worth arguing about live in `window/navigation-policy.js`
+so they can be tested at all (`main-window.js` needs a real Electron and therefore gets no spec). A URL a renderer hands over is **data** —
+a release page out of an HTTP response, a link out of the database — so `shell.openExternal` is reached only for `http:`/`https:`, because
+every other scheme resolves to whatever the OS registered for it and `file:` resolves to "run this". A navigation away from the app's own
+document is refused outright: `contextIsolation` protects the bridge from the page's scripts, not from the page being replaced, and a
+window that navigates takes the preload — every IPC channel above — along to wherever it lands. Webviews are refused for the same reason,
+and every permission request and check is answered `false`, because a portfolio tracker needs no camera, microphone, location or
+notifications.
 
 `config/config-file.js`'s `load()` writes nothing, ever. It reports which of three things it observed — `read`, `missing` or `unreadable`
 (unparsable JSON, a schema violation, a failed read) — alongside the configuration it hands back, and a file it could not read is left on
@@ -81,6 +137,9 @@ disk exactly as it is, with the reason logged to `fynancials.log` and nowhere el
 which is the one mode that needs no readable config and spawns no backend. The default configuration `load()` falls back to for either
 **names no database at all**: a proposed path is one "Save & start" away from becoming a decision the user never made, so the configuration
 screen asks for one instead of inheriting a silent `~/fynancials`.
+
+Every write of that file lands as mode `0600`, and a `chmod` to the same mode follows each one, since a `mode` passed to a write only
+applies to a file being created and an install predating this rule still carries whatever umask it was written under.
 
 Exactly two channels write `fynancials.config.json`: `auth:forget` removes one `auth` entry immediately, while the screen is still up, and
 `config:apply` persists the configuration screen on finish, touching `env.FY_DB_FILE_PATH` and nothing else. Both reach the disk through a
@@ -178,6 +237,10 @@ Two rules the config schemas specifically depend on: an entry map is validated *
 unusable rather than throwing away the whole file; and the semantic checks that protect a *call* (resource bounds around `scryptSync`) stay
 in the calling module, not in the schema — zod answers "is this shaped like a record", not "is this safe to run".
 
+Every string in `ipc/ipc-schema.js` carries a maximum length, and the bound is about the receiving side rather than about what a user would
+type: a password is run through scrypt, a path is spawned or written to the config file. The renderer is not the trustworthy source it
+looks like — it renders what a database and an HTTP response contain — so a new field there gets a bound like the others.
+
 ## Runtime dependencies
 
 `package.json`'s `dependencies` block is the main process's. Anything the main process `require`s statically belongs there and **not** in
@@ -211,10 +274,17 @@ Angular build, no generated API clients, no backend jar, no Java.
 
 The shared conventions from the parent `LLM.md`'s Testing section apply unchanged — explicit `@jest/globals` imports, `beforeEach`
 establishes the baseline, the first test in the file *is* the baseline case, every other test changes exactly one precondition in its own
-arrange step, shared alterations live in a nested `describe`'s own `beforeEach`, mocks over real dependencies. What is specific here:
+arrange step, shared alterations live in a nested `describe`'s own `beforeEach`, mocks over real dependencies, and every
+`toHaveBeenCalledWith(...)` paired with a `toHaveBeenCalledTimes(n)` and vice versa — or, for more than one call,
+`expect(fn.mock.calls).toEqual([...])` covering count, arguments and order in one literal, as
+`java/corretto-download.spec.js` does for the three `rmSync` calls a download makes. What is specific here:
 
 - `jest.electron.config.ts` sets `injectGlobals: false`, because jest's injected `jest` wrapper argument collides with the explicit
   `const {jest} = require('@jest/globals')` in a CommonJS file. Import every jest symbol; there are no ambient globals to fall back on.
+- The same config sets `transform: {}`, and that changes how `jest.mock()` has to be written here: **nothing hoists it**. Babel-jest is
+  what normally lifts a `jest.mock(...)` call above the imports, and it does not run in this directory, so the call has to physically
+  precede the `require` of the module under test — otherwise that module has already captured the real collaborator and the mock silently
+  does nothing. `java/corretto-signature.spec.js` is the worked example.
 - The parent `LLM.md`'s custom-asymmetric-matcher convention applies here too, with `electron/testing/` standing in for `src/testing/` as
   the shared location (there is no `src/` in this directory) — see `testing/base64-of.js` for the worked example: a class extending
   `expect`'s `AsymmetricMatcher`, JSDoc-typed like everything else here, with its own `base64-of.spec.js`.

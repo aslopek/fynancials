@@ -1,4 +1,5 @@
 const {z} = require('zod');
+const {MAXIMUM_SIGNATURE_LENGTH} = require('../security/signature-bounds.js');
 
 /**
  * The schemas for `fynancials.config.json`, which is user-editable input from outside the program. This module is the
@@ -24,6 +25,14 @@ const authEntrySchema = z.union([
   z.strictObject({passwordless: z.literal(true)})
 ]);
 
+// tolerant like `auth`: a hand-edited `java` block that does not parse must not make the whole config unreadable over
+// one unrelated key. `signature` is the base64 of a downloaded archive's detached signature - present only for a
+// runtime this app downloaded itself, `null`/absent for a picked or automatically-resolved one.
+const javaSchema = z.looseObject({
+  path: z.string().nullable().catch(null),
+  signature: z.base64().max(MAXIMUM_SIGNATURE_LENGTH).nullable().catch(null).optional()
+}).catch({path: null}).optional();
+
 const fynancialsConfigSchema = z.looseObject({
   // `catchall` keeps arbitrary user-added environment entries valid while FY_DB_FILE_PATH stays a declared key, which
   // is what makes `config.env.FY_DB_FILE_PATH` legal under `noPropertyAccessFromIndexSignature`
@@ -32,15 +41,18 @@ const fynancialsConfigSchema = z.looseObject({
   // (`authStateOf` classifies it) rather than throwing away the whole config file
   auth: z.record(z.string(), z.unknown()).default({}),
   // one-shot: read at start to force `configure` mode and deleted in the same step, so it cannot outlive the run it was written for
-  configureOnNextStart: z.boolean().optional()
+  configureOnNextStart: z.boolean().optional(),
+  java: javaSchema
 });
 
 /** @typedef {import('zod').infer<typeof scryptRecordSchema>} ScryptRecord */
 /** @typedef {import('zod').infer<typeof authEntrySchema>} AuthEntry */
+/** @typedef {import('zod').infer<typeof javaSchema>} JavaConfig */
 /** @typedef {import('zod').infer<typeof fynancialsConfigSchema>} FynancialsConfig */
 
 module.exports = {
   scryptRecordSchema,
   authEntrySchema,
+  javaSchema,
   fynancialsConfigSchema
 };

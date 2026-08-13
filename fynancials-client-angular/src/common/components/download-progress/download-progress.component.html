@@ -1,0 +1,11 @@
+<div class="download-progress">
+    <mat-progress-bar [mode]="indeterminate() ? 'indeterminate' : 'determinate'"
+                      [value]="barValue()"/>
+    <p class="download-progress-line">
+        @if (label(); as label) {
+            {{ label }}
+        } @else {
+            {{ receivedBytes() | downloadProgress:totalBytes():bytesPerSecond():secondsRemaining() }}
+        }
+    </p>
+</div>

@@ -13,6 +13,10 @@ describe('startupRouteFor', (): void => {
   it('returns /configure for the configure phase', (): void => {
     expect(startupRouteFor('configure')).toBe('/configure');
   });
+
+  it('returns /insecure for the insecure phase', (): void => {
+    expect(startupRouteFor('insecure')).toBe('/insecure');
+  });
 });
 
 describe('phaseAfterFailedStart', (): void => {

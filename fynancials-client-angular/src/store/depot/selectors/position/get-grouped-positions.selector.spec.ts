@@ -250,6 +250,7 @@ describe('getGroupedPositions', (): void => {
     it('hands resolve an empty array and collects the position in the fallback group', (): void => {
       const result: GroupedPositions = groupPositions();
 
+      expect(resolve).toHaveBeenCalledTimes(positions.positions.length);
       expect(resolve).toHaveBeenCalledWith([]);
       expect(groupNamed(result, 'Others')).toEqual({
         name: 'Others',

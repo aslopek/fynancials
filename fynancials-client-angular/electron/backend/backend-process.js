@@ -1,3 +1,5 @@
+const {jvmEnvironment} = require('../java/jvm-environment.js');
+
 /** @import {AuthRegistry} from '../config/auth-registry.js' */
 /** @import {AuthState} from '../config/auth.js' */
 /** @import {FynancialsConfig} from '../config/config-schema.js' */
@@ -23,8 +25,17 @@
  * architecture guidelines.
  *
  * @typedef {Object} BackendLogFileSystem
- * @property {(path: string, options: {flags: string}) => import('node:fs').WriteStream} createWriteStream
+ * @property {(path: string, options: {flags: string, mode: number}) => import('node:fs').WriteStream} createWriteStream
  */
+
+/**
+ * The mode the log file is created with: readable and writable by its owner only. Whatever a backend prints - queries,
+ * stack traces, the data they carry - is readable to every local account under a default umask otherwise. It applies
+ * to a file being created, so a log already on disk keeps the mode it has.
+ *
+ * @type {number}
+ */
+const LOG_FILE_MODE = 0o600;
 
 /**
  * The subset of the child's stdin this module writes the password through - a one-shot, parent-to-child-private pipe.
@@ -51,7 +62,8 @@
 /**
  * @typedef {Object} BackendProcessOptions
  * @property {(command: string, args: string[], options: {env: NodeJS.ProcessEnv}) => SpawnedBackendProcess} spawn
- * @property {() => Promise<string>} resolveJava injected, so how a JVM is found stays outside this module
+ * @property {() => Promise<string | null>} resolveJava injected, so how a JVM is found stays outside this module;
+ *   null means no runtime resolved, which spawns nothing
  * @property {string} backendPath
  * @property {FynancialsConfig} config read live at spawn time
  * @property {Pick<AuthRegistry, 'recordProvenStart' | 'stateOf'>} authRegistry
@@ -94,21 +106,18 @@ function createBackendProcess(options) {
 
   /**
    * The child's environment: what the app runs with, the configured entries, and the marker that tells the backend to take
-   * the database password from its stdin instead. `FY_DB_FILE_PASSWORD` is deleted rather than merely left unset - an
-   * inherited one from the developer's own shell would put a plaintext password back into the very environment block this
-   * channel exists to keep it out of.
+   * the database password from its stdin instead. What `jvm-environment.js` strips is stripped *after* the config file's
+   * own entries are merged in, so neither an inherited nor a hand-written `FY_DB_FILE_PASSWORD` can put a plaintext
+   * password back into the very environment block this channel exists to keep it out of.
    *
    * @returns {NodeJS.ProcessEnv}
    */
   function backendEnvironment() {
-    /** @type {NodeJS.ProcessEnv} */
-    const environment = {
+    return jvmEnvironment({
       ...process.env,
       ...config.env,
       FY_DB_FILE_PASSWORD_STDIN: 'true'
-    };
-    delete environment['FY_DB_FILE_PASSWORD'];
-    return environment;
+    });
   }
 
   /**
@@ -163,8 +172,12 @@ function createBackendProcess(options) {
       const databasePath = config.env.FY_DB_FILE_PATH ?? null;
       /** @type {AuthState} */
       const startedFrom = databasePath == null ? 'pending' : authRegistry.stateOf(databasePath);
-      /** @type {string} */
+      /** @type {string | null} */
       const java = await resolveJava();
+      if (java == null) {
+        logToFile('No Java runtime resolved; backend not started.');
+        return {reachable: false, startedFrom};
+      }
       /** @type {SpawnedBackendProcess} */
       const spawnedProcess = spawn(java, ['-jar', backendPath], {env: backendEnvironment()});
       child = spawnedProcess;
@@ -197,13 +210,27 @@ function createBackendProcess(options) {
   }
 
   /**
+   * @param {string} message
+   * @returns {void}
+   */
+  function logToFile(message) {
+    try {
+      const logStream = logFileSystem.createWriteStream(logPath, {flags: 'a', mode: LOG_FILE_MODE});
+      logStream.on('error', (error) => logger.error(`Failed to write to ${logPath}:`, error));
+      logStream.end(`${message}\n`);
+    } catch (error) {
+      logger.error(`Failed to write to ${logPath}:`, error);
+    }
+  }
+
+  /**
    * @param {SpawnedBackendProcess} spawnedProcess
    * @returns {void}
    */
   function pipeLog(spawnedProcess) {
     try {
       /** @type {import('node:fs').WriteStream} */
-      const logStream = logFileSystem.createWriteStream(logPath, {flags: 'a'});
+      const logStream = logFileSystem.createWriteStream(logPath, {flags: 'a', mode: LOG_FILE_MODE});
       logStream.on('error', (error) => logger.error(`Failed to write backend log to ${logPath}:`, error));
       spawnedProcess.stdout.pipe(logStream, {end: false});
       spawnedProcess.stderr.pipe(logStream, {end: false});

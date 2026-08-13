@@ -31,6 +31,7 @@ describe('enterUnlock', (): void => {
     enterUnlock(store, router);
 
     expect(getState(store)).toEqual({...initialState, phase: 'unlock'});
+    expect(startupRouteForMock).toHaveBeenCalledTimes(1);
     expect(startupRouteForMock).toHaveBeenCalledWith('unlock');
     expect(navigate).toHaveBeenCalledTimes(1);
     expect(navigate).toHaveBeenCalledWith(['/unlock']);

@@ -52,6 +52,7 @@ describe('applyStartOutcome', (): void => {
     it('enters the phase derived from the state the start was made with, and marks the start as failed', (): void => {
       applyStartOutcome(store, router, outcome);
 
+      expect(phaseAfterFailedStartMock).toHaveBeenCalledTimes(1);
       expect(phaseAfterFailedStartMock).toHaveBeenCalledWith('scrypt');
       expect(getState(store)).toEqual({...initialState, phase: 'unlock', startFailed: true}); // unlock is from parent beforeEach()
     });
@@ -59,6 +60,7 @@ describe('applyStartOutcome', (): void => {
     it('navigates to the route of that phase', (): void => {
       applyStartOutcome(store, router, outcome);
 
+      expect(startupRouteForMock).toHaveBeenCalledTimes(1);
       expect(startupRouteForMock).toHaveBeenCalledWith('unlock'); // unlock is from parent beforeEach()
       expect(navigate).toHaveBeenCalledTimes(1);
       expect(navigate).toHaveBeenCalledWith(['/unlock']);

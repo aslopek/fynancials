@@ -1,3 +1,4 @@
+export * from './components/download-progress/download-progress.component';
 export * from './components/title-toolbar/title-toolbar.component';
 export * from './date/fy-date-adapter';
 export * from './pipe/fy-currency.pipe';
