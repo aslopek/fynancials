@@ -19,6 +19,8 @@ See the parent `LLM.md` for the Angular renderer, and the root `LLM.md` for how 
 electron/
   main.js                      entry point; wiring only, no logic worth testing
   preload.js                   contextBridge surface shared with the renderer
+  app/
+    restart-into-configuration.js sets `configureOnNextStart`, kills the backend, relaunches and exits, in that order
   config/
     config-schema.js           zod schemas + inferred types for fynancials.config.json
     config-file.js             read/write fynancials.config.json
@@ -26,6 +28,7 @@ electron/
     auth-registry.js           the auth map over a loaded config, keyed by database base path: classify, verify,
                                record a proven start, list the known databases, remove one entry
     configuration-writer.js    the configuration screen's single config write, one section's slice per config key
+    configure-on-next-start.js sets the one-shot `configureOnNextStart` flag and saves the loaded config
   backend/
     backend-reachable.js       poll GET /config/pid until reachable or child exit
     backend-process.js         spawn, stdin password handover, log piping, single-instance guard, proven-start recording
@@ -57,7 +60,7 @@ electron/
   testing/                     shared spec-only helpers (custom matchers, ...) used by more than one *.spec.js
 ```
 
-The channels `ipc/startup-bridge.js` registers — eleven request/response via `ipcMain.handle`, one one-way via `ipcMain.on`, one push from
+The channels `ipc/startup-bridge.js` registers — eleven request/response via `ipcMain.handle`, two one-way via `ipcMain.on`, one push from
 the main process into the renderer:
 
 - `startup:getState`
@@ -71,6 +74,7 @@ the main process into the renderer:
 - `java:verify`
 - `java:pick`
 - `java:download`
+- `app:restartAndConfigure` (one-way)
 - `app:quit` (one-way)
 - `java:downloadProgress` (push, main → renderer)
 
@@ -141,11 +145,13 @@ screen asks for one instead of inheriting a silent `~/fynancials`.
 Every write of that file lands as mode `0600`, and a `chmod` to the same mode follows each one, since a `mode` passed to a write only
 applies to a file being created and an install predating this rule still carries whatever umask it was written under.
 
-Exactly two channels write `fynancials.config.json`: `auth:forget` removes one `auth` entry immediately, while the screen is still up, and
-`config:apply` persists the configuration screen on finish, touching `env.FY_DB_FILE_PATH` and nothing else. Both reach the disk through a
-collaborator of their own (`config/auth-registry.js`'s `forget`, `config/configuration-writer.js`'s `apply`); no `ConfigFile` is injected
-into the bridge, so no other channel can write at all. Nothing in the main process ever *writes* an `auth` entry outside
-`recordProvenStart`, which is what keeps epic ADR-003's "a failed start never discards a record" structural rather than conventional.
+Exactly three channels write `fynancials.config.json`: `auth:forget` removes one `auth` entry immediately, while the screen is still up,
+`config:apply` persists the configuration screen on finish, touching `env.FY_DB_FILE_PATH` and nothing else, and `app:restartAndConfigure`
+sets `configureOnNextStart` on the way out. All three reach the disk through a collaborator of their own
+(`config/auth-registry.js`'s `forget`, `config/configuration-writer.js`'s `apply`, `config/configure-on-next-start.js`'s `request`); no
+`ConfigFile` is injected into the bridge, so no other channel can write at all. Nothing in the main process ever *writes* an `auth` entry
+outside `recordProvenStart`, which is what keeps epic ADR-003's "a failed start never discards a record" structural rather than
+conventional.
 
 A database is identified everywhere by its **base path without extension** — `env.FY_DB_FILE_PATH`, the `auth` map's keys and
 `StartupState.databasePath` are all that shape. The `.mv.db` suffix H2 materializes exists only at the dialog boundary, where

@@ -11,6 +11,7 @@ const {createStartupBridge} = require('./startup-bridge.js');
 /** @import {JavaDialogs} from '../window/java-dialogs.js' */
 /** @import {JavaRuntime} from '../java/java-runtime.js' */
 /** @import {JavaVerification} from '../java/java-version.js' */
+/** @import {RestartIntoConfiguration} from '../app/restart-into-configuration.js' */
 /** @import {StartupState} from '../window/startup-mode.js' */
 /** @import {IpcMainLike, ProgressWindowLike} from './startup-bridge.js' */
 
@@ -37,6 +38,7 @@ describe('startupBridge', () => {
   const knownDatabases = jest.fn(/** @type {() => KnownDatabase[]} */ (() => known));
   const forget = jest.fn(/** @type {(databasePath: string) => void} */ (() => undefined));
   const apply = jest.fn(/** @type {(changes: ConfigurationChanges) => AuthState} */ (() => 'passwordless'));
+  const restart = jest.fn();
   const pickExisting = jest.fn(/** @type {DatabaseDialogs['pickExisting']} */
     (() => Promise.resolve(otherDatabasePath)));
   const pickNew = jest.fn(/** @type {DatabaseDialogs['pickNew']} */
@@ -65,6 +67,9 @@ describe('startupBridge', () => {
 
   /** @type {Pick<ConfigurationWriter, 'apply'>} */
   let configurationWriter;
+
+  /** @type {Pick<RestartIntoConfiguration, 'restart'>} */
+  let restartIntoConfiguration;
 
   /** @type {DatabaseDialogs} */
   let databaseDialogs;
@@ -116,6 +121,7 @@ describe('startupBridge', () => {
       backendProcess,
       authRegistry,
       configurationWriter,
+      restartIntoConfiguration,
       databaseDialogs,
       javaDialogs,
       javaRuntime,
@@ -157,6 +163,7 @@ describe('startupBridge', () => {
     backendProcess = {start};
     authRegistry = {verify, knownDatabases, forget};
     configurationWriter = {apply};
+    restartIntoConfiguration = {restart};
     databaseDialogs = {pickExisting, pickNew};
     javaDialogs = {pickJavaBinary};
     javaRuntime = {verifySetting};
@@ -185,8 +192,8 @@ describe('startupBridge', () => {
     ]);
   });
 
-  it('registers exactly the app:quit channel via on', () => {
-    expect(on.mock.calls.map(([channel]) => channel)).toEqual(['app:quit']);
+  it('registers exactly the app:restartAndConfigure and app:quit channels via on', () => {
+    expect(on.mock.calls.map(([channel]) => channel)).toEqual(['app:restartAndConfigure', 'app:quit']);
   });
 
   it('resolves startup:getState with the given startup state', async () => {
@@ -527,6 +534,16 @@ describe('startupBridge', () => {
     expect(verify).not.toHaveBeenCalled();
   });
 
+  it('calls restart for app:restartAndConfigure and neither quits, starts nor applies anything', () => {
+    onListenerFor('app:restartAndConfigure')(undefined);
+
+    expect(restart).toHaveBeenCalledTimes(1);
+    expect(restart).toHaveBeenCalledWith();
+    expect(quit).not.toHaveBeenCalled();
+    expect(start).not.toHaveBeenCalled();
+    expect(apply).not.toHaveBeenCalled();
+  });
+
   describe('when TLS verification is overridden', () => {
     beforeEach(() => {
       tlsOverridden = true;
@@ -540,6 +557,12 @@ describe('startupBridge', () => {
 
     it('registers only app:quit via on', () => {
       expect(on.mock.calls.map(([channel]) => channel)).toEqual(['app:quit']);
+    });
+
+    it('finds no app:restartAndConfigure listener registered', () => {
+      expect(() => onListenerFor('app:restartAndConfigure')(undefined))
+        .toThrow('No \'on\' listener registered for app:restartAndConfigure');
+      expect(restart).not.toHaveBeenCalled();
     });
 
     it('still quits on app:quit', () => {

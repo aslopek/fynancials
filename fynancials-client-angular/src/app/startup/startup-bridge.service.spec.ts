@@ -55,6 +55,7 @@ describe('StartupBridgeService', (): void => {
   let downloadJava: jest.Mock<DownloadJava>;
   let onJavaDownloadProgress: jest.Mock<OnJavaDownloadProgress>;
   let unsubscribeJavaDownloadProgress: jest.Mock<() => void>;
+  let restartAndConfigure: jest.Mock<() => void>;
   let quit: jest.Mock<() => void>;
   let service: StartupBridgeService;
 
@@ -91,6 +92,7 @@ describe('StartupBridgeService', (): void => {
     downloadJava = jest.fn<DownloadJava>(() => Promise.resolve(javaDownloadOutcome));
     unsubscribeJavaDownloadProgress = jest.fn<() => void>();
     onJavaDownloadProgress = jest.fn<OnJavaDownloadProgress>(() => unsubscribeJavaDownloadProgress);
+    restartAndConfigure = jest.fn<() => void>();
     quit = jest.fn<() => void>();
 
     const fynancials: FynancialsBridge = {
@@ -106,6 +108,7 @@ describe('StartupBridgeService', (): void => {
       pickJava,
       downloadJava,
       onJavaDownloadProgress,
+      restartAndConfigure,
       quit
     };
     const bridgeHost: BridgeHost = {fynancials};
@@ -339,6 +342,13 @@ describe('StartupBridgeService', (): void => {
       [expect.any(Function)]
     ]);
     expect(onJavaDownloadProgress.mock.calls[0][0]).not.toBe(onJavaDownloadProgress.mock.calls[1][0]);
+  });
+
+  it('reaches the bridge eagerly for restartAndConfigure, with no subscription involved', (): void => {
+    service.restartAndConfigure();
+
+    expect(restartAndConfigure).toHaveBeenCalledTimes(1);
+    expect(restartAndConfigure).toHaveBeenCalledWith();
   });
 
   it('reaches the bridge eagerly for quit, with no subscription involved', (): void => {

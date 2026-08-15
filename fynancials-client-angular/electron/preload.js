@@ -10,8 +10,8 @@ const {contextBridge, ipcRenderer} = require('electron');
 
 // Channel names are literals here on purpose: a sandboxed preload's `require` is a limited polyfill that resolves
 // `electron` and a handful of Node built-ins only - it cannot require a module of this app, so `ipc/` cannot be
-// shared with it. All eleven request/response literals plus the one push channel are duplicated in
-// `ipc/startup-bridge.js`:
+// shared with it. All eleven request/response literals plus the two one-way channels and the one push channel are
+// duplicated in `ipc/startup-bridge.js`:
 //   - `startup:getState`
 //   - `backend:start`
 //   - `auth:verify`
@@ -24,7 +24,8 @@ const {contextBridge, ipcRenderer} = require('electron');
 //   - `java:pick`
 //   - `java:download`
 //   - `java:downloadProgress` (push, main -> renderer)
-//   - `app:quit`
+//   - `app:restartAndConfigure` (one-way)
+//   - `app:quit` (one-way)
 // The manual checklist (`electron/LLM.md`) is what keeps the two copies in step.
 contextBridge.exposeInMainWorld('fynancials', {
   /** @returns {Promise<StartupState>} */
@@ -94,6 +95,9 @@ contextBridge.exposeInMainWorld('fynancials', {
     ipcRenderer.on('java:downloadProgress', wrapped);
     return () => ipcRenderer.removeListener('java:downloadProgress', wrapped);
   },
+
+  /** @returns {void} */
+  restartAndConfigure: () => ipcRenderer.send('app:restartAndConfigure'),
 
   /** @returns {void} */
   quit: () => ipcRenderer.send('app:quit')
