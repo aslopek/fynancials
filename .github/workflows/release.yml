@@ -36,8 +36,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add CHANGELOG.md \
-            fynancials-client-angular/package.json fynancials-client-angular/package-lock.json \
-            fynancials-server-spring/pom.xml
+            traquity-client-angular/package.json traquity-client-angular/package-lock.json \
+            traquity-server-spring/pom.xml
           git commit -m "Release v${{ steps.bump.outputs.version }}" --allow-empty
           git tag "v${{ steps.bump.outputs.version }}"
           git push origin main "v${{ steps.bump.outputs.version }}"
@@ -66,22 +66,22 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: fynancials-client-angular/package-lock.json
+          cache-dependency-path: traquity-client-angular/package-lock.json
       - run: mvn -B package
-        working-directory: fynancials-server-spring
+        working-directory: traquity-server-spring
       - run: npm ci
-        working-directory: fynancials-client-angular
+        working-directory: traquity-client-angular
       - run: npm run build
-        working-directory: fynancials-client-angular
+        working-directory: traquity-client-angular
       - run: npm test
-        working-directory: fynancials-client-angular
+        working-directory: traquity-client-angular
       - run: npm run licenses:check
-        working-directory: fynancials-client-angular
+        working-directory: traquity-client-angular
       - run: npm run electron:pack
-        working-directory: fynancials-client-angular
+        working-directory: traquity-client-angular
       - name: Collect artifacts
         shell: bash
-        working-directory: fynancials-client-angular
+        working-directory: traquity-client-angular
         run: |
           version="${{ needs.prepare.outputs.version }}"
           mkdir -p release-artifacts
@@ -90,18 +90,18 @@ jobs:
           # it
           case "${{ runner.os }}" in
             Windows)
-              7z a "release-artifacts/fynancials-${version}-windows-x64.zip" ./out/fynancials-win32-x64 ;;
+              7z a "release-artifacts/traquity-${version}-windows-x64.zip" ./out/traquity-win32-x64 ;;
             macOS)
               # ditto rather than zip, so the bundle's symlinks and extended attributes survive the round trip
-              ditto -c -k --sequesterRsrc --keepParent out/fynancials-darwin-arm64 \
-                "release-artifacts/fynancials-${version}-macos-arm64.zip" ;;
+              ditto -c -k --sequesterRsrc --keepParent out/traquity-darwin-arm64 \
+                "release-artifacts/traquity-${version}-macos-arm64.zip" ;;
             Linux)
-              tar -czf "release-artifacts/fynancials-${version}-linux-x64.tar.gz" -C out fynancials-linux-x64 ;;
+              tar -czf "release-artifacts/traquity-${version}-linux-x64.tar.gz" -C out traquity-linux-x64 ;;
           esac
       - uses: actions/upload-artifact@v7
         with:
           name: dist-${{ runner.os }}
-          path: fynancials-client-angular/release-artifacts/*
+          path: traquity-client-angular/release-artifacts/*
           if-no-files-found: error
 
   publish:
@@ -114,7 +114,7 @@ jobs:
       - run: |
           gh release create "v${{ needs.prepare.outputs.version }}" \
             --repo "${{ github.repository }}" \
-            --title "Fynancials ${{ needs.prepare.outputs.version }}" \
+            --title "TraQuity ${{ needs.prepare.outputs.version }}" \
             --notes-file artifacts/release-notes/release-notes.md \
             artifacts/dist-*/*
         env:

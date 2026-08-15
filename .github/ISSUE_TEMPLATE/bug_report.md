@@ -1,13 +1,13 @@
 ---
 name: Bug report
-about: Create a report to help improve Fynancials
+about: Create a report to help improve TraQuity
 title: "[BUG]"
 labels: bug
 assignees: aslopek
 
 ---
 
-IMPORTANT: Please only submit bug reports if you use the latest release of Fynancials.
+IMPORTANT: Please only submit bug reports if you use the latest release of TraQuity.
 Older releases are not supported.
 
 **Describe the bug**
