@@ -1,7 +1,7 @@
 {
   "name": "fynancials",
   "private": true,
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "Angular client for the Fynancials API",
   "author": "Armin Slopek",
   "license": "MIT",
