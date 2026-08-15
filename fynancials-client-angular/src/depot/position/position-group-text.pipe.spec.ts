@@ -46,7 +46,7 @@ describe('PositionGroupTextPipe', (): void => {
   it('reads the buy-in basis when useBuyIn is true', (): void => {
     pipe.transform(group, true, false, true, 'USD');
     expect(fyPercentPipe.transform).toHaveBeenCalledTimes(1);
-    expect(fyPercentPipe.transform).toHaveBeenCalledWith(group.buyInRelative / 100);
+    expect(fyPercentPipe.transform).toHaveBeenCalledWith(group.buyInRelative);
     expect(fyCurrencyPipe.transform).toHaveBeenCalledTimes(1);
     expect(fyCurrencyPipe.transform).toHaveBeenCalledWith(group.buyInAbsolute, 'USD');
   });
@@ -54,7 +54,7 @@ describe('PositionGroupTextPipe', (): void => {
   it('reads the current-size basis when useBuyIn is false', (): void => {
     pipe.transform(group, false, false, true, 'USD');
     expect(fyPercentPipe.transform).toHaveBeenCalledTimes(1);
-    expect(fyPercentPipe.transform).toHaveBeenCalledWith(group.currentSizeRelative / 100);
+    expect(fyPercentPipe.transform).toHaveBeenCalledWith(group.currentSizeRelative);
     expect(fyCurrencyPipe.transform).toHaveBeenCalledTimes(1);
     expect(fyCurrencyPipe.transform).toHaveBeenCalledWith(group.currentSizeAbsolute, 'USD');
   });
