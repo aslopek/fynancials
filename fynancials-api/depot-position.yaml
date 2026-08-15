@@ -112,7 +112,7 @@ components:
           format: double
           nullable: false
         relativePerformance:
-          description: Percentage (100 meaning 100% or 1.0)
+          description: Percentage (e.g. 0.1 meaning 10%)
           type: number
           format: double
           nullable: false
@@ -163,7 +163,7 @@ components:
           format: double
           nullable: false
         buyInRelative:
-          description: Percentage (100 meaning 100% or 1.0)
+          description: Percentage (e.g. 0.1 meaning 10%)
           type: number
           format: double
           nullable: false
@@ -172,7 +172,7 @@ components:
           format: double
           nullable: false
         currentSizeRelative:
-          description: Percentage (100 meaning 100% or 1.0)
+          description: Percentage (e.g. 0.1 meaning 10%)
           type: number
           format: double
           nullable: false
@@ -181,7 +181,7 @@ components:
           format: double
           nullable: false
         relativePerformance:
-          description: Percentage (100 meaning 100% or 1.0)
+          description: Percentage (e.g. 0.1 meaning 10%)
           type: number
           format: double
           nullable: false

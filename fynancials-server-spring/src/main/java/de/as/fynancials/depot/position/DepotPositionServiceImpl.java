@@ -36,8 +36,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 class DepotPositionServiceImpl implements DepotPositionService {
 
-  private static final BigDecimal HUNDRED = new BigDecimal("100");
-
   private final DepotService depotService;
   private final TransactionService transactionService;
   private final HistoricalSecurityPriceService historicalSecurityPriceService;
@@ -78,7 +76,7 @@ class DepotPositionServiceImpl implements DepotPositionService {
           existing.setAbsolutePerformance(existing.getCurrentSizeAbsolute().subtract(existing.getBuyInAbsolute(),
               mathContext));
           existing.setRelativePerformance(existing.getAbsolutePerformance().divide(existing.getBuyInAbsolute(),
-              mathContext).multiply(HUNDRED, mathContext));
+              mathContext));
         } else {
           positionsById.put(position.getPositionId(), position);
         }
@@ -94,11 +92,8 @@ class DepotPositionServiceImpl implements DepotPositionService {
       sumCurrentSize = sumCurrentSize.add(position.getCurrentSizeAbsolute(), mathContext);
     }
     for (DepotPosition position : consolidatedDepotPositions) {
-      position.setCurrentSizeRelative(position.getCurrentSizeAbsolute().divide(sumCurrentSize, mathContext).multiply(
-          HUNDRED,
-          mathContext));
-      position.setBuyInRelative(position.getBuyInAbsolute().divide(sumBuyInSize, mathContext).multiply(HUNDRED,
-          mathContext));
+      position.setCurrentSizeRelative(position.getCurrentSizeAbsolute().divide(sumCurrentSize, mathContext));
+      position.setBuyInRelative(position.getBuyInAbsolute().divide(sumBuyInSize, mathContext));
     }
 
     if (consolidateSecurityGroups) {
@@ -187,16 +182,13 @@ class DepotPositionServiceImpl implements DepotPositionService {
 
     for (DepotPosition position : depotPositions) {
       try {
-        position.setCurrentSizeRelative(position.getCurrentSizeAbsolute().divide(sumCurrentSize, mathContext).multiply(
-            HUNDRED,
-            mathContext));
+        position.setCurrentSizeRelative(position.getCurrentSizeAbsolute().divide(sumCurrentSize, mathContext));
       } catch (ArithmeticException e) {
         position.setCurrentSizeRelative(ZERO);
       }
 
       try {
-        position.setBuyInRelative(position.getBuyInAbsolute().divide(sumBuyInSize, mathContext).multiply(HUNDRED,
-            mathContext));
+        position.setBuyInRelative(position.getBuyInAbsolute().divide(sumBuyInSize, mathContext));
       } catch (ArithmeticException e) {
         position.setBuyInRelative(ZERO);
       }
@@ -294,7 +286,6 @@ class DepotPositionServiceImpl implements DepotPositionService {
         // negative performance
         relativePerformance = BigDecimal.ONE.subtract(relativePerformance, mathContext).negate();
       }
-      relativePerformance = relativePerformance.multiply(BigDecimal.valueOf(100), mathContext);
     }
     depotPosition.setRelativePerformance(relativePerformance);
   }
@@ -388,7 +379,7 @@ class DepotPositionServiceImpl implements DepotPositionService {
         mathContext));
     try {
       depotComposition.setRelativePerformance(depotComposition.getAbsolutePerformance().divide(depotComposition.getBuyInAbsolute(),
-          mathContext).multiply(HUNDRED, mathContext));
+          mathContext));
     } catch (ArithmeticException e) {
       depotComposition.setRelativePerformance(null);
     }

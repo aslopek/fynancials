@@ -33,6 +33,8 @@ class DividendTest {
   private static final String ENDPOINT = "/dividends";
   private static final Offset<Double> ACCURACY_ONE_THOUSANDTH = Offset.strictOffset(0.001);
   private static final Offset<Double> ACCURACY_ONE_HUNDREDTH = Offset.offset(0.01);
+  private static final Offset<Double> PERCENTAGE_ACCURACY_ONE_THOUSANDTH = Offset.strictOffset(0.00001);
+  private static final Offset<Double> PERCENTAGE_ACCURACY_ONE_HUNDREDTH = Offset.offset(0.0001);
 
   private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
@@ -161,20 +163,24 @@ class DividendTest {
      */
     double expectedEstimatedPaymentGross = 236.07;
     double expectedEstimatedPaymentNet = 177.05;
-    double expectedCurrentYieldGross = 7.69;
-    double expectedCurrentYieldNet = 5.77;
-    double expectedYieldOnCostGross = 8.00;
-    double expectedYieldOnCostNet = 6.00;
+    double expectedCurrentYieldGross = 0.0769;
+    double expectedCurrentYieldNet = 0.0577;
+    double expectedYieldOnCostGross = 0.0800;
+    double expectedYieldOnCostNet = 0.0600;
 
     assertThat(dividendYield.getRegularDividendPaymentsPerYear()).isEqualTo(2);
     assertThat(dividendYield.getEstimatedPaymentGross()).isCloseTo(2 * expectedEstimatedPaymentGross,
         ACCURACY_ONE_HUNDREDTH);
     assertThat(dividendYield.getEstimatedPaymentNet()).isCloseTo(2 * expectedEstimatedPaymentNet,
         ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(2 * expectedCurrentYieldGross, ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(2 * expectedCurrentYieldNet, ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(2 * expectedYieldOnCostGross, ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(2 * expectedYieldOnCostNet, ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(2 * expectedCurrentYieldGross,
+        PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(2 * expectedCurrentYieldNet,
+        PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(2 * expectedYieldOnCostGross,
+        PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(2 * expectedYieldOnCostNet,
+        PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
   }
 
   @Test
@@ -215,20 +221,24 @@ class DividendTest {
      */
     double expectedEstimatedPaymentGross = 78.84;
     double expectedEstimatedPaymentNet = 59.13;
-    double expectedCurrentYieldGross = 7.84;
-    double expectedCurrentYieldNet = 5.88;
-    double expectedYieldOnCostGross = 8.86;
-    double expectedYieldOnCostNet = 6.64;
+    double expectedCurrentYieldGross = 0.0784;
+    double expectedCurrentYieldNet = 0.0588;
+    double expectedYieldOnCostGross = 0.0886;
+    double expectedYieldOnCostNet = 0.0664;
 
     assertThat(dividendYield.getRegularDividendPaymentsPerYear()).isEqualTo(2);
     assertThat(dividendYield.getEstimatedPaymentGross()).isCloseTo(2 * expectedEstimatedPaymentGross,
         ACCURACY_ONE_HUNDREDTH);
     assertThat(dividendYield.getEstimatedPaymentNet()).isCloseTo(2 * expectedEstimatedPaymentNet,
         ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(2 * expectedCurrentYieldGross, ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(2 * expectedCurrentYieldNet, ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(2 * expectedYieldOnCostGross, ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(2 * expectedYieldOnCostNet, ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(2 * expectedCurrentYieldGross,
+        PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(2 * expectedCurrentYieldNet,
+        PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(2 * expectedYieldOnCostGross,
+        PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(2 * expectedYieldOnCostNet,
+        PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
   }
 
   @Test
@@ -266,20 +276,24 @@ class DividendTest {
      */
     double expectedEstimatedPaymentGross = 314.91;
     double expectedEstimatedPaymentNet = 236.18;
-    double expectedCurrentYieldGross = 7.73;
-    double expectedCurrentYieldNet = 5.80;
-    double expectedYieldOnCostGross = 8.20;
-    double expectedYieldOnCostNet = 6.15;
+    double expectedCurrentYieldGross = 0.0773;
+    double expectedCurrentYieldNet = 0.0580;
+    double expectedYieldOnCostGross = 0.0820;
+    double expectedYieldOnCostNet = 0.0615;
 
     assertThat(dividendYield.getRegularDividendPaymentsPerYear()).isEqualTo(2);
     assertThat(dividendYield.getEstimatedPaymentGross()).isCloseTo(2 * expectedEstimatedPaymentGross,
         ACCURACY_ONE_HUNDREDTH);
     assertThat(dividendYield.getEstimatedPaymentNet()).isCloseTo(2 * expectedEstimatedPaymentNet,
         ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(2 * expectedCurrentYieldGross, ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(2 * expectedCurrentYieldNet, ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(2 * expectedYieldOnCostGross, ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(2 * expectedYieldOnCostNet, ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(2 * expectedCurrentYieldGross,
+        PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(2 * expectedCurrentYieldNet,
+        PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(2 * expectedYieldOnCostGross,
+        PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(2 * expectedYieldOnCostNet,
+        PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
   }
 
   /**
@@ -367,11 +381,11 @@ class DividendTest {
     assertThat(dividendYield.getRegularDividendPaymentsPerYear()).isEqualTo(4);
     assertThat(dividendYield.getEstimatedPaymentGross()).isCloseTo(3.12, ACCURACY_ONE_THOUSANDTH);
     assertThat(dividendYield.getEstimatedPaymentNet()).isCloseTo(2.36, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(0.09, ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(0.07, ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(0.0009, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(0.0007, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
     // yield on cost are similar, because no historical prices exist for NVDA
-    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(0.09, ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(0.07, ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(0.0009, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(0.0007, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
   }
 
   private void getDividendsForDepot1And2_noSpecialDividend(MvcResult mvcResult) throws Exception {
@@ -400,11 +414,11 @@ class DividendTest {
     assertThat(dividendYield.getRegularDividendPaymentsPerYear()).isEqualTo(1);
     assertThat(dividendYield.getEstimatedPaymentGross()).isCloseTo(75, ACCURACY_ONE_THOUSANDTH);
     assertThat(dividendYield.getEstimatedPaymentNet()).isCloseTo(75, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(2.37, ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(2.37, ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(0.0237, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(0.0237, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
     // yield on cost are similar, because no historical prices exist for HAG
-    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(2.37, ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(2.37, ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(0.0237, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(0.0237, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
 
     dividendYield = dividendYields.get(1);
     assertThat(dividendYield.getSecurityIds()).isEqualTo(List.of(SecurityIds.NVDA));
@@ -413,11 +427,11 @@ class DividendTest {
     assertThat(dividendYield.getRegularDividendPaymentsPerYear()).isEqualTo(4);
     assertThat(dividendYield.getEstimatedPaymentGross()).isCloseTo(3.92, ACCURACY_ONE_THOUSANDTH);
     assertThat(dividendYield.getEstimatedPaymentNet()).isCloseTo(3.04, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(0.09, ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(0.07, ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(0.0009, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(0.0007, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
     // yield on cost are similar, because no historical prices exist for NVDA
-    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(0.09, ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(0.07, ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(0.0009, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(0.0007, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
   }
 
 
@@ -477,9 +491,9 @@ class DividendTest {
     assertThat(sumGross).isCloseTo(expectedSumGross, ACCURACY_ONE_THOUSANDTH);
     assertThat(sumNet).isCloseTo(expectedSumNet, ACCURACY_ONE_THOUSANDTH);
 
-    double expectedPercentage = dividends.isEmpty() ? 0.0 : 100.0;
-    assertThat(sumGrossPercentage).isCloseTo(expectedPercentage, ACCURACY_ONE_THOUSANDTH);
-    assertThat(sumNetPercentage).isCloseTo(expectedPercentage, ACCURACY_ONE_THOUSANDTH);
+    double expectedPercentage = dividends.isEmpty() ? 0.0 : 1.0;
+    assertThat(sumGrossPercentage).isCloseTo(expectedPercentage, PERCENTAGE_ACCURACY_ONE_THOUSANDTH);
+    assertThat(sumNetPercentage).isCloseTo(expectedPercentage, PERCENTAGE_ACCURACY_ONE_THOUSANDTH);
   }
 
   private ResultActions getDividends(String depotIds, Boolean includeSpecialDividends) throws Exception {
