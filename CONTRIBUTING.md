@@ -1,15 +1,15 @@
 # Contributing
 
-Thanks for your interest in Fynancials!
+Thanks for your interest in TraQuity!
 
 **Feature requests and bug reports are very welcome** — please open a GitHub issue. For bugs,
 include what you did, what you expected, and what happened instead; the log file
-(`fynancials.log`, next to the application) often helps.
+(`traquity.log`, next to the application) often helps.
 
 Please refer to [SECURITY.md](./SECURITY.md) for guidance on how to report vulnerabilities.
 
 **Pull requests, however, are not accepted.** This is a deliberate choice, not a lack of
-appreciation: Fynancials doubles as a showcase of my personal work, so I want every line in
+appreciation: TraQuity doubles as a showcase of my personal work, so I want every line in
 this repository to be my own — and accepting outside code would also raise copyright and
 licensing questions I'd rather avoid entirely.
 

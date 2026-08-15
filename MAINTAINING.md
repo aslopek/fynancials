@@ -63,16 +63,16 @@ Do this whenever the PAT expires, is revoked, or you're rotating on a schedule. 
 1. Create a new PAT with **all** permissions listed above
 2. Update the **Actions** secret:
    ```
-   gh secret set RELEASE_TOKEN --repo aslopek/fynancials
+   gh secret set RELEASE_TOKEN --repo aslopek/traquity
    ```
 3. Update the **Dependabot** secret:
    ```
-   gh secret set RELEASE_TOKEN --app dependabot --repo aslopek/fynancials
+   gh secret set RELEASE_TOKEN --app dependabot --repo aslopek/traquity
    ```
 4. Verify both are present:
    ```
-   gh secret list --repo aslopek/fynancials
-   gh secret list --app dependabot --repo aslopek/fynancials
+   gh secret list --repo aslopek/traquity
+   gh secret list --app dependabot --repo aslopek/traquity
    ```
 5. Smoke-test: re-run the failed check on an open Dependabot PR (or comment `@dependabot rebase`) and confirm the
    auto-merge → merge → auto-release → release chain completes. If no Dependabot PR is open, the next push to `main` at least exercises

@@ -4,18 +4,18 @@ This file provides guidance to LLM coding agents (Claude Code, etc.) when workin
 
 ## Repository overview
 
-Fynancials is a portfolio-tracking desktop app. This is a monorepo; three parts matter:
+TraQuity is a portfolio-tracking desktop app. This is a monorepo; three parts matter:
 
-- **fynancials-api** — OpenAPI 3 specs, the source of truth for every HTTP API. One YAML file per domain.
-- **fynancials-client-angular** — Angular + NgRx frontend, packaged as the Electron desktop app that ships to users. Generates its API
-  client (`typescript-angular` generator) from `fynancials-api` into `src/gen/api/`.
-- **fynancials-server-spring** — Spring Boot backend implementing the same APIs. Generates server-side delegate interfaces (`spring`
-  generator) from `fynancials-api` at build time into `target/generated-sources/openapi`.
+- **traquity-api** — OpenAPI 3 specs, the source of truth for every HTTP API. One YAML file per domain.
+- **traquity-client-angular** — Angular + NgRx frontend, packaged as the Electron desktop app that ships to users. Generates its API
+  client (`typescript-angular` generator) from `traquity-api` into `src/gen/api/`.
+- **traquity-server-spring** — Spring Boot backend implementing the same APIs. Generates server-side delegate interfaces (`spring`
+  generator) from `traquity-api` at build time into `target/generated-sources/openapi`.
 - **openapigen/** ignore it - it's just the shared cache dir for the `openapi-generator-cli` jar (`storageDir` in both `openapitools.json`
   files).
 
-See `fynancials-api/LLM.md`, `fynancials-client-angular/LLM.md`, `fynancials-client-angular/electron/LLM.md` (the Electron main process) and
-`fynancials-server-spring/LLM.md` for details specific to each part.
+See `traquity-api/LLM.md`, `traquity-client-angular/LLM.md`, `traquity-client-angular/electron/LLM.md` (the Electron main process) and
+`traquity-server-spring/LLM.md` for details specific to each part.
 
 ## Code style
 
@@ -132,7 +132,7 @@ its parent POM if not set directly)before adding it.
 
 ## How the pieces fit together at runtime
 
-The Electron app (`fynancials-client-angular`) is the shipped product. `app.on('ready')` opens its single `BrowserWindow` on the built
+The Electron app (`traquity-client-angular`) is the shipped product. `app.on('ready')` opens its single `BrowserWindow` on the built
 Angular app immediately — it does not resolve Java, ask for a password or spawn the backend first. The Angular shell reads a computed
 startup mode (`boot`, `unlock` or `configure`) over an IPC bridge and, once past any unlock/configure screen, triggers the backend start
 itself via that same bridge. In `configure` mode the shell renders the configuration screen, where the user picks or creates the database
@@ -140,30 +140,30 @@ file and, for a newly created one, defines its password; finishing there continu
 a relaunch. `electron/main.js` then spawns a bundled Java process running the Spring Boot backend (`backend.jar`) as a
 child process and reports back whether it became reachable. The database password reaches that child over its stdin — the entire content
 of the stream, closed right after — rather than through its environment. The backend listens on port `23726` (H2 console on `29232`),
-backed by a local encrypted H2 file database whose path is configurable via `FY_DB_FILE_PATH`. See
-`fynancials-client-angular/electron/LLM.md` for the boot order in full.
+backed by a local encrypted H2 file database whose path is configurable via `TQ_DB_FILE_PATH`. See
+`traquity-client-angular/electron/LLM.md` for the boot order in full.
 
-`forge.config.js` copies `fynancials-server-spring/target/fynancials-server-spring-<version>.jar` into
-`fynancials-client-angular/resources/backend.jar` during electron-forge packaging — the Spring backend must be built (`mvn package`) before
+`forge.config.js` copies `traquity-server-spring/target/traquity-server-spring-<version>.jar` into
+`traquity-client-angular/resources/backend.jar` during electron-forge packaging — the Spring backend must be built (`mvn package`) before
 an Electron package/make build.
 
 ## Making an API change (cross-cutting workflow)
 
-1. Edit/add the relevant OpenAPI YAML in `fynancials-api/`.
-2. Regenerate the Angular client: `cd fynancials-client-angular && npm run generate`.
-3. Rebuild the Spring backend: `cd fynancials-server-spring && mvn generate-sources` (or `compile`/`package`) — the
+1. Edit/add the relevant OpenAPI YAML in `traquity-api/`.
+2. Regenerate the Angular client: `cd traquity-client-angular && npm run generate`.
+3. Rebuild the Spring backend: `cd traquity-server-spring && mvn generate-sources` (or `compile`/`package`) — the
    `openapi-generator-maven-plugin` runs in the `generate-sources` phase and produces one delegate interface per domain (e.g.
    `DepotApiDelegate`), implemented by a package-private `*Controller`.
-4. Keep the `@openapitools/openapi-generator-cli` version in sync across `fynancials-api/package.json`'s devDependency and
-   `fynancials-client-angular/package.json`'s devDependency.
-5. Keep `fynancials-api/openapitools.json`, `fynancials-client-angular/openapitools.json` and the plugin version in
-   `fynancials-server-spring/pom.xml` in sync when bumping.
+4. Keep the `@openapitools/openapi-generator-cli` version in sync across `traquity-api/package.json`'s devDependency and
+   `traquity-client-angular/package.json`'s devDependency.
+5. Keep `traquity-api/openapitools.json`, `traquity-client-angular/openapitools.json` and the plugin version in
+   `traquity-server-spring/pom.xml` in sync when bumping.
 
 Upon adding a new API spec file in step one, the following steps must be conducted before continuing to generate code:
 
-1. Add a test script to `fynancials-api/package.json` and reference the test script in `scripts.test`
-2. Add a generator to `fynancials-client-angular/openapitools.json`
-3. Add an execution to plugin `org.openapitools.openapi-generator-maven-plugin` in `fynancials-server-spring/pom.xml`
+1. Add a test script to `traquity-api/package.json` and reference the test script in `scripts.test`
+2. Add a generator to `traquity-client-angular/openapitools.json`
+3. Add an execution to plugin `org.openapitools.openapi-generator-maven-plugin` in `traquity-server-spring/pom.xml`
 
 ## Commands and per-part architecture
 
@@ -219,7 +219,7 @@ architectural decision records (ADRs), story map and other useful information.
 A story that adds or changes a screen gets a mockup in the story's directory, sharing the story's number prefix.
 
 Draw one panel per state the ACs describe (empty, invalid, warning, error, populated, menu open …), caption each panel with the ACs it
-shows, and take colors and typography from `fynancials-client-angular/src/styles.scss` rather than inventing a palette. Panels that show
+shows, and take colors and typography from `traquity-client-angular/src/styles.scss` rather than inventing a palette. Panels that show
 placeholders for sections a later story adds are worth keeping — they make the boundary between the stories visible.
 
 ### Acceptance criteria

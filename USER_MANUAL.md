@@ -1,4 +1,4 @@
-# Fynancials User Manual
+# TraQuity User Manual
 
 - [Installation & first launch](#installation--first-launch)
 - [Your database](#your-database)
@@ -9,7 +9,7 @@
 
 ## Installation & first launch
 
-Fynancials is a desktop app; all data stays on your machine. It needs Java to run its local
+TraQuity is a desktop app; all data stays on your machine. It needs Java to run its local
 backend — if none is found on your system, the app offers to download Amazon Corretto 25 on
 first launch (Windows x64 and macOS Apple Silicon) and stores it in a `java/` folder next to
 the app. If Java is already installed, that installation is used.
@@ -23,82 +23,82 @@ Since the app isn't notarized by Apple, macOS Gatekeeper quarantines it after do
 refuse to open it at all (or report it as "damaged"). Fix this once from a terminal:
 
 ```shell
-xattr -cr <path-to-Fynancials.app>
+xattr -cr <path-to-TraQuity.app>
 ```
 
 This clears the quarantine attribute. It may require admin privileges depending on where the app is installed — if the command fails, try
-again with `sudo` before the command. Once done, Fynancials starts normally and no admin rights are needed for any subsequent launch.
+again with `sudo` before the command. Once done, TraQuity starts normally and no admin rights are needed for any subsequent launch.
 
 ## Your database
 
 Everything you enter is stored in a single, AES-encrypted [H2](https://h2database.com) database file. By default it is created in your home
-directory as `fynancials.mv.db`.
+directory as `traquity.mv.db`.
 
 ### The password
 
 - The password you enter at the very first start becomes the encryption password of the newly created database. There is **no recovery** —
   if you lose it, the data in the file is gone.
 - If you entered a password, you will be asked for it at every start.
-- If you left it **empty**, Fynancials remembers that choice and never asks again for this
+- If you left it **empty**, TraQuity remembers that choice and never asks again for this
   database file. The file is then effectively unprotected — anyone with access to the file
   can open it.
 - That "ask / don't ask" choice is recorded per database file in the config file (see below)
   the first time you are prompted. To change it, edit the config file.
 - Entering a wrong password makes the backend fail to start: the app will not get past its
   loading screen. Quit, restart, and enter the correct password. Details end up in
-  `fynancials.log` next to the application (the file is rewritten on every start).
+  `traquity.log` next to the application (the file is rewritten on every start).
 
-Be aware that due to the nature of the desktop app, while Fynancials is running, third-party
+Be aware that due to the nature of the desktop app, while TraQuity is running, third-party
 software running on your system may access and/or manipulate the data by connecting to
-Fynancial's HTTP API. This enables you to use third-party add ons on top of Fynancials, but
-also means the data is fully protected only while no Fynancials instance is accessing the
+TraQuity's HTTP API. This enables you to use third-party add ons on top of TraQuity, but
+also means the data is fully protected only while no TraQuity instance is accessing the
 database.
 
 ### The config file
 
-Startup settings live in `fynancials.config.json` in your home directory (e.g. `C:\Users\<you>\fynancials.config.json`):
+Startup settings live in `traquity.config.json` in your home directory (e.g. `C:\Users\<you>\traquity.config.json`):
 
 ```json
 {
   "env": {
-    "FY_DB_FILE_PATH": "C:\\Users\\you\\fynancials"
+    "TQ_DB_FILE_PATH": "C:\\Users\\you\\traquity"
   },
   "askForPassword": {
-    "C:\\Users\\you\\fynancials": true
+    "C:\\Users\\you\\traquity": true
   }
 }
 ```
 
-- `env` — environment variables passed to the backend. `FY_DB_FILE_PATH` is the database file
+- `env` — environment variables passed to the backend. `TQ_DB_FILE_PATH` is the database file
   path **without** the `.mv.db` extension.
 - `askForPassword` — one entry per database path: `true` = prompt at every start, `false` =
   never prompt (empty password is used). An entry is written automatically the first time you
   are prompted for that path; edit or delete it to change the behavior.
 
-On Windows, use either escaped backslashes (`C:\\data\\fynancials`) or forward slashes
-(`C:/data/fynancials`) in the JSON.
+On Windows, use either escaped backslashes (`C:\\data\\traquity`) or forward slashes
+(`C:/data/traquity`) in the JSON.
 
 ### Moving the database
 
-1. Quit Fynancials.
-2. Move `fynancials.mv.db` to the new location (you can also rename it; keep the `.mv.db`
+1. Quit TraQuity.
+2. Move `traquity.mv.db` to the new location (you can also rename it; keep the `.mv.db`
    extension).
-3. Edit `fynancials.config.json` and set `env.FY_DB_FILE_PATH` to the new path without the
+3. Edit `traquity.config.json` and set `env.TQ_DB_FILE_PATH` to the new path without the
    `.mv.db` suffix — for `D:\finance\depot.mv.db` that is `"D:\\finance\\depot"`.
-4. Start Fynancials and enter your password. Since this is the first prompt for the new path,
+4. Start TraQuity and enter your password. Since this is the first prompt for the new path,
    your "ask / don't ask" choice is recorded again; you can delete the old path's
    `askForPassword` entry.
 
 ### Switching between and creating databases
 
-`FY_DB_FILE_PATH` also lets you keep several databases (e.g. a real one and a playground):
+`TQ_DB_FILE_PATH` also lets you keep several databases (e.g. a real one and a playground):
 point it at a different path and restart. If no file exists at the path, a fresh, empty
 database is created — encrypted with whatever password you enter at that first prompt.
 
 ### Backups
 
-Quit the app and copy `fynancials.mv.db` somewhere safe. That single file is your complete portfolio; restoring a backup means copying it
-back (or pointing `FY_DB_FILE_PATH` at the copy).
+Quit the app and copy `traquity.mv.db` somewhere safe. That single file is your complete portfolio; restoring a backup means copying it
+back (or pointing `TQ_DB_FILE_PATH` at the copy).
 
 ### Changing the password (advanced)
 
@@ -119,14 +119,14 @@ The recommended order for a fresh database:
 
 ### 1. Configure market data sources
 
-For historical security prices, Fynancials ships with preconfigured data sources:
+For historical security prices, TraQuity ships with preconfigured data sources:
 
 - [Twelve Data](https://twelvedata.com)
 - [EODHD](https://eodhd.com).
 
 All require a personal API key (free tiers may be available): register with the provider, then
 select the data source under **Settings → Historical Security Prices** and enter your key.
-Fynancials is not affiliated with any of the providers; your use of their APIs is subject to
+TraQuity is not affiliated with any of the providers; your use of their APIs is subject to
 their respective terms and plan limits.
 
 Beyond that, you can connect any HTTP/JSON API of your choice (make sure your usage complies
@@ -245,16 +245,16 @@ Upcoming dividend announcements, grouped by week. New announcements also show up
 - **Security Groups** — organize your securities into named groups. This can be used to group
   ADR and non-ADR shares of the same company or group shares of dual class listings.
 
-![Settings — Appearance: formats, Hide Absolute Values, Dev Mode](./doc-assets/settings.png)
+![Settings — Appearance: formats, Hide Absolute Values, Dev Mode](./doc-assets/settings-appearance.png)
 
 ## Understanding your depot performance numbers
 
-Fynancials shows several numbers that all describe "performance" from different angles. This section explains what each one actually means, so the
+TraQuity shows several numbers that all describe "performance" from different angles. This section explains what each one actually means, so the
 figures don't feel contradictory.
 
 ### There are no withdrawals
 
-Fynancials doesn't model money leaving your depot. When you sell a position or receive a
+TraQuity doesn't model money leaving your depot. When you sell a position or receive a
 dividend, the proceeds don't disappear — they become **cash held inside the depot**, available
 to fund your next buy (or sit there earning nothing until you reinvest it). If a tax payment
 (e.g. "Vorabpauschale") exceeds your available cash, the shortfall is simply treated as

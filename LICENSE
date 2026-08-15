@@ -22,9 +22,9 @@ SOFTWARE.
 
 ---
 
-Name and logo exception: the "Fynancials" name and the logo/icon files located at
-fynancials-client-angular/src/favicon.ico, fynancials-client-angular/src/assets/icon.ico,
-fynancials-client-angular/src/assets/icon.icns, and fynancials-client-angular/src/assets/logo.png
+Name and logo exception: the "TraQuity" name and the logo/icon files located at
+traquity-client-angular/src/favicon.ico, traquity-client-angular/src/assets/icon.ico,
+traquity-client-angular/src/assets/icon.icns, and traquity-client-angular/src/assets/logo.png
 are not covered by the license above; all rights to the name and these files are reserved.
-Forks and derivative works must not use the "Fynancials" name or these files to identify
+Forks and derivative works must not use the "TraQuity" name or these files to identify
 themselves or in a way that implies endorsement by, or affiliation with, the original project.
