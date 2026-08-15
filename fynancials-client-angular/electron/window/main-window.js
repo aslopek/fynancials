@@ -36,9 +36,18 @@ function createMainWindow() {
       preload: preloadPath,
       devTools: false,
       nodeIntegration: false,
+      // a preload in a subframe is a bridge in a subframe, and where a subframe goes is decided by the document's own
+      // `frame-src` rather than by the navigation policy below
+      nodeIntegrationInSubFrames: false,
       contextIsolation: true,
       sandbox: true,
-      webSecurity: true
+      webSecurity: true,
+      webviewTag: false,
+      allowRunningInsecureContent: false,
+      experimentalFeatures: false,
+      // the renderer displays security names, depot names and file contents a user imported: none of that goes to a
+      // spell-check service, and the dictionary downloads that come with it are a fetch this app never asked for
+      spellcheck: false
     }
   });
   frontend.maximize();
@@ -68,6 +77,10 @@ function createMainWindow() {
     }
   });
 
+  // `will-navigate` deliberately stays the top-level rule: the app embeds the backend's H2 console in an iframe, so a
+  // `will-frame-navigate` refusing everything but this document would refuse that too. What a subframe may load is
+  // the document's own `frame-src` (index.html), and a subframe carries no preload and therefore no bridge.
+
   // nothing in this app embeds a webview, and one attached later would come with a preload of its own
   frontend.webContents.on('will-attach-webview', (event) => {
     event.preventDefault();
@@ -77,6 +90,9 @@ function createMainWindow() {
   // every check is answered before it can reach a prompt
   frontend.webContents.session.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
   frontend.webContents.session.setPermissionCheckHandler(() => false);
+  // WebHID/WebUSB/Web Serial are decided by a handler of their own rather than by the two above, and this app pairs
+  // with no device at all
+  frontend.webContents.session.setDevicePermissionHandler(() => false);
 }
 
 /**

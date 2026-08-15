@@ -49,6 +49,7 @@ describe('startupBridge', () => {
   const downloadJava = jest.fn(/** @type {(onProgress: (progress: JavaDownloadProgress) => void) => Promise<JavaDownloadResult>} */
     (() => Promise.resolve({status: 'completed', javaPath, signature: 'c2ln'})));
   const quit = jest.fn();
+  const isTrustedSender = jest.fn(/** @type {(event: unknown) => boolean} */ (() => true));
   const reresolveJava = jest.fn();
   const send = jest.fn(/** @type {ProgressWindowLike['webContents']['send']} */ (() => undefined));
   const getMainWindow = jest.fn(/** @type {() => ProgressWindowLike | null} */ (() => ({webContents: {send}})));
@@ -132,6 +133,7 @@ describe('startupBridge', () => {
       quit,
       getMainWindow,
       tlsOverridden,
+      isTrustedSender,
       reresolveJava
     }).register();
   }
@@ -157,6 +159,7 @@ describe('startupBridge', () => {
     verifySetting.mockResolvedValue(javaVerification);
     downloadJava.mockResolvedValue({status: 'completed', javaPath, signature: 'c2ln'});
     getMainWindow.mockReturnValue({webContents: {send}});
+    isTrustedSender.mockReturnValue(true);
     tlsOverridden = false;
 
     ipcMain = {handle, on};
@@ -542,6 +545,57 @@ describe('startupBridge', () => {
     expect(quit).not.toHaveBeenCalled();
     expect(start).not.toHaveBeenCalled();
     expect(apply).not.toHaveBeenCalled();
+  });
+
+  describe('when the sender is refused', () => {
+    /** @type {{senderFrame: string}} an event stood in for by the one member the decision is made on */
+    let event;
+
+    beforeEach(() => {
+      event = {senderFrame: 'a frame that is not the main one'};
+      isTrustedSender.mockReturnValue(false);
+    });
+
+    // a password the schema itself would reject, so the message names which of the two checks ran first
+    it('refuses backend:start before its password is parsed', () => {
+      expect(() => handleListenerFor('backend:start')(event, 42))
+        .toThrow('Refused backend:start from an untrusted sender');
+      expect(start).not.toHaveBeenCalled();
+    });
+
+    it('refuses startup:getState', () => {
+      expect(() => handleListenerFor('startup:getState')(event))
+        .toThrow('Refused startup:getState from an untrusted sender');
+    });
+
+    it('refuses config:apply without writing anything', () => {
+      const changes = {databasePath: otherDatabasePath, javaPath: null, javaSignature: null};
+
+      expect(() => handleListenerFor('config:apply')(event, changes))
+        .toThrow('Refused config:apply from an untrusted sender');
+      expect(apply).not.toHaveBeenCalled();
+      expect(reresolveJava).not.toHaveBeenCalled();
+    });
+
+    it('drops app:quit rather than reporting a refusal it has no answer for', () => {
+      onListenerFor('app:quit')(event);
+
+      expect(quit).not.toHaveBeenCalled();
+    });
+
+    it('drops app:restartAndConfigure', () => {
+      onListenerFor('app:restartAndConfigure')(event);
+
+      expect(restart).not.toHaveBeenCalled();
+    });
+
+    it('decides on the event the channel was invoked with', () => {
+      expect(() => handleListenerFor('auth:verify')(event, 'hunter2')).toThrow();
+
+      expect(isTrustedSender).toHaveBeenCalledTimes(1);
+      expect(isTrustedSender).toHaveBeenCalledWith(event);
+      expect(verify).not.toHaveBeenCalled();
+    });
   });
 
   describe('when TLS verification is overridden', () => {

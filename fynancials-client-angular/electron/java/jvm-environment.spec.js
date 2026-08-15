@@ -21,6 +21,14 @@ describe('jvmEnvironment', () => {
     expect(jvmEnvironment(environment)).toEqual({PATH: '/usr/bin', HOME: '/home/x'});
   });
 
+  it('strips the variables the dynamic linker loads shared objects from', () => {
+    environment['LD_PRELOAD'] = '/tmp/preload.so';
+    environment['LD_AUDIT'] = '/tmp/audit.so';
+    environment['DYLD_INSERT_LIBRARIES'] = '/tmp/insert.dylib';
+
+    expect(jvmEnvironment(environment)).toEqual({PATH: '/usr/bin', HOME: '/home/x'});
+  });
+
   it('strips the database password', () => {
     environment['FY_DB_FILE_PASSWORD'] = 'hunter2';
 
