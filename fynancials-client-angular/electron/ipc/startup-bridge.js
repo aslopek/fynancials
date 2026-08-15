@@ -18,18 +18,20 @@ const {
 /** @import {JavaDialogs} from '../window/java-dialogs.js' */
 /** @import {JavaRuntime} from '../java/java-runtime.js' */
 /** @import {JavaVerification} from '../java/java-version.js' */
+/** @import {RestartIntoConfiguration} from '../app/restart-into-configuration.js' */
 /** @import {StartupState} from '../window/startup-mode.js' */
 
 /**
  * Registers the IPC channels the preload's `contextBridge` surface calls into. No generic `invoke(channel, ...)`
  * passthrough, ever - a wider surface would let the renderer reach into the main process in uncontrolled manner. All
- * but one are request/response (registered via `ipcMain.handle`); `app:quit` is one-way (`ipcMain.on`) because it has
- * no answer to give, and `java:downloadProgress` is the one push the main process makes into the renderer, sent
- * straight to the window that invoked `java:download` rather than broadcast.
+ * but two are request/response (registered via `ipcMain.handle`); `app:restartAndConfigure` and `app:quit` are
+ * one-way (`ipcMain.on`) because neither has an answer to give. `java:downloadProgress` is the one push the main
+ * process makes into the renderer, sent straight to the window that invoked `java:download` rather than broadcast.
  *
- * Exactly two channels write `fynancials.config.json`: `auth:forget` removes one `auth` entry through
- * `authRegistry.forget`, `config:apply` sets `env.FY_DB_FILE_PATH` and `java` through `configurationWriter.apply`.
- * Nothing here ever *writes* an `auth` entry: recording one is a proven start's job.
+ * Exactly three channels write `fynancials.config.json`: `auth:forget` removes one `auth` entry through
+ * `authRegistry.forget`, `config:apply` sets `env.FY_DB_FILE_PATH` and `java` through `configurationWriter.apply`,
+ * and `app:restartAndConfigure` sets `configureOnNextStart` through `restartIntoConfiguration.restart`. Nothing
+ * here ever *writes* an `auth` entry: recording one is a proven start's job.
  *
  * A TLS-overridden environment collapses the registration to two channels - `startup:getState` and `app:quit` -
  * before anything else is registered: with no `java:download`, no `backend:start` and no `config:apply` registered,
@@ -96,6 +98,7 @@ const {
  * @property {Pick<BackendProcess, 'start'>} backendProcess
  * @property {Pick<AuthRegistry, 'verify' | 'knownDatabases' | 'forget'>} authRegistry
  * @property {Pick<ConfigurationWriter, 'apply'>} configurationWriter
+ * @property {Pick<RestartIntoConfiguration, 'restart'>} restartIntoConfiguration
  * @property {DatabaseDialogs} databaseDialogs
  * @property {Pick<JavaDialogs, 'pickJavaBinary'>} javaDialogs
  * @property {Pick<JavaRuntime, 'verifySetting'>} javaRuntime
@@ -123,6 +126,7 @@ function createStartupBridge(options) {
     backendProcess,
     authRegistry,
     configurationWriter,
+    restartIntoConfiguration,
     databaseDialogs,
     javaDialogs,
     javaRuntime,
@@ -272,6 +276,7 @@ function createStartupBridge(options) {
       return {...result, verification};
     });
 
+    ipcMain.on('app:restartAndConfigure', () => restartIntoConfiguration.restart());
     ipcMain.on('app:quit', () => quit());
   }
 

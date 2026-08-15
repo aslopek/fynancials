@@ -9,6 +9,8 @@ import {getHistoricalSecurityPriceDataSources} from "../../store/security/securi
 import {getDividendAnnouncementDataSources} from "../../store/dividend-announcement/dividend-announcement.selector";
 import {DataSourcePageComponent} from "../data-source/data-source-page/data-source-page.component";
 import {SecurityGroupPageComponent} from "../security-group/security-group-page/security-group-page.component";
+import {RestartConfigureComponent} from "../restart-configure/restart-configure.component";
+import {StartupBridgeService} from "../../app/startup/startup-bridge.service";
 
 @Component({
   selector: "app-settings-page",
@@ -21,6 +23,7 @@ import {SecurityGroupPageComponent} from "../security-group/security-group-page/
     MatIcon,
     DataSourcePageComponent,
     SecurityGroupPageComponent,
+    RestartConfigureComponent,
   ],
   templateUrl: "settings-page.component.html",
   styleUrls: ["settings-page.component.scss"],
@@ -30,4 +33,5 @@ export class SettingsPageComponent {
   protected readonly store: Store<AppState> = inject(Store);
   protected readonly historicalSecurityPriceDataSources: Signal<DataSourceWithId[]> = this.store.selectSignal(getHistoricalSecurityPriceDataSources);
   protected readonly dividendAnnouncementDataSources: Signal<DataSourceWithId[]> = this.store.selectSignal(getDividendAnnouncementDataSources);
+  protected readonly bridgeAvailable: boolean = inject(StartupBridgeService).available;
 }

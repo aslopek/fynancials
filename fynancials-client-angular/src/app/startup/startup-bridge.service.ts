@@ -85,6 +85,13 @@ export class StartupBridgeService {
   });
 
   /**
+   * Fire-and-forget: nothing here may depend on the app still running afterward.
+   */
+  restartAndConfigure(): void {
+    this.requireBridge().restartAndConfigure();
+  }
+
+  /**
    * Fire-and-forget: `ipcRenderer.send` returns synchronously and `app.quit()` is vetoable in Electron, so nothing
    * here may depend on the app still running afterward.
    */
