@@ -15,7 +15,7 @@
     <div class="position-item-column margin-right"
          style="width: 20%;">
         <h4>
-            {{ (useBuyIn() ? pos.buyInRelative : pos.currentSizeRelative) / 100 | fyPercent }}
+            {{ (useBuyIn() ? pos.buyInRelative : pos.currentSizeRelative) | fyPercent }}
         </h4>
     </div>
 
@@ -39,7 +39,7 @@
                 @if (pos.buyInAbsolute === 0) {
                     +&infin;
                 } @else {
-                    {{ pos.relativePerformance >= 0 ? '+' : '' }}{{ (pos.relativePerformance / 100) | fyPercent }}
+                    {{ pos.relativePerformance >= 0 ? '+' : '' }}{{ pos.relativePerformance | fyPercent }}
                 }
             </h4>
         } @else {
@@ -50,7 +50,7 @@
                 @if (pos.buyInAbsolute === 0) {
                     +&infin;
                 } @else {
-                    {{ pos.relativePerformance >= 0 ? '+' : '' }}{{ (pos.relativePerformance / 100) | fyPercent }}
+                    {{ pos.relativePerformance >= 0 ? '+' : '' }}{{ pos.relativePerformance | fyPercent }}
                 }
             </h5>
         }

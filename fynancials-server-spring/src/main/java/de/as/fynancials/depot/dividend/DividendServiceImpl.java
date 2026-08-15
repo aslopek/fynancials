@@ -41,7 +41,6 @@ class DividendServiceImpl implements DividendService {
 
   private static final List<Integer> QUARTERS = List.of(1, 2, 3, 4);
   private static final List<Integer> MONTHS = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
-  private static final BigDecimal HUNDRED = new BigDecimal("100");
 
   private final DepotService depotService;
   private final DepotPositionService depotPositionService;
@@ -215,10 +214,7 @@ class DividendServiceImpl implements DividendService {
 
     for (Dividend dividend : consolidatedDividends) {
       dividend.setRelativeValueGross(dividend.getAbsoluteValueGross().divide(sums.getGrossSum(), mathContext));
-      dividend.setRelativeValueGross(dividend.getRelativeValueGross().multiply(HUNDRED, mathContext));
-
       dividend.setRelativeValueNet(dividend.getAbsoluteValueNet().divide(sums.getNetSum(), mathContext));
-      dividend.setRelativeValueNet(dividend.getRelativeValueNet().multiply(HUNDRED, mathContext));
       dividendDtos.add(dividendMapper.toDto(dividend));
     }
 
@@ -344,7 +340,6 @@ class DividendServiceImpl implements DividendService {
         dividendYield.setEstimatedPaymentGross(estimatedPaymentPerYear.doubleValue());
         estimatedYield = estimatedPaymentPerYear.divide(depotPositions.get(securityId).getCurrentSizeAbsolute(),
             mathContext);
-        estimatedYield = estimatedYield.multiply(HUNDRED, mathContext);
         dividendYield.setCurrentYieldGross(estimatedYield.doubleValue());
 
         try {
@@ -353,7 +348,6 @@ class DividendServiceImpl implements DividendService {
         } catch (ArithmeticException e) {
           estimatedYield = BigDecimal.ZERO;
         }
-        estimatedYield = estimatedYield.multiply(HUNDRED, mathContext);
         dividendYield.setYieldOnCostGross(estimatedYield.doubleValue());
 
         estimatedPaymentPerYear = regularPaymentsPerYear.multiply(latestPayment.getNetValue(mathContext));
@@ -363,7 +357,6 @@ class DividendServiceImpl implements DividendService {
         dividendYield.setEstimatedPaymentNet(estimatedPaymentPerYear.doubleValue());
         estimatedYield = estimatedPaymentPerYear.divide(depotPositions.get(securityId).getCurrentSizeAbsolute(),
             mathContext);
-        estimatedYield = estimatedYield.multiply(HUNDRED, mathContext);
         dividendYield.setCurrentYieldNet(estimatedYield.doubleValue());
 
         try {
@@ -372,7 +365,6 @@ class DividendServiceImpl implements DividendService {
         } catch (ArithmeticException e) {
           estimatedYield = BigDecimal.ZERO;
         }
-        estimatedYield = estimatedYield.multiply(HUNDRED, mathContext);
         dividendYield.setYieldOnCostNet(estimatedYield.doubleValue());
       }
     }

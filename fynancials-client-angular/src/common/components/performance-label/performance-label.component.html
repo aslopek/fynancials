@@ -3,7 +3,7 @@
         @if (relativePerformance === 'infinity') {
             +&infin;
         } @else {
-            {{ performanceIsPositive ? '+' : '' }}{{ relativePerformance / 100 | fyPercent }}
+            {{ performanceIsPositive ? '+' : '' }}{{ relativePerformance | fyPercent }}
         }
     </h4>
     @if (!this.hideAbsoluteValues) {

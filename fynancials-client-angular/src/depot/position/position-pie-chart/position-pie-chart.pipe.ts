@@ -28,7 +28,7 @@ export class PositionPieChartPipe implements PipeTransform {
 
     const data = positions.map((pos: DepotPosition) => {
       const relative: string = this.fyPercentPipe.transform(
-        (useBuyIn ? pos.buyInRelative : pos.currentSizeRelative) / 100
+        useBuyIn ? pos.buyInRelative : pos.currentSizeRelative
       );
 
       const absoluteCurrency: string = this.fyCurrencyPipe.transform(

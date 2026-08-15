@@ -12,7 +12,7 @@ export class PositionGroupTextPipe implements PipeTransform {
   }
 
   transform(group: PositionGroup, useBuyIn: boolean, hideAbsoluteValues: boolean, includeAbsolute: boolean, currency: string): string {
-    const relative: string = this.fyPercentPipe.transform((useBuyIn ? group.buyInRelative : group.currentSizeRelative) / 100);
+    const relative: string = this.fyPercentPipe.transform(useBuyIn ? group.buyInRelative : group.currentSizeRelative);
 
     if (!includeAbsolute || hideAbsoluteValues) {
       return `${group.name} · ${relative}`;
