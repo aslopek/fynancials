@@ -145,22 +145,34 @@ components:
               format: double
               nullable: false
             currentYieldGross:
-              description: Dividend yield per year based on the latest regular payment (gross value) and current position size.
+              description: '''
+                Dividend yield per year based on the latest regular payment (gross value) and current position size, as a
+                percentage (e.g. 0.1 meaning 10%).
+                '''
               type: number
               format: double
               nullable: false
             currentYieldNet:
-              description: Dividend yield per year based on the latest regular payment (net value) and current position size.
+              description: '''
+                Dividend yield per year based on the latest regular payment (net value) and current position size, as a
+                percentage (e.g. 0.1 meaning 10%).
+                '''
               type: number
               format: double
               nullable: false
             yieldOnCostGross:
-              description: Dividend yield per year based on the latest regular payment (gross value) and buy-in position size.
+              description: '''
+                Dividend yield per year based on the latest regular payment (gross value) and buy-in position size, as a
+                percentage (e.g. 0.1 meaning 10%).
+                '''
               type: number
               format: double
               nullable: false
             yieldOnCostNet:
-              description: Dividend yield per year based on the latest regular payment (net value) and buy-in position size.
+              description: '''
+                Dividend yield per year based on the latest regular payment (net value) and buy-in position size, as a
+                percentage (e.g. 0.1 meaning 10%).
+                '''
               type: number
               format: double
               nullable: false
@@ -194,12 +206,12 @@ components:
               format: double
               nullable: false
             relativeValueGross:
-              description: Percentage 0 < x <= 100
+              description: Percentage 0 < x <= 1
               type: number
               format: double
               nullable: false
             relativeValueNet:
-              description: Percentage 0 < x <= 100
+              description: Percentage 0 < x <= 1
               type: number
               format: double
               nullable: false

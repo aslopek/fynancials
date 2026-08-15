@@ -78,7 +78,7 @@
                     }
 
                     <span class="position-tag-relative">
-                        {{ (useBuyIn() ? position.buyInRelative : position.currentSizeRelative) / 100 | fyPercent }}
+                        {{ (useBuyIn() ? position.buyInRelative : position.currentSizeRelative) | fyPercent }}
                     </span>
                 </div>
             }
