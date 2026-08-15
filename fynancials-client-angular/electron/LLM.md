@@ -44,6 +44,7 @@ electron/
     corretto-download.js       downloads, verifies and extracts the Corretto 25 JDK, reporting progress
   ipc/
     ipc-schema.js              zod schema for IPC input crossing the renderer boundary
+    trusted-sender.js          whether an IPC event came from the main frame of the app's own window
     startup-bridge.js          registers the IPC channels listed below
   security/
     signature-bounds.js        how long a detached signature may be, for every schema that validates one
@@ -105,9 +106,10 @@ inside a `data` listener when it is reached. Every failure of the run resolves t
 
 `java/jvm-environment.js` is what both JVM spawns — the probe and the backend — pass their environment through, which is what makes it one
 rule rather than two: a JVM appends `JAVA_TOOL_OPTIONS`, `JDK_JAVA_OPTIONS` and `_JAVA_OPTIONS` to its own command line, so an inherited
-one of those is an inherited argument (`-javaagent:` among them), and `FY_DB_FILE_PASSWORD` has no business in a block other processes can
-read. The backend's spawn sanitizes *after* merging the config file's own `env`, so a password written into the config cannot come back in
-through it either.
+one of those is an inherited argument (`-javaagent:` among them); `LD_PRELOAD`, `LD_AUDIT` and `DYLD_INSERT_LIBRARIES` are the same
+substitution one level lower, where the dynamic linker rather than the JVM reads the variable; and `FY_DB_FILE_PASSWORD` has no business in
+a block other processes can read. The backend's spawn sanitizes *after* merging the config file's own `env`, so neither a password nor any
+of the above written into the config can come back in through it either.
 
 `NODE_TLS_REJECT_UNAUTHORIZED` set to anything other than `1` (see `security/tls-override.js`) short-circuits all of this: the startup mode
 resolves to `insecure` before the auth registry is consulted or `configureOnNextStart` is consumed, `javaPromise` becomes
@@ -131,9 +133,19 @@ so they can be tested at all (`main-window.js` needs a real Electron and therefo
 a release page out of an HTTP response, a link out of the database — so `shell.openExternal` is reached only for `http:`/`https:`, because
 every other scheme resolves to whatever the OS registered for it and `file:` resolves to "run this". A navigation away from the app's own
 document is refused outright: `contextIsolation` protects the bridge from the page's scripts, not from the page being replaced, and a
-window that navigates takes the preload — every IPC channel above — along to wherever it lands. Webviews are refused for the same reason,
-and every permission request and check is answered `false`, because a portfolio tracker needs no camera, microphone, location or
-notifications.
+window that navigates takes the preload — every IPC channel above — along to wherever it lands. That rule is the top-level frame's:
+`will-navigate` does not fire for subframes, and the `will-frame-navigate` that would cover them cannot refuse everything but this
+document, because the app embeds the backend's H2 console in an iframe. What a subframe may load is therefore the built document's own
+`frame-src`, and `nodeIntegrationInSubFrames: false` is what keeps the preload out of one. Webviews are refused outright, and every
+permission request and check is answered `false`, because a portfolio tracker needs no camera, microphone, location or notifications —
+device access (WebHID/WebUSB/Web Serial) is decided by `setDevicePermissionHandler`, which those two do not cover, so it is answered
+`false` too.
+
+Two decisions in `window/main-window.js` are about what the renderer may *reach out* to rather than about what it may do: `spellcheck` is
+off because the renderer displays security names, depot names and imported file contents, and `devTools` is off because a devtools window
+inspects the bridge from inside the trusted context. Neither is a default.
+
+Nothing in `webPreferences` may be relaxed without saying which of the above it gives up.
 
 `config/config-file.js`'s `load()` writes nothing, ever. It reports which of three things it observed — `read`, `missing` or `unreadable`
 (unparsable JSON, a schema violation, a failed read) — alongside the configuration it hands back, and a file it could not read is left on
@@ -247,6 +259,13 @@ Every string in `ipc/ipc-schema.js` carries a maximum length, and the bound is a
 type: a password is run through scrypt, a path is spawned or written to the config file. The renderer is not the trustworthy source it
 looks like — it renders what a database and an HTTP response contain — so a new field there gets a bound like the others.
 
+One check runs *before* any of those schemas: `ipc/trusted-sender.js` decides whether the event's sending frame is the main frame of the
+app's own window, and `ipc/startup-bridge.js` registers every channel — the two one-way ones included — behind it. A registration is per
+channel name rather than per frame, so which frame an event came from is a question only the event answers, and the answer is an identity
+comparison against an object this process created rather than a check on a URL the sender influences. A refused `handle` throws (the
+renderer sees a rejected `invoke`, the same shape a rejected argument takes); a refused `on` is dropped, since there is no answer to
+reject. Adding a channel means adding it through the module's own `handle`/`on` helpers, never through `ipcMain` directly.
+
 ## Runtime dependencies
 
 `package.json`'s `dependencies` block is the main process's. Anything the main process `require`s statically belongs there and **not** in
@@ -271,6 +290,13 @@ suggest a test library is part of the product. Keep new spec-only helpers under 
 
 Note that a function-valued `ignore` *replaces* electron-packager's built-in default patterns rather than extending them, which is why
 `node_modules/.bin` is excluded explicitly. Anything else worth keeping out of the package belongs in the same list.
+
+`forge.config.js` also flips a set of Electron **fuses** into the packaged binary, and they matter to everything in this directory: the
+binary otherwise accepts `ELECTRON_RUN_AS_NODE=1`, `NODE_OPTIONS=--require=…` and `--inspect`, each of which runs code in the main process
+without `main.js` ever being consulted — which is to say, past the preload boundary, the IPC schemas and the bounded java probe alike, all
+at once. `OnlyLoadAppFromAsar` belongs to the same list because Electron otherwise prefers an unpacked `app` directory next to `app.asar`.
+`GrantFileProtocolExtraPrivileges` is deliberately left on: this app's own document *is* a `file:` URL. A fuse is a property of the
+packaged binary, so none of this is observable from the suite — it is verifiable only on a packaged run.
 
 ## Testing
 
