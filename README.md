@@ -63,6 +63,10 @@ and the frontend via `npm run serve` on `http://localhost:4200`. API changes sta
 `fynancials-api`; both sides regenerate their clients/delegates from the specs
 (`npm run generate` / `mvn generate-sources`). See `LLM.md` for the full development workflow.
 
+## Architecture Decision Records
+
+ADRs can be found in [ADR](./architecture/adr.md).
+
 ## How it's built
 
 An OpenAPI-first monorepo with three parts:
