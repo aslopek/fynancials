@@ -1,13 +1,9 @@
-# Architectural Decision Records
-
-This file contains Architectural Decision Records (ADRs) for the project.
-
-## Dependabot Auto Releases
+# Dependabot Auto Releases
 
 `dependabot-auto-merge.yml`, `dependabot-rebase-behind.yml` and `dependabot-auto-release.yml` together turn a merged Dependabot PR into a
 dispatch of `release.yml`.
 
-### ADR-1: Every dependency update is released, as a patch version, without asking
+## ADR-1: Every dependency update is released, as a patch version, without asking
 
 **Status:** ACCEPTED
 
@@ -23,7 +19,7 @@ because the `ignore` rules drop every `version-update:semver-major` before it be
 Versions advance on dependency churn alone, and no human sees such a release before it is published — it rests entirely on the CI gate and
 the three-OS build in `release.yml`.
 
-### ADR-2: A batch of PRs produces one release, dispatched by the last one to merge
+## ADR-2: A batch of PRs produces one release, dispatched by the last one to merge
 
 **Status:** ACCEPTED
 
@@ -38,7 +34,7 @@ known to be patched immediately by the next release.
 A batch whose final PR is *closed* rather than merged dispatches nothing, leaving the earlier merges unreleased until some later merge
 drains the queue. This can be mitigated by hand, since `release.yml` is a `workflow_dispatch`.
 
-### ADR-3: GitHub Actions updates never trigger a release
+## ADR-3: GitHub Actions updates never trigger a release
 
 **Status:** ACCEPTED
 
@@ -48,7 +44,7 @@ count it waits for.
 **Rationale:** Nothing in `.github/workflows` ships, so such a release would be identical to its predecessor. The exclusion must cover the
 count too: an open github-actions PR would otherwise hold the batch back indefinitely, since merging it releases nothing.
 
-### ADR-4: Each ecosystem gets its own Dependabot groups, all sharing one weekly slot
+## ADR-4: Each ecosystem gets its own Dependabot groups, all sharing one weekly slot
 
 **Status:** ACCEPTED
 
@@ -64,7 +60,7 @@ both work.
 
 One shared slot is what lets ADR-2 and ADR-5 collapse the week's updates into one release. Saturday morning leaves the weekend to react.
 
-### ADR-5: The count is preceded by a 15-minute wait, and later merges cancel earlier ones
+## ADR-5: The count is preceded by a 15-minute wait, and later merges cancel earlier ones
 
 **Status:** ACCEPTED
 
