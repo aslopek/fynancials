@@ -14,7 +14,7 @@ app).
   builds `target/fynancials-server-spring-<version>.jar`.
 - `mvn generate-sources` — regenerate only `target/generated-sources/openapi` without a full build; do this after editing a spec in
   `../fynancials-api` and before relying on IDE autocomplete for a new `*ApiDelegate`/DTO.
-- `mvn spring-boot:run -Dspring-boot.run.profiles=dev` — run the backend directly on port `23726` (H2 console `23727`). Other dev profiles:
+- `mvn spring-boot:run -Dspring-boot.run.profiles=dev` — run the backend directly on port `23726` (H2 console `29232`). Other dev profiles:
   `dev-file`, `dev-empty-db` (see `application-dev*.yaml` for what each seeds/uses). Every dev profile sets `spring.datasource.password`
   itself and never consults `FY_DB_FILE_PASSWORD`, so the stdin password channel described below does not apply to any of them; a plain
   `mvn spring-boot:run` with no profile and `FY_DB_FILE_PASSWORD` exported in the shell works without providing a password on `stdin`.

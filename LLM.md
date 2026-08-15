@@ -139,7 +139,7 @@ itself via that same bridge. In `configure` mode the shell renders the configura
 file and, for a newly created one, defines its password; finishing there continues the very same startup flow in the same window, without
 a relaunch. `electron/main.js` then spawns a bundled Java process running the Spring Boot backend (`backend.jar`) as a
 child process and reports back whether it became reachable. The database password reaches that child over its stdin — the entire content
-of the stream, closed right after — rather than through its environment. The backend listens on port `23726` (H2 console on `23727`),
+of the stream, closed right after — rather than through its environment. The backend listens on port `23726` (H2 console on `29232`),
 backed by a local encrypted H2 file database whose path is configurable via `FY_DB_FILE_PATH`. See
 `fynancials-client-angular/electron/LLM.md` for the boot order in full.
 
