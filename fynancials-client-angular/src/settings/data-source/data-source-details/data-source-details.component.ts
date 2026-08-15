@@ -7,17 +7,8 @@ import {MatTableModule} from '@angular/material/table';
 import {MatIconModule} from '@angular/material/icon';
 import {MatChipsModule} from '@angular/material/chips';
 import {DataSourceStore, ReadableDataSourceStore} from "../store/data-source.store";
-import {
-  AnyDataSource,
-  CurrencyMapping,
-  DataSourceVariant,
-  DateConfiguration,
-  MultiUrlDataSource,
-  RequestHeader,
-  SingleUrlDataSource,
-  UrlPattern,
-  ZonedTime
-} from "../data-source.type";
+import {AnyDataSource, DataSourceVariant, MultiUrlDataSource, SingleUrlDataSource} from "../data-source.type";
+import {parseDataSource, ParsedDataSource} from "../parse-data-source.util";
 import {FyDecimalPipe} from "../../../common";
 import {ScriptTokenizerPipe} from "./tokenize-script.pipe";
 import {MatButton} from "@angular/material/button";
@@ -88,9 +79,9 @@ export class DataSourceDetailsComponent {
   private readonly dataSourceStore: ReadableDataSourceStore = inject(DataSourceStore);
   protected readonly selectedDataSourceId: Signal<number | null> = this.dataSourceStore.selectedDataSourceId;
   protected readonly selectedDataSource: Signal<AnyDataSource> = computed<AnyDataSource>(() => {
-    const uploaded: AnyDataSource | null = this.uploadedDataSource();
+    const uploaded: ParsedDataSource | null = this.uploadedDataSource();
     if (uploaded != null) {
-      return uploaded;
+      return uploaded.dataSource;
     }
 
     const selectedDataSource: AnyDataSource | null = this.dataSourceStore.selectedDataSource();
@@ -111,7 +102,7 @@ export class DataSourceDetailsComponent {
     }
     return [];
   });
-  private readonly uploadedDataSource: WritableSignal<AnyDataSource | null> = signal<AnyDataSource | null>(null);
+  private readonly uploadedDataSource: WritableSignal<ParsedDataSource | null> = signal<ParsedDataSource | null>(null);
   protected readonly isSaveDisabled: Signal<boolean> = computed<boolean>((): boolean => this.uploadedDataSource() === null);
   private readonly store: Store<AppState> = inject(Store);
 
@@ -125,17 +116,13 @@ export class DataSourceDetailsComponent {
     const reader = new FileReader();
 
     reader.onload = (e: ProgressEvent<FileReader>): void => {
-      try {
-        const json: any = JSON.parse(e.target?.result as string);
-        const {id, version, ...dataSourceData} = json;
-        if (this.dataSourceVariant() === 'historical-security-price') {
-          if (this.isValidMultiUrlDataSource(dataSourceData)) {
-            this.uploadedDataSource.set(dataSourceData);
-          }
-        } else if (this.isValidSingleUrlDataSource(dataSourceData)) {
-          this.uploadedDataSource.set(dataSourceData);
-        }
-      } catch (error) {
+      const fileContent: string | ArrayBuffer | null | undefined = e.target?.result;
+      if (typeof fileContent !== 'string') {
+        return;
+      }
+      const parsed: ParsedDataSource | null = parseDataSource(this.dataSourceVariant(), fileContent);
+      if (parsed !== null) {
+        this.uploadedDataSource.set(parsed);
       }
     };
 
@@ -144,109 +131,23 @@ export class DataSourceDetailsComponent {
   }
 
   protected save(): void {
-    const data: AnyDataSource | null = this.uploadedDataSource();
-    if (data == null) {
+    const uploaded: ParsedDataSource | null = this.uploadedDataSource();
+    if (uploaded == null) {
       return;
     }
-    const selectedDataSourceId: number | null = this.selectedDataSourceId();
-    const variant: DataSourceVariant = this.dataSourceVariant();
+    const id: number | undefined = this.selectedDataSourceId() ?? undefined;
 
-    if (variant === 'historical-security-price' && this.isValidMultiUrlDataSource(data)) {
-      const dataSource: MultiUrlDataSource = {
-        ...data,
-        marketCloseTimes: data.marketCloseTimes ?? []
-      };
+    if (uploaded.variant === 'historical-security-price') {
       this.store.dispatch(SecurityActions.setHistoricalSecurityPriceDataSource({
-        id: selectedDataSourceId ?? undefined,
-        dataSource: dataSource,
+        id,
+        dataSource: uploaded.dataSource,
       }));
-    } else if (variant === 'dividend-announcement' && this.isValidSingleUrlDataSource(data)) {
+    } else {
       this.store.dispatch(DividendAnnouncementActions.setDividendAnnouncementDataSource({
-        id: selectedDataSourceId ?? undefined,
-        dataSource: data,
+        id,
+        dataSource: uploaded.dataSource,
       }));
     }
     this.uploadedDataSource.set(null);
-  }
-
-  private isValidDataSource(obj: any): boolean {
-    return (
-      obj != null &&
-      typeof obj.name === 'string' &&
-      typeof obj.jsonPathDate === 'string' &&
-      typeof obj.jsonPathValue === 'string' &&
-      this.isValidDateFormat(obj.dateFormat) &&
-      Array.isArray(obj.requestHeaders) && obj.requestHeaders.every((x: any) => this.isValidRequestHeader(x)) &&
-      Array.isArray(obj.currencyMappings) && obj.currencyMappings.every((x: any) => this.isValidCurrencyMapping(x)) &&
-      this.isValidMarketCloseTimeConfiguration(obj) &&
-      (obj.jsonPathCurrency === undefined || typeof obj.jsonPathCurrency === 'string') &&
-      (obj.regexCurrency === undefined || typeof obj.regexCurrency === 'string') &&
-      (obj.regexCurrencyGroup === undefined || typeof obj.regexCurrencyGroup === 'number')
-    );
-  }
-
-  private isValidMultiUrlDataSource(obj: any): obj is MultiUrlDataSource {
-    return (
-      this.isValidDataSource(obj) &&
-      Array.isArray(obj.urlPatterns) && obj.urlPatterns.every((x: unknown): x is UrlPattern => this.isValidUrlPattern(x)) &&
-      obj.urlPattern === undefined
-    );
-  }
-
-  private isValidSingleUrlDataSource(obj: any): obj is SingleUrlDataSource {
-    return (
-      this.isValidDataSource(obj) &&
-      typeof obj.urlPattern === 'string' && obj.urlPattern.length > 0 &&
-      obj.urlPatterns === undefined
-    );
-  }
-
-  private isValidMarketCloseTimeConfiguration(obj: any): boolean {
-    if (this.dataSourceVariant() === 'historical-security-price') {
-      return obj.marketCloseTimes === undefined || obj.marketCloseTimes === null ||
-        (Array.isArray(obj.marketCloseTimes) && obj.marketCloseTimes.every((x: unknown): x is ZonedTime => this.isValidZonedTime(x)));
-    }
-    return obj.marketCloseTimes === undefined;
-  }
-
-  private isValidDateFormat(obj: any): obj is DateConfiguration {
-    return (
-      obj != null &&
-      (obj.format === 'TIMESTAMP_SECONDS' || obj.format === 'TIMESTAMP_MILLISECONDS' || obj.format === 'CUSTOM_STRING') &&
-      (obj.customPattern === undefined || typeof obj.customPattern === 'string')
-    );
-  }
-
-  private isValidUrlPattern(obj: any): obj is UrlPattern {
-    return (
-      obj != null &&
-      typeof obj.timespanInDays === 'number' &&
-      typeof obj.urlPattern === 'string'
-    );
-  }
-
-  private isValidRequestHeader(obj: any): obj is RequestHeader {
-    return (
-      obj != null &&
-      typeof obj.headerName === 'string' &&
-      typeof obj.headerValue === 'string'
-    );
-  }
-
-  private isValidCurrencyMapping(obj: any): obj is CurrencyMapping {
-    return (
-      obj != null &&
-      typeof obj.currencyKey === 'string' &&
-      typeof obj.mappedCurrencyCode === 'string' &&
-      (obj.multiplier === undefined || typeof obj.multiplier === 'number')
-    );
-  }
-
-  private isValidZonedTime(obj: any): obj is ZonedTime {
-    return (
-      obj != null &&
-      typeof obj.time === 'string' &&
-      typeof obj.timeZone === 'string'
-    );
   }
 }

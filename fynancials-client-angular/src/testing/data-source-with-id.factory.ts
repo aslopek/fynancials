@@ -13,6 +13,7 @@ export function dataSourceWithIdFactory(overrides?: DataSourceWithIdOverrides): 
     dateFormat: {format: 'TIMESTAMP_SECONDS'},
     jsonPathValue: '$.value',
     currencyMappings: [],
+    marketCloseTimes: [],
     ...overrides
   };
 }
