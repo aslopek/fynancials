@@ -15,6 +15,7 @@ const {createDatabaseDialogs} = require('./window/database-dialogs.js');
 const {createJavaDialogs} = require('./window/java-dialogs.js');
 const {createStartupMode} = require('./window/startup-mode.js');
 const {createStartupBridge} = require('./ipc/startup-bridge.js');
+const {isTrustedSender} = require('./ipc/trusted-sender.js');
 const {createMainWindow, getMainWindow} = require('./window/main-window.js');
 const {findJavaOnPath, normalizeToJavaBinary} = require('./java/java-path.js');
 const {runJavaVersion} = require('./java/java-version.js');
@@ -206,6 +207,7 @@ app.on('ready', () => {
     quit: () => app.quit(),
     getMainWindow,
     tlsOverridden,
+    isTrustedSender: (event) => isTrustedSender(event, getMainWindow()),
     reresolveJava: () => {
       javaPromise = javaRuntime.resolve();
     }

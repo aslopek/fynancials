@@ -36,6 +36,10 @@ const {
  * A TLS-overridden environment collapses the registration to two channels - `startup:getState` and `app:quit` -
  * before anything else is registered: with no `java:download`, no `backend:start` and no `config:apply` registered,
  * "nothing can be done" is enforced by architecture.
+ *
+ * Every channel is registered behind `isTrustedSender`, which runs before that channel's own argument schema: a
+ * registration is per channel name rather than per frame, so *which* frame sent an event is a question only the event
+ * itself answers, and it has to be answered before any argument of it is looked at.
  */
 
 /**
@@ -110,6 +114,7 @@ const {
  * @property {() => void} quit
  * @property {() => ProgressWindowLike | null} getMainWindow
  * @property {boolean} tlsOverridden
+ * @property {(event: unknown) => boolean} isTrustedSender whether an IPC event's sender may be served at all
  * @property {() => void} reresolveJava called once `config:apply` has saved, so a later boot-time resolution reuse
  *   sees whatever the save just wrote
  */
@@ -137,6 +142,7 @@ function createStartupBridge(options) {
     quit,
     getMainWindow,
     tlsOverridden,
+    isTrustedSender,
     reresolveJava
   } = options;
 
@@ -144,17 +150,50 @@ function createStartupBridge(options) {
   let downloading = false;
 
   /**
+   * Registers a request/response channel that refuses an untrusted sender by throwing, which is what `ipcMain.handle`
+   * turns into a rejected `invoke` on the other side - the same shape a rejected argument schema takes.
+   *
+   * @param {string} channel
+   * @param {(event: unknown, ...args: unknown[]) => unknown} listener
+   * @returns {void}
+   */
+  function handle(channel, listener) {
+    ipcMain.handle(channel, (event, ...args) => {
+      if (!isTrustedSender(event)) {
+        throw new Error(`Refused ${channel} from an untrusted sender`);
+      }
+      return listener(event, ...args);
+    });
+  }
+
+  /**
+   * Registers a one-way channel. An untrusted sender is dropped rather than reported: there is no answer to reject.
+   *
+   * @param {string} channel
+   * @param {(event: unknown, ...args: unknown[]) => void} listener
+   * @returns {void}
+   */
+  function on(channel, listener) {
+    ipcMain.on(channel, (event, ...args) => {
+      if (!isTrustedSender(event)) {
+        return;
+      }
+      listener(event, ...args);
+    });
+  }
+
+  /**
    * @returns {void}
    */
   function register() {
-    ipcMain.handle('startup:getState', () => startupState);
+    handle('startup:getState', () => startupState);
 
     if (tlsOverridden) {
-      ipcMain.on('app:quit', () => quit());
+      on('app:quit', () => quit());
       return;
     }
 
-    ipcMain.handle('backend:start', (_event, password) => {
+    handle('backend:start', (_event, password) => {
       const parsedPassword = backendStartPasswordSchema.safeParse(password);
       if (!parsedPassword.success) {
         throw new Error('Invalid password argument for backend:start');
@@ -162,7 +201,7 @@ function createStartupBridge(options) {
       return backendProcess.start(parsedPassword.data ?? '');
     });
 
-    ipcMain.handle('auth:verify', (_event, password) => {
+    handle('auth:verify', (_event, password) => {
       const parsedPassword = authVerifyPasswordSchema.safeParse(password);
       if (!parsedPassword.success) {
         throw new Error('Invalid password argument for auth:verify');
@@ -172,7 +211,7 @@ function createStartupBridge(options) {
       return databasePath != null && authRegistry.verify(databasePath, parsedPassword.data);
     });
 
-    ipcMain.handle('configure:getState', () => {
+    handle('configure:getState', () => {
       /** @type {ConfigureState} */
       const configureState = {
         configFileState,
@@ -183,7 +222,7 @@ function createStartupBridge(options) {
       return configureState;
     });
 
-    ipcMain.handle('database:pickExisting', (_event, currentSelection) => {
+    handle('database:pickExisting', (_event, currentSelection) => {
       const parsedSelection = databaseSelectionSchema.safeParse(currentSelection);
       if (!parsedSelection.success) {
         throw new Error('Invalid currentSelection argument for database:pickExisting');
@@ -191,7 +230,7 @@ function createStartupBridge(options) {
       return databaseDialogs.pickExisting(parsedSelection.data);
     });
 
-    ipcMain.handle('database:pickNew', (_event, currentSelection) => {
+    handle('database:pickNew', (_event, currentSelection) => {
       const parsedSelection = databaseSelectionSchema.safeParse(currentSelection);
       if (!parsedSelection.success) {
         throw new Error('Invalid currentSelection argument for database:pickNew');
@@ -199,7 +238,7 @@ function createStartupBridge(options) {
       return databaseDialogs.pickNew(parsedSelection.data);
     });
 
-    ipcMain.handle('auth:forget', (_event, databasePath) => {
+    handle('auth:forget', (_event, databasePath) => {
       const parsedDatabasePath = databasePathSchema.safeParse(databasePath);
       if (!parsedDatabasePath.success) {
         throw new Error('Invalid databasePath argument for auth:forget');
@@ -207,7 +246,7 @@ function createStartupBridge(options) {
       authRegistry.forget(parsedDatabasePath.data);
     });
 
-    ipcMain.handle('config:apply', (_event, changes) => {
+    handle('config:apply', (_event, changes) => {
       const parsedChanges = configurationChangesSchema.safeParse(changes);
       if (!parsedChanges.success) {
         throw new Error('Invalid changes argument for config:apply');
@@ -221,7 +260,7 @@ function createStartupBridge(options) {
       return applied;
     });
 
-    ipcMain.handle('java:verify', (_event, setting) => {
+    handle('java:verify', (_event, setting) => {
       const parsedSetting = javaSettingSchema.safeParse(setting);
       if (!parsedSetting.success) {
         throw new Error('Invalid setting argument for java:verify');
@@ -229,7 +268,7 @@ function createStartupBridge(options) {
       return javaRuntime.verifySetting(parsedSetting.data);
     });
 
-    ipcMain.handle('java:pick', (_event, currentSetting) => {
+    handle('java:pick', (_event, currentSetting) => {
       const parsedSetting = javaSettingSchema.safeParse(currentSetting);
       if (!parsedSetting.success) {
         throw new Error('Invalid currentSetting argument for java:pick');
@@ -246,7 +285,7 @@ function createStartupBridge(options) {
       });
     });
 
-    ipcMain.handle('java:download', async () => {
+    handle('java:download', async () => {
       // a download replaces a directory: two of them at once would each remove what the other is extracting into. The
       // guard is here rather than in whatever asks for one, so a second call is refused however it arrives.
       if (downloading) {
@@ -276,8 +315,8 @@ function createStartupBridge(options) {
       return {...result, verification};
     });
 
-    ipcMain.on('app:restartAndConfigure', () => restartIntoConfiguration.restart());
-    ipcMain.on('app:quit', () => quit());
+    on('app:restartAndConfigure', () => restartIntoConfiguration.restart());
+    on('app:quit', () => quit());
   }
 
   return {register};

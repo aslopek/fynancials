@@ -1,6 +1,8 @@
 const path = require('path');
 const fs = require('fs');
 const {rimrafSync} = require('rimraf')
+const {FusesPlugin} = require('@electron-forge/plugin-fuses');
+const {FuseV1Options, FuseVersion} = require('@electron/fuses');
 
 // What ends up inside app.asar. electron-packager copies the whole package directory unless told otherwise, which
 // would ship the Angular sources, every spec, the build tooling and a second copy of backend.jar (it is already
@@ -86,5 +88,29 @@ module.exports = {
             name: '@electron-forge/plugin-auto-unpack-natives',
             config: {},
         },
+        // Electron's own binary accepts several ways of being told to run something other than this app, all of them
+        // enabled by default and none of them reachable through anything the main process decides. A fuse is flipped
+        // into the packaged binary itself, which is what puts them out of reach: every hardening in electron/ - the
+        // preload boundary, the IPC schemas, the bounded java probe - is bypassed outright by a
+        // `NODE_OPTIONS=--require` or an `ELECTRON_RUN_AS_NODE=1` that this process never gets to see.
+        new FusesPlugin({
+            version: FuseVersion.V1,
+            // `ELECTRON_RUN_AS_NODE=1 fynancials.exe evil.js` would otherwise turn the shipped binary into a plain
+            // Node interpreter, with this app's own signature/installation on it
+            [FuseV1Options.RunAsNode]: false,
+            // `NODE_OPTIONS=--require=evil.js` is code loaded into the *main* process, before main.js runs at all
+            [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+            // `--inspect`/`--inspect-brk` attaches a debugger with full Node privileges to the same process
+            [FuseV1Options.EnableNodeCliInspectArguments]: false,
+            // the app is loaded from app.asar and from nowhere else. Electron otherwise prefers an unpacked `app`
+            // directory next to it, so dropping one there replaces the whole main process without touching a byte of
+            // what was packaged
+            [FuseV1Options.OnlyLoadAppFromAsar]: true,
+            // cookies at rest are encrypted with the OS keychain rather than the fixed fallback key kept around for
+            // reading what an older version wrote
+            [FuseV1Options.EnableCookieEncryption]: true
+            // deliberately not set: `GrantFileProtocolExtraPrivileges` - this app's own document *is* a `file:` URL
+            // (window/main-window.js), so the privileges it revokes are ones the renderer needs.
+        })
     ],
 };
