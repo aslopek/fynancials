@@ -5,10 +5,10 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 
-const clientPackageJsonPath = path.join(root, 'fynancials-client-angular', 'package.json');
-const serverPomPath = path.join(root, 'fynancials-server-spring', 'pom.xml');
-const clientOpenapitoolsPath = path.join(root, 'fynancials-client-angular', 'openapitools.json');
-const apiOpenapitoolsPath = path.join(root, 'fynancials-api', 'openapitools.json');
+const clientPackageJsonPath = path.join(root, 'traquity-client-angular', 'package.json');
+const serverPomPath = path.join(root, 'traquity-server-spring', 'pom.xml');
+const clientOpenapitoolsPath = path.join(root, 'traquity-client-angular', 'openapitools.json');
+const apiOpenapitoolsPath = path.join(root, 'traquity-api', 'openapitools.json');
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
@@ -41,14 +41,14 @@ function main() {
   const apiOpenapitools = readJson(apiOpenapitoolsPath);
 
   const productVersionOk = checkGroup('product version', [
-    {label: 'fynancials-client-angular/package.json', value: clientPackageJson.version},
-    {label: 'fynancials-server-spring/pom.xml', value: extractPomVersion(pomContent, 'fynancials-server-spring')},
+    {label: 'traquity-client-angular/package.json', value: clientPackageJson.version},
+    {label: 'traquity-server-spring/pom.xml', value: extractPomVersion(pomContent, 'traquity-server-spring')},
   ]);
 
   const generatorVersionOk = checkGroup('openapi-generator version', [
-    {label: 'fynancials-client-angular/openapitools.json', value: clientOpenapitools['generator-cli'].version},
-    {label: 'fynancials-api/openapitools.json', value: apiOpenapitools['generator-cli'].version},
-    {label: 'fynancials-server-spring/pom.xml', value: extractPomVersion(pomContent, 'openapi-generator-maven-plugin')},
+    {label: 'traquity-client-angular/openapitools.json', value: clientOpenapitools['generator-cli'].version},
+    {label: 'traquity-api/openapitools.json', value: apiOpenapitools['generator-cli'].version},
+    {label: 'traquity-server-spring/pom.xml', value: extractPomVersion(pomContent, 'openapi-generator-maven-plugin')},
   ]);
 
   if (!productVersionOk || !generatorVersionOk) {

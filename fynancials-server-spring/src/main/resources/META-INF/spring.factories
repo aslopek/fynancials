@@ -1,2 +1,0 @@
-org.springframework.boot.EnvironmentPostProcessor=\
-de.as.fynancials.common.startup.StdinPasswordEnvironmentPostProcessor

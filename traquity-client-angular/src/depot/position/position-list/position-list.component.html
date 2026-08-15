@@ -1,0 +1,59 @@
+@let composition = depotComposition();
+@let grouped = grouping();
+
+<div class="wrapper">
+    <div class="sticky-header"
+         [class.grouped]="grouped.groups.length > 0">
+        <div class="total-row">
+            @if (!hideAbsoluteValues()) {
+                @let total = useBuyIn() ? composition.buyInAbsolute : composition.currentSizeAbsolute;
+                <h1 class="title">
+                    {{ total | tqCurrency:depotCurrency() }}
+                </h1>
+            }
+
+            <app-performance-label
+                    [absolutePerformance]="composition.absolutePerformance"
+                    [relativePerformance]="composition.relativePerformance ?? 'infinity'"
+                    [currency]="depotCurrency()">
+            </app-performance-label>
+        </div>
+
+        <div class="column-headers">
+            <div class="column-headers-spacer"></div>
+            <div class="column-header" style="width: 20%;">Size (%)</div>
+            @if (!hideAbsoluteValues()) {
+                <div class="column-header" style="width: 20%;">Size</div>
+            }
+            <div class="column-header" style="width: 15%;">Performance</div>
+            <div class="column-header" style="width: 15%;">Income</div>
+        </div>
+    </div>
+
+    @if (grouped.groups.length > 0) {
+        @for (group of grouped.groups; track $index) {
+            @let label = group | positionGroupText : useBuyIn() : hideAbsoluteValues() : false : depotCurrency();
+            @let tooltip = group | positionGroupText : useBuyIn() : hideAbsoluteValues() : true : depotCurrency();
+            <div class="position-group">
+                <div class="group-gutter">
+                    <span class="group-label"
+                          [matTooltip]="tooltip">
+                        {{ label }}
+                    </span>
+                    <div class="group-brace"></div>
+                </div>
+                <div class="group-rows">
+                    @for (position of group.positions; track position) {
+                        <app-position-list-row [position]="position"></app-position-list-row>
+                    }
+                </div>
+            </div>
+        }
+    } @else {
+        <div class="position-rows">
+            @for (position of grouped.positions; track position) {
+                <app-position-list-row [position]="position"></app-position-list-row>
+            }
+        </div>
+    }
+</div>

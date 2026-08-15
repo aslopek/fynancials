@@ -1,0 +1,70 @@
+{
+  "$schema": "./node_modules/@openapitools/openapi-generator-cli/config.schema.json",
+  "spaces": 2,
+  "generator-cli": {
+    "version": "7.24.0",
+    "storageDir": "../openapigen",
+    "generators": {
+      "traquity-configuration": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/configuration",
+        "inputSpec": "../traquity-api/configuration.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "traquity-configuration-security-group": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/configuration-security-group",
+        "inputSpec": "../traquity-api/configuration-security-group.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "traquity-depot": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/depot",
+        "inputSpec": "../traquity-api/depot.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "traquity-depot-dividend": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/depot-dividend",
+        "inputSpec": "../traquity-api/depot-dividend.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "traquity-depot-performance": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/depot-performance",
+        "inputSpec": "../traquity-api/depot-performance.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "traquity-depot-position": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/depot-position",
+        "inputSpec": "../traquity-api/depot-position.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "traquity-depot-transaction": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/depot-transaction",
+        "inputSpec": "../traquity-api/depot-transaction.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "traquity-historical-security-price": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/historical-security-price",
+        "inputSpec": "../traquity-api/historical-security-price.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "traquity-notification-dividend-announcement": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/notification/dividend-announcement",
+        "inputSpec": "../traquity-api/notification-dividend-announcement.yaml",
+        "config": "api/openapi-config.json"
+      },
+      "traquity-security": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/security",
+        "inputSpec": "../traquity-api/security.yaml",
+        "config": "api/openapi-config.json"
+      }
+    }
+  }
+}

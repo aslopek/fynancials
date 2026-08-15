@@ -2,7 +2,7 @@ version: 2
 
 updates:
   - package-ecosystem: npm
-    directory: /fynancials-client-angular
+    directory: /traquity-client-angular
     schedule:
       interval: weekly
       day: saturday
@@ -23,7 +23,7 @@ updates:
           - "version-update:semver-major"
 
   - package-ecosystem: npm
-    directory: /fynancials-api
+    directory: /traquity-api
     schedule:
       interval: weekly
       day: saturday
@@ -44,7 +44,7 @@ updates:
           - "version-update:semver-major"
 
   - package-ecosystem: maven
-    directory: /fynancials-server-spring
+    directory: /traquity-server-spring
     schedule:
       interval: weekly
       day: saturday

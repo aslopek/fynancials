@@ -5,9 +5,9 @@ const path = require('path');
 const {execSync} = require('child_process');
 
 const root = path.join(__dirname, '..');
-const clientDir = path.join(root, 'fynancials-client-angular');
+const clientDir = path.join(root, 'traquity-client-angular');
 const clientPackageJsonPath = path.join(clientDir, 'package.json');
-const serverPomPath = path.join(root, 'fynancials-server-spring', 'pom.xml');
+const serverPomPath = path.join(root, 'traquity-server-spring', 'pom.xml');
 const changelogPath = path.join(root, 'CHANGELOG.md');
 const releaseNotesPath = path.join(root, 'release-notes.md');
 
@@ -24,9 +24,9 @@ function bumpVersion(currentVersion, bump) {
 
 function bumpPomVersion(newVersion) {
   const pomContent = fs.readFileSync(serverPomPath, 'utf-8');
-  const regex = /(<artifactId>fynancials-server-spring<\/artifactId>\s*<version>)([^<]+)(<\/version>)/;
+  const regex = /(<artifactId>traquity-server-spring<\/artifactId>\s*<version>)([^<]+)(<\/version>)/;
   if (!regex.test(pomContent)) {
-    throw new Error(`Could not find fynancials-server-spring version in ${serverPomPath}`);
+    throw new Error(`Could not find traquity-server-spring version in ${serverPomPath}`);
   }
   fs.writeFileSync(serverPomPath, pomContent.replace(regex, `$1${newVersion}$3`));
 }

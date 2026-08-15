@@ -1,12 +1,12 @@
-# Fynancials
+# TraQuity
 
-Local-first portfolio tracking for the desktop. Fynancials keeps your complete investment
+Local-first portfolio tracking for the desktop. TraQuity keeps your complete investment
 history — depots, transactions, dividends, performance — in an AES-encrypted database on your
 own machine. No account, no cloud, no telemetry: the only network traffic is fetching market
 data from sources you configure yourself. And a request to GitHub itself on application startup
 to check for available updates.
 
-![Fynancials — local-first portfolio tracking for the desktop](./doc-assets/social-preview.png)
+![TraQuity — local-first portfolio tracking for the desktop](./doc-assets/social-preview.png)
 
 ## Features
 
@@ -42,17 +42,17 @@ to check for available updates.
 
 Users: see the [user manual](./USER_MANUAL.md) for installation, database setup, and a feature walkthrough.
 
-You can download Fynancials from the [GitHub Releases page](https://github.com/aslopek/fynancials/releases).
+You can download TraQuity from the [GitHub Releases page](https://github.com/aslopek/traquity/releases).
 
 ### Build from source
 
 Prerequisites: Java 25, Maven 3.9+, Node.js 24.
 
 ```shell
-git clone https://github.com/aslopek/fynancials.git
-cd fynancials/fynancials-server-spring
+git clone https://github.com/aslopek/traquity.git
+cd traquity/traquity-server-spring
 mvn clean package
-cd ../fynancials-client-angular
+cd ../traquity-client-angular
 npm ci
 npm run build
 npm run electron:pack
@@ -60,7 +60,7 @@ npm run electron:pack
 
 For development, run the backend directly (`mvn spring-boot:run -Dspring-boot.run.profiles=dev`)
 and the frontend via `npm run serve` on `http://localhost:4200`. API changes start in
-`fynancials-api`; both sides regenerate their clients/delegates from the specs
+`traquity-api`; both sides regenerate their clients/delegates from the specs
 (`npm run generate` / `mvn generate-sources`). See `LLM.md` for the full development workflow.
 
 ## Architecture Decision Records
@@ -71,11 +71,11 @@ ADRs can be found in [ADR](./architecture/adr.md).
 
 An OpenAPI-first monorepo with three parts:
 
-| Part                        | Role                                                                                 |
-|-----------------------------|--------------------------------------------------------------------------------------|
-| `fynancials-api`            | OpenAPI 3 specs — the single source of truth for every HTTP API, one spec per domain |
-| `fynancials-client-angular` | Angular + NgRx frontend, packaged as the Electron desktop app                        |
-| `fynancials-server-spring`  | Spring Boot (Java 25) backend, bundled into the desktop app as `backend.jar`         |
+| Part                      | Role                                                                                 |
+|---------------------------|--------------------------------------------------------------------------------------|
+| `traquity-api`            | OpenAPI 3 specs — the single source of truth for every HTTP API, one spec per domain |
+| `traquity-client-angular` | Angular + NgRx frontend, packaged as the Electron desktop app                        |
+| `traquity-server-spring`  | Spring Boot (Java 25) backend, bundled into the desktop app as `backend.jar`         |
 
 At runtime, the Electron main process spawns the Spring Boot backend as a local child process
 (`127.0.0.1:23726`) and points the Angular UI at it. Data lives in a single encrypted H2 file
@@ -86,7 +86,7 @@ the ports are named in their honor.
 
 ### The domain is the unit, not the layer
 
-One idea carries through the whole stack: `fynancials-api` splits the HTTP surface into one
+One idea carries through the whole stack: `traquity-api` splits the HTTP surface into one
 OpenAPI spec per domain (`depot`, `depot-transaction`, `security`,
 `historical-security-price`, ...), and that split propagates straight down. The backend mirrors
 it as one package per domain — each a self-contained vertical slice of controller → service →
@@ -116,14 +116,14 @@ is the next area to invest in.
 
 ## Security model
 
-Fynancials is a **single-user local desktop application**, and its security model is built on
+TraQuity is a **single-user local desktop application**, and its security model is built on
 that assumption: the backend binds to `127.0.0.1` only, CORS is restricted to the bundled app
 and the local dev server, the database is an encrypted local file, and there is no
 authentication layer — on a single-user machine, the only thing that can reach the port is the
 user's own Electron app. The database connection details are only exposed to the UI when the
 user explicitly enables dev mode.
 
-Those trade-offs are sound locally but mean `fynancials-server-spring` is **not suitable to
+Those trade-offs are sound locally but mean `traquity-server-spring` is **not suitable to
 deploy as a hosted service as-is**. That would require, at minimum: authentication/
 authorization, per-tenant data isolation instead of one embedded H2 file, TLS, a real CORS/
 network exposure policy, disabling the H2 console or entirely switching the database, proper
@@ -162,6 +162,6 @@ Please refer to [SECURITY.md](./SECURITY.md) for guidance on how to report vulne
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). The "Fynancials" name and logo files are excluded from the license;
+MIT — see [LICENSE](./LICENSE). The "TraQuity" name and logo files are excluded from the license;
 see the exception note in the LICENSE file. Third-party attributions are shown in the app's
 About dialog.

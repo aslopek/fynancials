@@ -31,17 +31,17 @@ setup/unlock completes — or immediately in `boot` mode.
 
 **Status:** ACCEPTED
 
-**Decision:** `fynancials.config.json` replaces `askForPassword` with `auth`, keyed by DB base path like before. The block below is
+**Decision:** `traquity.config.json` replaces `askForPassword` with `auth`, keyed by DB base path like before. The block below is
 the epic's *complete* config surface — `auth` (this ADR, story #34), `configureOnNextStart`
 (ADR-006, stories #37/#39) and `java` (ADR-005, story #38); each key is introduced independently, so the stories can land in any
 order:
 
 ```json
 {
-  "env": {"FY_DB_FILE_PATH": "C:\\Users\\x\\fynancials"},
+  "env": {"TQ_DB_FILE_PATH": "C:\\Users\\x\\traquity"},
   "auth": {
-    "C:\\Users\\x\\fynancials": {"scrypt": {"salt": "<base64>", "hash": "<base64>", "cost": 16384, "blockSize": 8, "parallelization": 1}},
-    "D:\\backup\\fynancials-test": {"passwordless": true}
+    "C:\\Users\\x\\traquity": {"scrypt": {"salt": "<base64>", "hash": "<base64>", "cost": 16384, "blockSize": 8, "parallelization": 1}},
+    "D:\\backup\\traquity-test": {"passwordless": true}
   },
   "configureOnNextStart": false,
   "java": {"path": null}
@@ -92,7 +92,7 @@ the other way around.
 
 **Status:** ACCEPTED
 
-Storing a scrypt salt+hash in `fynancials.config.json` gives anyone with file access an offline-guessing target. Accepted, because:
+Storing a scrypt salt+hash in `traquity.config.json` gives anyone with file access an offline-guessing target. Accepted, because:
 the attacker with access to the config also has access to the `.mv.db` itself, which is *already* an offline target for password
 guessing (H2 file encryption); also the salting increases an attackers' cost for guessing.
 
@@ -113,7 +113,7 @@ mirroring the boot fallback, so a stale `java.path` shows as an error and blocks
 The setup screen owns everything currently done by `verifyJava()`'s dialogs: show what would be used (`java -version` output), let the user
 pick a local JDK/JRE (native dialog, validated by actually running `-version`), or download Corretto 25 with a visible progress bar and the
 existing GPLv2+CE license note. The download keeps the no-shell `spawnSync` extraction and today's Windows/macOS target — `java` in the
-app's working directory — on all three platforms; only Linux moves onto it, off a `~/.fynancials/java` dotdir that nothing else in the app
+app's working directory — on all three platforms; only Linux moves onto it, off a `~/.traquity/java` dotdir that nothing else in the app
 uses. A repeated download replaces whatever is already there. Nothing relative is ever persisted: `path.resolve` yields an absolute path
 and that is what `java.path` records, so an app directory that later moves breaks the recorded path exactly like a deleted JDK does, and
 the chain above already routes it.
@@ -153,13 +153,13 @@ password input is a first-class app screen.
 
 **Status:** ACCEPTED
 
-**Context:** `FY_DB_FILE_PASSWORD` in the child-process environment is readable by every same-user process for the backend's whole
+**Context:** `TQ_DB_FILE_PASSWORD` in the child-process environment is readable by every same-user process for the backend's whole
 lifetime (Linux `/proc/<pid>/environ`, Windows PEB reads, macOS `ps -wwE`) and is routinely captured by crash/heap dumps and support
 tooling. It is the last leg where the plaintext password sits somewhere broadly observable.
 
-**Decision:** The Electron spawn (story #35's `backend:start`) omits the variable, sets a `FY_DB_FILE_PASSWORD_STDIN=true` marker, and
+**Decision:** The Electron spawn (story #35's `backend:start`) omits the variable, sets a `TQ_DB_FILE_PASSWORD_STDIN=true` marker, and
 writes the password (nothing at all for passwordless databases) to the child's stdin, then closes the stream. On the backend, an
-`EnvironmentPostProcessor` reads stdin to EOF — only when the marker is set — and contributes `FY_DB_FILE_PASSWORD` as a property
+`EnvironmentPostProcessor` reads stdin to EOF — only when the marker is set — and contributes `TQ_DB_FILE_PASSWORD` as a property
 source with precedence over the system environment, before datasource/Liquibase initialization. The placeholder in `application.yaml`
 stays untouched, which makes the priority rule structural: a stream that reached EOF is a completed handover and always wins, and
 whenever no password arrives via stdin — no marker (standalone `mvn spring-boot:run`, `dev-file` profile), or marker set but the
@@ -176,12 +176,12 @@ accept.
 
 Two consequences of EOF-delimiting are deliberate. **Zero bytes mean an explicit empty password**, not a missing handover: the two are
 indistinguishable without a delimiter, and in the packaged app — the only place the marker is ever set — they resolve identically
-anyway, because that spawn passes no `FY_DB_FILE_PASSWORD` for a fallback to find. The env fallback for a marker-set backend therefore
+anyway, because that spawn passes no `TQ_DB_FILE_PASSWORD` for a fallback to find. The env fallback for a marker-set backend therefore
 survives only as the read timeout, which is the case that carries defensive weight. And the channel is **one-shot by construction**:
 completion depends on the parent closing the stream, so nothing else can ever be sent over this stdin without redesigning the
 protocol. It carries exactly one secret, exactly once.
 
-**Consequences:** This is the epic's only change to `fynancials-server-spring` — no OpenAPI/spec change, no codegen. The password
+**Consequences:** This is the epic's only change to `traquity-server-spring` — no OpenAPI/spec change, no codegen. The password
 still lives in JVM memory afterwards, and on the Electron side in the V8 heap as an immutable string (both inherent); a heap dump of
 either process still contains it. Story #40 carries the details.
 
@@ -204,7 +204,7 @@ processes, unlike the child's environment block that this ADR eliminates).
 **Decision:** Config reads and writes run in the main process, exposed through the bridge. The Spring backend and the OpenAPI specs are
 not touched for any of it.
 
-**Rationale:** `fynancials.config.json` is main-process territory (read at spawn time, written by the screens here) — a second writer
+**Rationale:** `traquity.config.json` is main-process territory (read at spawn time, written by the screens here) — a second writer
 would create ownership and race problems. Switching databases requires a backend restart anyway (env fixed at spawn), so the backend could
 never apply these changes itself.
 
@@ -222,7 +222,7 @@ app-managed files.
 **Decision:** the working directory stays. The download exists to spare users who do not want to manage a JDK themselves, and keeping the
 runtime next to the app means deleting or updating the app takes the JDK with it, instead of leaving a few hundred megabytes of orphaned
 Java behind on the machine. That is a real user benefit with no equivalent under `userData`, and it is the same reasoning that made ADR-005
-unify all three platforms on the working directory rather than keep Linux on a `~/.fynancials/java` dotdir.
+unify all three platforms on the working directory rather than keep Linux on a `~/.traquity/java` dotdir.
 
 **Consequences:** two residuals follow from "the working directory is the artifact root" rather than from the download itself, and are
 accepted with the location:
