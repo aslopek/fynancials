@@ -1,52 +1,35 @@
+import {z} from "zod";
+import {
+  currencyMappingSchema,
+  dateConfigurationSchema,
+  dividendAnnouncementDataSourceSchema,
+  historicalSecurityPriceDataSourceSchema,
+  requestHeaderSchema,
+  urlPatternSchema,
+  zonedTimeSchema
+} from "./data-source.schema";
+
 export type DataSourceVariant = 'historical-security-price' | 'dividend-announcement';
 
-export type CurrencyMapping = {
-  currencyKey: string
-  mappedCurrencyCode: string
-  multiplier?: number
-};
+export type CurrencyMapping = z.infer<typeof currencyMappingSchema>;
 
-export type DateConfiguration = {
-  format: 'TIMESTAMP_SECONDS' | 'TIMESTAMP_MILLISECONDS' | 'CUSTOM_STRING'
-  customPattern?: string
-};
+export type DateConfiguration = z.infer<typeof dateConfigurationSchema>;
 
-export type RequestHeader = {
-  headerName: string
-  headerValue: string
-};
+export type RequestHeader = z.infer<typeof requestHeaderSchema>;
 
-export type UrlPattern = {
-  timespanInDays: number
-  urlPattern: string
-};
+export type UrlPattern = z.infer<typeof urlPatternSchema>;
 
-export type ZonedTime = {
-  time: string
-  timeZone: string
-}
+export type ZonedTime = z.infer<typeof zonedTimeSchema>;
 
-export type DataSource = {
-  name: string
-  requestHeaders: RequestHeader[]
-  jsonPathDate: string
-  dateFormat: DateConfiguration
-  jsonPathValue: string
-  jsonPathCurrency?: string
-  regexCurrency?: string
-  regexCurrencyGroup?: number
-  currencyMappings: CurrencyMapping[]
-  marketCloseTimes?: ZonedTime[]
-};
-
-export type SingleUrlDataSource = DataSource & {
-  urlPattern: string
+// the `never` members carry the other variant's discriminating keys, so a value of the union below can be asked for
+// either of them
+export type SingleUrlDataSource = z.infer<typeof dividendAnnouncementDataSourceSchema> & {
   urlPatterns?: never
+  marketCloseTimes?: never
 };
 
-export type MultiUrlDataSource = DataSource & {
+export type MultiUrlDataSource = z.infer<typeof historicalSecurityPriceDataSourceSchema> & {
   urlPattern?: never
-  urlPatterns: UrlPattern[]
 };
 
 export type AnyDataSource = SingleUrlDataSource | MultiUrlDataSource;

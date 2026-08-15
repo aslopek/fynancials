@@ -201,6 +201,13 @@ container component's `providers: [XStore]`, then have descendant components
 - **Doc comments obey dependency inversion** (root `LLM.md`, "Dependency inversion binds the docs too"): a selector, computed, method,
   effect or store helper documents its own contract, never which component or screen calls it, in which order the callers run, or what
   another slice/screen does with the result afterwards.
+- **Input from outside the program is defined exactly once, as a zod schema, and its static type is inferred from that same schema** —
+  the renderer's half of the boundary rule `electron/LLM.md` states in full. The case here is a file the user imports: the data source
+  configuration files are described by `src/settings/data-source/data-source.schema.ts`, mirroring
+  `HistoricalSecurityPriceDataSourceCreate` and `DividendAnnouncementDataSourceCreate` of the API specs, and every type in
+  `data-source.type.ts` is a `z.infer` over it. `JSON.parse` returns `any`, so its result goes straight into a `safeParse` and never
+  flows on untyped; a hand-rolled type predicate over parsed JSON is what the schema replaces. Data arriving over HTTP is not this
+  case — a generated API client already types it. Everything the app constructs itself stays a plain `type`.
 
 ## Date display
 
