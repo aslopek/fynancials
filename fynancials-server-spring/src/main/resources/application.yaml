@@ -21,7 +21,7 @@ server:
   h2:
     console:
       enabled: true
-      port: 23727
+      port: 29232
 
 logging:
   level:

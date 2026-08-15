@@ -79,7 +79,10 @@ An OpenAPI-first monorepo with three parts:
 
 At runtime, the Electron main process spawns the Spring Boot backend as a local child process
 (`127.0.0.1:23726`) and points the Angular UI at it. Data lives in a single encrypted H2 file
-database, schema-managed by Liquibase.
+database, schema-managed by Liquibase. Its web console listens on `127.0.0.1:29232`.
+
+These port numbers are not arbitrary: `23726` and `29232` are the birthdays of my grandparents — July 26, 1923 and February 29, 1932 — and
+the ports are named in their honor.
 
 ### The domain is the unit, not the layer
 
