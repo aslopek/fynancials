@@ -62,7 +62,9 @@ The Angular + NgRx frontend, packaged as the Electron desktop app that ships to 
   `enterConfigure`/`enterBooting` as the way back into the unlock screen. Both `/unlock` and `/configure` route on the same `startFailed`
   flag rather than each carrying their own. `startup.initializer.ts` resolves the startup state from the bridge before the router's first
   navigation, which is what lets `startupPhaseGuard` decide synchronously which route to admit. In browser dev mode (`ng serve`, no bridge)
-  none of this activates: the guard admits the shell immediately and the app loads.
+  none of this activates: the guard admits the shell immediately and the app loads. The Settings page (`src/settings/settings-page/`)
+  carries a bridge-gated action, shown only while the bridge is available, that writes the one-shot `configureOnNextStart` flag and
+  relaunches the app through the same `StartupBridgeService`.
 - **Two kinds of state, kept strictly separate** — see the dedicated sections below for each:
   - The **global NgRx store** (`src/store/`) holds only data that's genuinely shared/global (loaded entities, cross-screen config) — never
     screen-local drafts or UI-only state.

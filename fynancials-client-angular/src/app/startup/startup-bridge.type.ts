@@ -92,5 +92,6 @@ export type FynancialsBridge = {
   pickJava: (currentSetting: string | null) => Promise<JavaPickResult | null>
   downloadJava: () => Promise<JavaDownloadOutcome>
   onJavaDownloadProgress: (listener: (progress: JavaDownloadProgress) => void) => () => void
+  restartAndConfigure: () => void
   quit: () => void
 };

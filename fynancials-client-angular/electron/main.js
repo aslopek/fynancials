@@ -7,6 +7,8 @@ const os = require('os');
 const {createConfigFile} = require('./config/config-file.js');
 const {createAuthRegistry} = require('./config/auth-registry.js');
 const {createConfigurationWriter} = require('./config/configuration-writer.js');
+const {createConfigureOnNextStart} = require('./config/configure-on-next-start.js');
+const {createRestartIntoConfiguration} = require('./app/restart-into-configuration.js');
 const {BACKEND_PID_URL, createBackendReachability} = require('./backend/backend-reachable.js');
 const {createBackendProcess} = require('./backend/backend-process.js');
 const {createDatabaseDialogs} = require('./window/database-dialogs.js');
@@ -38,6 +40,7 @@ const configFile = createConfigFile({
 const {config, state: configFileState} = configFile.load();
 const authRegistry = createAuthRegistry({configFile, config});
 const configurationWriter = createConfigurationWriter({configFile, config, authRegistry});
+const configureOnNextStart = createConfigureOnNextStart({configFile, config});
 const backendReachability = createBackendReachability({
   fetchPid: fetchBackendPid,
   delay
@@ -82,6 +85,8 @@ const backendProcess = createBackendProcess({
   logFileSystem: {createWriteStream: fs.createWriteStream},
   logPath
 });
+
+const restartIntoConfiguration = createRestartIntoConfiguration({configureOnNextStart, backendProcess, app});
 
 const startupMode = createStartupMode({
   configFile,
@@ -190,6 +195,7 @@ app.on('ready', () => {
     backendProcess,
     authRegistry,
     configurationWriter,
+    restartIntoConfiguration,
     databaseDialogs,
     javaDialogs,
     javaRuntime,

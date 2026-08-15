@@ -48,4 +48,18 @@
         </mat-expansion-panel-header>
         <app-security-group-page></app-security-group-page>
     </mat-expansion-panel>
+
+    @if (bridgeAvailable) {
+        <mat-expansion-panel>
+            <mat-expansion-panel-header>
+                <mat-panel-title>
+                    <mat-icon fontIcon="database"
+                              class="icon">
+                    </mat-icon>
+                    Database Configuration
+                </mat-panel-title>
+            </mat-expansion-panel-header>
+            <app-restart-configure></app-restart-configure>
+        </mat-expansion-panel>
+    }
 </mat-accordion>
