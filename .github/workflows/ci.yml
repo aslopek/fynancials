@@ -29,6 +29,10 @@ jobs:
           allow-licenses: >-
             MIT, ISC, Apache-2.0, BSD-2-Clause, BSD-3-Clause, 0BSD, BlueOak-1.0.0,
             CC0-1.0, Unlicense, MPL-2.0, EPL-1.0, EPL-2.0
+          # Exceptions - see architecture/licensing.md.
+          allow-dependencies-licenses: >-
+            pkg:maven/com.h2database/h2,
+            pkg:maven/org.liquibase/liquibase-core
 
   api:
     runs-on: ubuntu-latest
