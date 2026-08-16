@@ -33,8 +33,12 @@ class GetDepotsTest {
   @SqlMergeMode(MERGE)
   @Sql(statements = {"DELETE FROM DEPOT"})
   void getDepots_emptyDatabase() throws Exception {
-    MvcResult mvcResult = getDepots().andExpect(status().isNoContent()).andReturn();
-    assertThat(mvcResult.getResponse().getContentLength()).isZero();
+    MvcResult mvcResult = getDepots().andExpect(status().isOk()).andReturn();
+    List<DepotReadDto> depots =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), new TypeReference<>() {
+        });
+
+    assertThat(depots).isEmpty();
   }
 
   @Test

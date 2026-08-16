@@ -38,12 +38,7 @@ class IncomeServiceImpl implements IncomeService {
         || incomeTypes.isEmpty()) {
       throw new BadRequestException();
     }
-    try {
-      boolean depotsHaveSameCurrency = depotService.depotsHaveSameCurrency(depotIds);
-      if (!depotsHaveSameCurrency) {
-        throw new BadRequestException();
-      }
-    } catch (NotFoundException e) {
+    if (!depotService.depotsHaveSameCurrency(depotIds)) {
       throw new BadRequestException();
     }
 

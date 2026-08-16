@@ -14,9 +14,9 @@ public class TransactionPageRequest {
   private Integer pageSize;
   private Set<Long> depotIds;
   private Set<TransactionTypeDto> transactionTypes;
-  private SortOrderDto orderByTime;
-  private LocalDate minDate;
-  private LocalDate maxDate;
+  private SortOrderDto order;
+  private LocalDate startDate;
+  private LocalDate endDate;
   private Set<Long> securityIds;
 
   void validate() throws BadRequestException {
@@ -32,7 +32,7 @@ public class TransactionPageRequest {
     if (securityIds != null && securityIds.isEmpty()) {
       throw new BadRequestException();
     }
-    if (minDate != null && maxDate != null && minDate.isAfter(maxDate)) {
+    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
       throw new BadRequestException();
     }
   }

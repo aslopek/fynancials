@@ -2,7 +2,7 @@ openapi: 3.0.3
 
 info:
   title: Dividend Announcement API
-  description: The API definitions querying dividend announcements
+  description: The API definitions for querying dividend announcements and configuring the sources they are loaded from
   version: 1.0.0
 
 servers:
@@ -26,7 +26,7 @@ paths:
       operationId: getDividendAnnouncements
       responses:
         '200':
-          description: Successfully returned the dividend announcements
+          description: Successfully returned the dividend announcements, or an empty array if none exist
           content:
             application/json:
               schema:
@@ -35,6 +35,10 @@ paths:
                 minItems: 0
                 items:
                   $ref: '#/components/schemas/DividendAnnouncementRead'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /notifications/dividend-announcements/{id}:
     parameters:
@@ -55,10 +59,18 @@ paths:
             schema:
               $ref: '#/components/schemas/DividendAnnouncementUpdate'
       responses:
-        '204':
+        '200':
           description: Successfully updated the dividend announcement
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DividendAnnouncementRead'
         '400':
           description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: The dividend announcement to be updated does not exist
 
@@ -69,7 +81,7 @@ paths:
       operationId: getDividendAnnouncementConfigs
       responses:
         '200':
-          description: Successfully returned the dividend announcement configs
+          description: Successfully returned the dividend announcement configs, or an empty array if none exist
           content:
             application/json:
               schema:
@@ -78,6 +90,10 @@ paths:
                 minItems: 0
                 items:
                   $ref: '#/components/schemas/DividendAnnouncementConfigRead'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /notifications/dividend-announcements/configs/{securityId}:
     parameters:
@@ -98,6 +114,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DividendAnnouncementConfigRead'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No dividend announcement config exists for the specified securityId
     post:
@@ -125,6 +145,10 @@ paths:
                 $ref: '#/components/schemas/DividendAnnouncementConfigRead'
         '400':
           description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: The security identified by securityId does not exist
         '409':
@@ -148,6 +172,10 @@ paths:
                 $ref: '#/components/schemas/DividendAnnouncementConfigRead'
         '400':
           description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No dividend announcement config exists for the specified securityId
         '409':
@@ -159,10 +187,12 @@ paths:
       responses:
         '204':
           description: Successfully deleted the dividend announcement config
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No dividend announcement config exists for the specified securityId
-        '409':
-          description: Optimistic Lock failed
 
   /notifications/dividend-announcements/data-sources:
     post:
@@ -190,6 +220,10 @@ paths:
                 $ref: '#/components/schemas/DividendAnnouncementDataSourceRead'
         '400':
           description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           description: Another dividend announcement data source with the same name exists already
     get:
@@ -198,7 +232,7 @@ paths:
       operationId: getDividendAnnouncementDataSources
       responses:
         '200':
-          description: Successfully returned the dividend announcement data sources
+          description: Successfully returned the dividend announcement data sources, or an empty array if none exist
           content:
             application/json:
               schema:
@@ -207,6 +241,10 @@ paths:
                 minItems: 0
                 items:
                   $ref: '#/components/schemas/DividendAnnouncementDataSourceRead'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /notifications/dividend-announcements/data-sources/{id}:
     parameters:
@@ -235,6 +273,10 @@ paths:
                 $ref: '#/components/schemas/DividendAnnouncementDataSourceRead'
         '400':
           description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: The dividend announcement data source to be updated does not exist
         '409':
@@ -247,13 +289,27 @@ paths:
         '204':
           description: Successfully deleted the dividend announcement data source
         '400':
-          description: There are data (e.g. dividend announcement configs) referencing this dividend announcement data source or the data source may not be deleted for other reasons
+          description: >
+            There are data (e.g. dividend announcement configs) referencing this dividend announcement data source or the data source
+            may not be deleted for other reasons
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: The dividend announcement data source to be deleted does not exist
-        '409':
-          description: Optimistic Lock failed
 
 components:
+  responses:
+    Unauthorized:
+      description: |
+        The request carried no valid credentials, or credentials the server rejected. A deployment that does not authenticate never
+        answers this, and a caller must not treat its absence as a promise that the endpoint is open.
+    Forbidden:
+      description: |
+        The caller is authenticated but not permitted to perform this operation - a read-only registration issuing a write, for
+        instance. A deployment that does not authorize never answers this.
+
   schemas:
     Id:
       type: integer
@@ -343,7 +399,7 @@ components:
           type: string
           nullable: false
           minLength: 0
-          example: someSecreteApiKey
+          example: someSecretApiKey
 
     CurrencyMapping:
       type: object
@@ -367,6 +423,8 @@ components:
 
     DateFormat:
       type: string
+      nullable: false
+      example: CUSTOM_STRING
       enum:
         - TIMESTAMP_SECONDS
         - TIMESTAMP_MILLISECONDS

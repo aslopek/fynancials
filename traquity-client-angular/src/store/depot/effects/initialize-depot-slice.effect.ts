@@ -46,7 +46,7 @@ async function initializeDepotsSliceHelper(effectArgs: InitializeDepotsSliceEffe
   } = effectArgs;
 
   try {
-    const depots: DepotRead[] = await firstValueFrom(depotApi.getDepots()) ?? [];
+    const depots: DepotRead[] = await firstValueFrom(depotApi.getDepots());
     const config: { [key: string]: string } = await firstValueFrom(configApi.getClientConfig(clientId, depotConfigPrefix));
     const selectedDepotIdsValue: number[] = parseNumberArray(config[selectedDepotIds.key]) ?? selectedDepotIds.default;
     const selectedTabIndexValue: number = config[selectedTabIndex.key] == null ? selectedTabIndex.default : parseInt(config[selectedTabIndex.key]);

@@ -16,19 +16,19 @@ export type LoadTransactionsArgs = {
 }
 
 function fetchDepotTransactions(transactionApi: TransactionApi, depotId: number, pageSize: number,
-                                minDate: string): Observable<TransactionRead[]> {
-  const firstPage: Observable<PaginatedTransactionRead | null> =
-    transactionApi.getTransactions(depotId, 0, pageSize, undefined, SortOrder.ASC, minDate);
+                                startDate: string): Observable<TransactionRead[]> {
+  const firstPage: Observable<PaginatedTransactionRead> =
+    transactionApi.getTransactions(depotId, 0, pageSize, SortOrder.ASC, undefined, startDate);
 
   return firstPage.pipe(
-    expand((page: PaginatedTransactionRead | null): Observable<PaginatedTransactionRead | null> => {
-      if (page != null && page.currentPage < page.lastPage) {
-        return transactionApi.getTransactions(depotId, page.currentPage + 1, pageSize, undefined, SortOrder.ASC, minDate);
+    expand((page: PaginatedTransactionRead): Observable<PaginatedTransactionRead> => {
+      if (page.currentPage < page.lastPage) {
+        return transactionApi.getTransactions(depotId, page.currentPage + 1, pageSize, SortOrder.ASC, undefined, startDate);
       } else {
         return EMPTY;
       }
     }),
-    map((page: PaginatedTransactionRead | null): TransactionRead[] => page?.items ?? []),
+    map((page: PaginatedTransactionRead): TransactionRead[] => page.items),
     reduce((accumulated: TransactionRead[], pageItems: TransactionRead[]): TransactionRead[] =>
       [...accumulated, ...pageItems], [] satisfies TransactionRead[])
   );

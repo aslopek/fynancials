@@ -1,6 +1,6 @@
 import {Component, computed, DestroyRef, input, InputSignal, Signal, signal, WritableSignal,} from "@angular/core";
 import {SecurityCreate} from "../../../gen/api/security";
-import {HistoricalSecurityPriceConfig} from "../../../gen/api/historical-security-price";
+import {HistoricalSecurityPriceConfigCreate} from "../../../gen/api/historical-security-price";
 import {DividendAnnouncementConfigCreate, DividendAnnouncementDataSourceRead,} from "../../../gen/api/notification/dividend-announcement";
 import {MatCard, MatCardContent, MatCardHeader, MatCardSubtitle, MatCardTitle,} from "@angular/material/card";
 import {MatIcon} from "@angular/material/icon";
@@ -11,6 +11,7 @@ import {getAllDataSources} from "../../../store/dividend-announcement/dividend-a
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {DataSourceWithId} from "../../../settings/data-source/data-source.type";
 import {getHistoricalSecurityPriceDataSources} from "../../../store/security/security.selector";
+import {SecurityTypeDisplayNamePipe} from "../../../common/pipe/security-type-display-name.pipe";
 
 @Component({
   selector: "app-summary",
@@ -23,6 +24,7 @@ import {getHistoricalSecurityPriceDataSources} from "../../../store/security/sec
     MatCardContent,
     MatChipSet,
     MatChipRow,
+    SecurityTypeDisplayNamePipe,
   ],
   templateUrl: "./summary.component.html",
   styleUrl: "./summary.component.scss",
@@ -30,8 +32,8 @@ import {getHistoricalSecurityPriceDataSources} from "../../../store/security/sec
 export class SummaryComponent {
 
   readonly masterData: InputSignal<SecurityCreate | null> = input.required<SecurityCreate | null>();
-  readonly historicalSecurityPriceConfig: InputSignal<Omit<HistoricalSecurityPriceConfig, "version"> | undefined>
-    = input<Omit<HistoricalSecurityPriceConfig, "version">>();
+  readonly historicalSecurityPriceConfig: InputSignal<HistoricalSecurityPriceConfigCreate | undefined>
+    = input<HistoricalSecurityPriceConfigCreate>();
   readonly dividendAnnouncementConfig: InputSignal<DividendAnnouncementConfigCreate | undefined> = input<DividendAnnouncementConfigCreate>();
   protected readonly historicalSecurityPriceDataSource: Signal<DataSourceWithId | null>;
   protected readonly dividendAnnouncementDataSources: WritableSignal<{ [id: number]: DividendAnnouncementDataSourceRead; }>;

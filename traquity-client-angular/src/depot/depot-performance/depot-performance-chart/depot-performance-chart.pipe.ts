@@ -160,8 +160,8 @@ export class DepotPerformanceChartPipe implements PipeTransform {
             `;
           });
 
-          const absolutePerformance: string = hideAbsoluteValues ? '••••••' : `${rawProfit >= 0 ? '+' : ''}${this.formatCurrency(rawProfit, currency)}`;
-          const relativePerformance: string = `${rawProfit >= 0 ? '+' : ''}${this.formatPercent(performanceRelative[date])}`;
+          const formattedPerformanceAbsolute: string = hideAbsoluteValues ? '••••••' : `${rawProfit >= 0 ? '+' : ''}${this.formatCurrency(rawProfit, currency)}`;
+          const formattedPerformanceRelative: string = `${rawProfit >= 0 ? '+' : ''}${this.formatPercent(performanceRelative[date])}`;
           return `
             <div style="font-weight: 600; margin-bottom: 6px; color: rgba(255, 255, 255, 0.5); font-size: 11px;">${this.escapeHtml(date)}</div>
             
@@ -169,11 +169,11 @@ export class DepotPerformanceChartPipe implements PipeTransform {
             
             <div style="display: flex; justify-content: space-between; gap: 24px; margin-top: 6px; border-top: 1px dashed rgba(255, 255, 255, 0.1); padding-top: 4px;">
               <span style="color: rgba(255, 255, 255, 0.7);">${rawProfit >= 0 ? 'Growth' : 'Decline'}:</span>
-              <strong style="color: ${profitColor}; font-variant-numeric: tabular-nums;">${absolutePerformance}</strong>
+              <strong style="color: ${profitColor}; font-variant-numeric: tabular-nums;">${formattedPerformanceAbsolute}</strong>
             </div>
             <div style="display: flex; justify-content: space-between; gap: 24px;">
               <span></span>
-              <strong style="color: ${profitColor}; font-variant-numeric: tabular-nums;">${relativePerformance}</strong>
+              <strong style="color: ${profitColor}; font-variant-numeric: tabular-nums;">${formattedPerformanceRelative}</strong>
             </div>
           `;
         }

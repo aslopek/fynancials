@@ -1,7 +1,7 @@
 import {StockSplitState, StockSplitWithMultiplier} from "../stock-split.store";
 import {WritableSignalStore} from "../../../../../common/types/signal-store.type";
 import {StockSplit, StockSplitApi} from "../../../../../gen/api/security";
-import {catchError, EMPTY, map, Observable, take} from "rxjs";
+import {catchError, EMPTY, Observable, take} from "rxjs";
 import {patchState} from "@ngrx/signals";
 
 export function loadStockSplitState(signalStore: WritableSignalStore<StockSplitState>,
@@ -9,7 +9,6 @@ export function loadStockSplitState(signalStore: WritableSignalStore<StockSplitS
                                     securityId: number): void {
   stockSplitApi.getStockSplits(securityId).pipe(
     take(1),
-    map((result: StockSplit[]): StockSplit[] => result ?? []),
     catchError((): Observable<never> => EMPTY))
     .subscribe((stockSplits: StockSplit[]) => {
       const stockSplitsWithMultiplier: StockSplitWithMultiplier[] = [];

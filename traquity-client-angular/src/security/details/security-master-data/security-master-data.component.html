@@ -73,7 +73,7 @@
         <mat-label>Type</mat-label>
         <mat-select [formField]="form.securityType">
             @for (securityType of securityTypes; track $index) {
-                <mat-option [value]="securityType">{{ securityType }}</mat-option>
+            <mat-option [value]="securityType">{{ securityType | securityTypeDisplayName }}</mat-option>
             }
         </mat-select>
     </mat-form-field>

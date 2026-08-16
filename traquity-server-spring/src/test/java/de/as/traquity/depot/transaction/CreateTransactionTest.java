@@ -45,11 +45,11 @@ class CreateTransactionTest {
     requestBody.setTime("16:10:38");
     requestBody.setSecurityId(SecurityIds.AAPL);
     requestBody.setTransactionType(TransactionTypeDto.BUY);
-    requestBody.setSecurityCountOriginal(20.0);
+    requestBody.setSecurityCountOriginal(BigDecimal.valueOf(20.0));
     requestBody.setSecurityCountSplitAdjusted(null);
-    requestBody.setGrossValue(3351.6);
+    requestBody.setGrossValue(BigDecimal.valueOf(3351.6));
     requestBody.setTax(null);
-    requestBody.setFee(0.99);
+    requestBody.setFee(BigDecimal.valueOf(0.99));
   }
 
   @Test
@@ -59,7 +59,7 @@ class CreateTransactionTest {
 
   @Test
   void addTransaction_fractionalShares_ok() throws Exception {
-    requestBody.setSecurityCountOriginal(19.908);
+    requestBody.setSecurityCountOriginal(BigDecimal.valueOf(19.908));
     runPositiveTestCase(1);
   }
 
@@ -69,11 +69,11 @@ class CreateTransactionTest {
     requestBody.setTime(null);
     requestBody.setSecurityId(SecurityIds.HAG);
     requestBody.setTransactionType(TransactionTypeDto.SELL);
-    requestBody.setSecurityCountOriginal(150.0);
+    requestBody.setSecurityCountOriginal(BigDecimal.valueOf(150.0));
     requestBody.setSecurityCountSplitAdjusted(null);
-    requestBody.setGrossValue(4264.5);
-    requestBody.setTax(584.63);
-    requestBody.setFee(0.99);
+    requestBody.setGrossValue(BigDecimal.valueOf(4264.5));
+    requestBody.setTax(BigDecimal.valueOf(584.63));
+    requestBody.setFee(BigDecimal.valueOf(0.99));
     runPositiveTestCase(2);
   }
 
@@ -83,10 +83,10 @@ class CreateTransactionTest {
     requestBody.setTime(null);
     requestBody.setSecurityId(SecurityIds.NVDA);
     requestBody.setTransactionType(TransactionTypeDto.DIVIDEND);
-    requestBody.setSecurityCountOriginal(30.0);
+    requestBody.setSecurityCountOriginal(BigDecimal.valueOf(30.0));
     requestBody.setSecurityCountSplitAdjusted(null);
-    requestBody.setGrossValue(1.2);
-    requestBody.setTax(0.32);
+    requestBody.setGrossValue(BigDecimal.valueOf(1.2));
+    requestBody.setTax(BigDecimal.valueOf(0.32));
     requestBody.setFee(null);
     runPositiveTestCase(1);
   }
@@ -97,10 +97,10 @@ class CreateTransactionTest {
     requestBody.setTime(null);
     requestBody.setSecurityId(SecurityIds.NVDA);
     requestBody.setTransactionType(TransactionTypeDto.SPECIAL_DIVIDEND);
-    requestBody.setSecurityCountOriginal(30.0);
+    requestBody.setSecurityCountOriginal(BigDecimal.valueOf(30.0));
     requestBody.setSecurityCountSplitAdjusted(null);
-    requestBody.setGrossValue(1.2);
-    requestBody.setTax(0.32);
+    requestBody.setGrossValue(BigDecimal.valueOf(1.2));
+    requestBody.setTax(BigDecimal.valueOf(0.32));
     requestBody.setFee(null);
     runPositiveTestCase(1);
   }
@@ -111,17 +111,17 @@ class CreateTransactionTest {
     requestBody.setTime(null);
     requestBody.setSecurityId(SecurityIds.AMZN);
     requestBody.setTransactionType(TransactionTypeDto.TAX);
-    requestBody.setSecurityCountOriginal(40.0);
+    requestBody.setSecurityCountOriginal(BigDecimal.valueOf(40.0));
     requestBody.setSecurityCountSplitAdjusted(null);
-    requestBody.setGrossValue(82.19);
+    requestBody.setGrossValue(BigDecimal.valueOf(82.19));
     requestBody.setTax(null);
     requestBody.setFee(null);
     runPositiveTestCase(1);
   }
 
   @Test
-  void addTransaction_depotDoesNotExist_badRequest() throws Exception {
-    runNegativeTestCase(999, HttpStatus.BAD_REQUEST);
+  void addTransaction_depotDoesNotExist_notFound() throws Exception {
+    runNegativeTestCase(999, HttpStatus.NOT_FOUND);
   }
 
   @Test
@@ -232,11 +232,11 @@ class CreateTransactionTest {
     assertThat(locationHeader).isEqualTo(String.format(ENDPOINT, depotId) + "/" + responseBody.getId());
   }
 
-  private void verifyBigDecimal(BigDecimal actual, Double expected) {
+  private void verifyBigDecimal(BigDecimal actual, BigDecimal expected) {
     if (expected == null) {
       assertThat(actual).isNull();
     } else {
-      assertThat(actual.doubleValue()).isEqualByComparingTo(expected);
+      assertThat(actual).isEqualByComparingTo(expected);
     }
   }
 }

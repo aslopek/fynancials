@@ -14,13 +14,13 @@ import {AppState} from "../../../store/app.state";
   styleUrl: "./performance-label.component.scss",
 })
 export class PerformanceLabelComponent implements OnChanges {
-  protected _absolutePerformance: number = 0;
-  protected _relativePerformance: number | "infinity" = 0;
+  protected _performanceAbsolute: number = 0;
+  protected _performanceRelative: number | "infinity" = 0;
   protected _currency: string = "EUR";
   protected performanceIsPositive: boolean = true;
-  protected absolutePerformanceStyle: string =
+  protected performanceAbsoluteStyle: string =
     "absolute-performance performance-positive";
-  protected relativePerformanceStyle: string =
+  protected performanceRelativeStyle: string =
     "relative-performance performance-positive";
 
   private readonly appConfigStore: Store<AppState> = inject(Store);
@@ -37,21 +37,21 @@ export class PerformanceLabelComponent implements OnChanges {
   }
 
   @Input({ required: true })
-  set absolutePerformance(absolutePerformance: number) {
-    this._absolutePerformance = absolutePerformance;
+  set performanceAbsolute(performanceAbsolute: number) {
+    this._performanceAbsolute = performanceAbsolute;
   }
 
-  get absolutePerformance(): number {
-    return this._absolutePerformance;
+  get performanceAbsolute(): number {
+    return this._performanceAbsolute;
   }
 
   @Input({ required: true })
-  set relativePerformance(relativePerformance: number | "infinity") {
-    this._relativePerformance = relativePerformance;
+  set performanceRelative(performanceRelative: number | "infinity") {
+    this._performanceRelative = performanceRelative;
   }
 
-  get relativePerformance(): number | "infinity" {
-    return this._relativePerformance;
+  get performanceRelative(): number | "infinity" {
+    return this._performanceRelative;
   }
 
   @Input({ required: true })
@@ -64,22 +64,22 @@ export class PerformanceLabelComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    this.performanceIsPositive = this.absolutePerformance >= 0;
+    this.performanceIsPositive = this.performanceAbsolute >= 0;
 
     if (this.performanceIsPositive) {
-      this.absolutePerformanceStyle =
+      this.performanceAbsoluteStyle =
         "padding absolute-performance performance-positive";
-      this.relativePerformanceStyle = "padding performance-positive";
+      this.performanceRelativeStyle = "padding performance-positive";
     } else {
-      this.absolutePerformanceStyle =
+      this.performanceAbsoluteStyle =
         "padding absolute-performance performance-negative";
-      this.relativePerformanceStyle = "padding performance-negative";
+      this.performanceRelativeStyle = "padding performance-negative";
     }
 
     if (this.hideAbsoluteValues) {
-      this.relativePerformanceStyle = `${this.relativePerformanceStyle} absolute-performance-hidden`;
+      this.performanceRelativeStyle = `${this.performanceRelativeStyle} absolute-performance-hidden`;
     } else {
-      this.relativePerformanceStyle = `${this.relativePerformanceStyle} relative-performance`;
+      this.performanceRelativeStyle = `${this.performanceRelativeStyle} relative-performance`;
     }
   }
 }

@@ -18,7 +18,7 @@ import org.springframework.test.web.servlet.ResultActions;
 @IntegrationTest
 class DeleteHistoricalSecurityPriceDataSourceTest {
 
-  private static final String ENDPOINT = "/historicalprices/data-sources/%d";
+  private static final String ENDPOINT = "/historical-prices/data-sources/%d";
 
   @Autowired
   private HistoricalSecurityPriceDataSourceRepository dataSourceRepository;

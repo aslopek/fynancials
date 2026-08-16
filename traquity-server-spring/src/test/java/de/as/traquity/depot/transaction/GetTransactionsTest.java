@@ -1,5 +1,6 @@
 package de.as.traquity.depot.transaction;
 
+import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -32,9 +33,15 @@ class GetTransactionsTest {
   private MockMvc mockMvc;
 
   @Test
-  void getTransactions_emptyDepot_noContent() throws Exception {
-    MvcResult mvcResult = getSecurities(DepotIds.EMPTY_DEPOT, null, null).andExpect(status().isNoContent()).andReturn();
-    assertThat(mvcResult.getResponse().getContentLength()).isZero();
+  void getTransactions_emptyDepot_emptyPage() throws Exception {
+    MvcResult mvcResult = getSecurities(DepotIds.EMPTY_DEPOT, null, null).andExpect(status().isOk()).andReturn();
+    PaginatedTransactionReadDto responseBody =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), PaginatedTransactionReadDto.class);
+
+    assertThat(responseBody.getTotal()).isZero();
+    assertThat(responseBody.getCurrentPage()).isZero();
+    assertThat(responseBody.getLastPage()).isZero();
+    assertThat(responseBody.getItems()).isEmpty();
   }
 
   @Test
@@ -56,14 +63,15 @@ class GetTransactionsTest {
     transaction.setTime("21:09:34");
     transaction.setSecurityId(SecurityIds.AMZN);
     transaction.setTransactionType(TransactionTypeDto.BUY);
-    transaction.setSecurityCountOriginal(1.35);
-    transaction.setSecurityCountSplitAdjusted(27.0);
-    transaction.setGrossValue(3789.45);
+    transaction.setSecurityCountOriginal(BigDecimal.valueOf(1.35));
+    transaction.setSecurityCountSplitAdjusted(BigDecimal.valueOf(27.0));
+    transaction.setGrossValue(BigDecimal.valueOf(3789.45));
     transaction.setTax(null);
-    transaction.setFee(10.0);
-    transaction.setNetValue(3799.45);
+    transaction.setFee(BigDecimal.valueOf(10.0));
+    transaction.setNetValue(BigDecimal.valueOf(3799.45));
     transaction.setVersion(1L);
-    assertThat(responseBody.getItems().get(0)).isEqualTo(transaction);
+    assertThat(responseBody.getItems().get(0)).usingRecursiveComparison()
+        .withComparatorForType(BigDecimal::compareTo, BigDecimal.class).isEqualTo(transaction);
 
     transaction = new TransactionReadDto();
     transaction.setId(3L);
@@ -71,14 +79,15 @@ class GetTransactionsTest {
     transaction.setTime("16:19:17");
     transaction.setSecurityId(SecurityIds.NVDA);
     transaction.setTransactionType(TransactionTypeDto.SELL);
-    transaction.setSecurityCountOriginal(2.16);
-    transaction.setSecurityCountSplitAdjusted(8.64);
-    transaction.setGrossValue(1040.04);
-    transaction.setTax(23.35);
-    transaction.setFee(10.0);
-    transaction.setNetValue(1006.69);
+    transaction.setSecurityCountOriginal(BigDecimal.valueOf(2.16));
+    transaction.setSecurityCountSplitAdjusted(BigDecimal.valueOf(8.64));
+    transaction.setGrossValue(BigDecimal.valueOf(1040.04));
+    transaction.setTax(BigDecimal.valueOf(23.35));
+    transaction.setFee(BigDecimal.valueOf(10.0));
+    transaction.setNetValue(BigDecimal.valueOf(1006.69));
     transaction.setVersion(1L);
-    assertThat(responseBody.getItems().get(2)).isEqualTo(transaction);
+    assertThat(responseBody.getItems().get(2)).usingRecursiveComparison()
+        .withComparatorForType(BigDecimal::compareTo, BigDecimal.class).isEqualTo(transaction);
 
     transaction = new TransactionReadDto();
     transaction.setId(8L);
@@ -86,14 +95,15 @@ class GetTransactionsTest {
     transaction.setTime(null);
     transaction.setSecurityId(SecurityIds.NVDA);
     transaction.setTransactionType(TransactionTypeDto.DIVIDEND);
-    transaction.setSecurityCountOriginal(2.16);
-    transaction.setSecurityCountSplitAdjusted(8.64);
-    transaction.setGrossValue(0.28);
-    transaction.setTax(0.07);
+    transaction.setSecurityCountOriginal(BigDecimal.valueOf(2.16));
+    transaction.setSecurityCountSplitAdjusted(BigDecimal.valueOf(8.64));
+    transaction.setGrossValue(BigDecimal.valueOf(0.28));
+    transaction.setTax(BigDecimal.valueOf(0.07));
     transaction.setFee(null);
-    transaction.setNetValue(0.21);
+    transaction.setNetValue(BigDecimal.valueOf(0.21));
     transaction.setVersion(1L);
-    assertThat(responseBody.getItems().get(7)).isEqualTo(transaction);
+    assertThat(responseBody.getItems().get(7)).usingRecursiveComparison()
+        .withComparatorForType(BigDecimal::compareTo, BigDecimal.class).isEqualTo(transaction);
   }
 
   @Test
@@ -115,14 +125,15 @@ class GetTransactionsTest {
     transaction.setTime(null);
     transaction.setSecurityId(SecurityIds.LVMH);
     transaction.setTransactionType(TransactionTypeDto.SPECIAL_DIVIDEND);
-    transaction.setSecurityCountOriginal(4.25);
+    transaction.setSecurityCountOriginal(BigDecimal.valueOf(4.25));
     transaction.setSecurityCountSplitAdjusted(null);
-    transaction.setGrossValue(21.68);
-    transaction.setTax(5.72);
+    transaction.setGrossValue(BigDecimal.valueOf(21.68));
+    transaction.setTax(BigDecimal.valueOf(5.72));
     transaction.setFee(null);
-    transaction.setNetValue(15.96);
+    transaction.setNetValue(BigDecimal.valueOf(15.96));
     transaction.setVersion(0L);
-    assertThat(responseBody.getItems().get(9)).isEqualTo(transaction);
+    assertThat(responseBody.getItems().get(9)).usingRecursiveComparison()
+        .withComparatorForType(BigDecimal::compareTo, BigDecimal.class).isEqualTo(transaction);
   }
 
   @Test
@@ -146,14 +157,15 @@ class GetTransactionsTest {
     transaction.setTime("13:26:43");
     transaction.setSecurityId(SecurityIds.LVMH);
     transaction.setTransactionType(TransactionTypeDto.BUY);
-    transaction.setSecurityCountOriginal(2.55);
+    transaction.setSecurityCountOriginal(BigDecimal.valueOf(2.55));
     transaction.setSecurityCountSplitAdjusted(null);
-    transaction.setGrossValue(1791.38);
-    transaction.setTax(5.37);
-    transaction.setFee(10.0);
-    transaction.setNetValue(1806.75);
+    transaction.setGrossValue(BigDecimal.valueOf(1791.38));
+    transaction.setTax(BigDecimal.valueOf(5.37));
+    transaction.setFee(BigDecimal.valueOf(10.0));
+    transaction.setNetValue(BigDecimal.valueOf(1806.75));
     transaction.setVersion(0L);
-    assertThat(responseBody.getItems().get(17)).isEqualTo(transaction);
+    assertThat(responseBody.getItems().get(17)).usingRecursiveComparison()
+        .withComparatorForType(BigDecimal::compareTo, BigDecimal.class).isEqualTo(transaction);
   }
 
   @Test
@@ -178,14 +190,15 @@ class GetTransactionsTest {
     transaction.setTime(null);
     transaction.setSecurityId(SecurityIds.NVDA);
     transaction.setTransactionType(TransactionTypeDto.SPECIAL_DIVIDEND);
-    transaction.setSecurityCountOriginal(21.6);
+    transaction.setSecurityCountOriginal(BigDecimal.valueOf(21.6));
     transaction.setSecurityCountSplitAdjusted(null);
-    transaction.setGrossValue(8.64);
-    transaction.setTax(2.28);
+    transaction.setGrossValue(BigDecimal.valueOf(8.64));
+    transaction.setTax(BigDecimal.valueOf(2.28));
     transaction.setFee(null);
-    transaction.setNetValue(6.36);
+    transaction.setNetValue(BigDecimal.valueOf(6.36));
     transaction.setVersion(0L);
-    assertThat(responseBody.getItems().get(20)).isEqualTo(transaction);
+    assertThat(responseBody.getItems().get(20)).usingRecursiveComparison()
+        .withComparatorForType(BigDecimal::compareTo, BigDecimal.class).isEqualTo(transaction);
   }
 
   @Test
@@ -208,14 +221,15 @@ class GetTransactionsTest {
     transaction.setTime("21:09:34");
     transaction.setSecurityId(SecurityIds.AMZN);
     transaction.setTransactionType(TransactionTypeDto.BUY);
-    transaction.setSecurityCountOriginal(1.35);
-    transaction.setSecurityCountSplitAdjusted(27.0);
-    transaction.setGrossValue(3789.45);
+    transaction.setSecurityCountOriginal(BigDecimal.valueOf(1.35));
+    transaction.setSecurityCountSplitAdjusted(BigDecimal.valueOf(27.0));
+    transaction.setGrossValue(BigDecimal.valueOf(3789.45));
     transaction.setTax(null);
-    transaction.setFee(10.0);
-    transaction.setNetValue(3799.45);
+    transaction.setFee(BigDecimal.valueOf(10.0));
+    transaction.setNetValue(BigDecimal.valueOf(3799.45));
     transaction.setVersion(1L);
-    assertThat(responseBody.getItems().get(0)).isEqualTo(transaction);
+    assertThat(responseBody.getItems().get(0)).usingRecursiveComparison()
+        .withComparatorForType(BigDecimal::compareTo, BigDecimal.class).isEqualTo(transaction);
   }
 
   @Test
@@ -239,14 +253,15 @@ class GetTransactionsTest {
     transaction.setTime(null);
     transaction.setSecurityId(SecurityIds.NVDA);
     transaction.setTransactionType(TransactionTypeDto.DIVIDEND);
-    transaction.setSecurityCountOriginal(21.6);
+    transaction.setSecurityCountOriginal(BigDecimal.valueOf(21.6));
     transaction.setSecurityCountSplitAdjusted(null);
-    transaction.setGrossValue(0.73);
-    transaction.setTax(0.19);
+    transaction.setGrossValue(BigDecimal.valueOf(0.73));
+    transaction.setTax(BigDecimal.valueOf(0.19));
     transaction.setFee(null);
-    transaction.setNetValue(0.54);
+    transaction.setNetValue(BigDecimal.valueOf(0.54));
     transaction.setVersion(0L);
-    assertThat(responseBody.getItems().get(1)).isEqualTo(transaction);
+    assertThat(responseBody.getItems().get(1)).usingRecursiveComparison()
+        .withComparatorForType(BigDecimal::compareTo, BigDecimal.class).isEqualTo(transaction);
   }
 
   @Test
@@ -268,14 +283,15 @@ class GetTransactionsTest {
     transaction.setTime("12:44:46");
     transaction.setSecurityId(SecurityIds.VNGGF);
     transaction.setTransactionType(TransactionTypeDto.BUY);
-    transaction.setSecurityCountOriginal(16.849);
+    transaction.setSecurityCountOriginal(BigDecimal.valueOf(16.849));
     transaction.setSecurityCountSplitAdjusted(null);
-    transaction.setGrossValue(949.96);
+    transaction.setGrossValue(BigDecimal.valueOf(949.96));
     transaction.setTax(null);
     transaction.setFee(null);
-    transaction.setNetValue(949.96);
+    transaction.setNetValue(BigDecimal.valueOf(949.96));
     transaction.setVersion(0L);
-    assertThat(responseBody.getItems().get(1)).isEqualTo(transaction);
+    assertThat(responseBody.getItems().get(1)).usingRecursiveComparison()
+        .withComparatorForType(BigDecimal::compareTo, BigDecimal.class).isEqualTo(transaction);
 
     transaction = new TransactionReadDto();
     transaction.setId(30L);
@@ -283,14 +299,15 @@ class GetTransactionsTest {
     transaction.setTime(null);
     transaction.setSecurityId(SecurityIds.VNGGF);
     transaction.setTransactionType(TransactionTypeDto.TAX);
-    transaction.setSecurityCountOriginal(34.318);
+    transaction.setSecurityCountOriginal(BigDecimal.valueOf(34.318));
     transaction.setSecurityCountSplitAdjusted(null);
-    transaction.setGrossValue(7.89);
+    transaction.setGrossValue(BigDecimal.valueOf(7.89));
     transaction.setTax(null);
     transaction.setFee(null);
-    transaction.setNetValue(7.89);
+    transaction.setNetValue(BigDecimal.valueOf(7.89));
     transaction.setVersion(0L);
-    assertThat(responseBody.getItems().get(2)).isEqualTo(transaction);
+    assertThat(responseBody.getItems().get(2)).usingRecursiveComparison()
+        .withComparatorForType(BigDecimal::compareTo, BigDecimal.class).isEqualTo(transaction);
   }
 
   @Test
@@ -313,14 +330,15 @@ class GetTransactionsTest {
     transaction.setTime("11:48:34");
     transaction.setSecurityId(SecurityIds.HAG);
     transaction.setTransactionType(TransactionTypeDto.SELL);
-    transaction.setSecurityCountOriginal(120.0);
+    transaction.setSecurityCountOriginal(BigDecimal.valueOf(120.0));
     transaction.setSecurityCountSplitAdjusted(null);
-    transaction.setGrossValue(1764.0);
-    transaction.setTax(6.42);
-    transaction.setFee(10.0);
-    transaction.setNetValue(1747.58);
+    transaction.setGrossValue(BigDecimal.valueOf(1764.0));
+    transaction.setTax(BigDecimal.valueOf(6.42));
+    transaction.setFee(BigDecimal.valueOf(10.0));
+    transaction.setNetValue(BigDecimal.valueOf(1747.58));
     transaction.setVersion(0L);
-    assertThat(responseBody.getItems().get(2)).isEqualTo(transaction);
+    assertThat(responseBody.getItems().get(2)).usingRecursiveComparison()
+        .withComparatorForType(BigDecimal::compareTo, BigDecimal.class).isEqualTo(transaction);
   }
 
   @Test
@@ -343,14 +361,15 @@ class GetTransactionsTest {
     transaction.setTime(null);
     transaction.setSecurityId(SecurityIds.NVDA);
     transaction.setTransactionType(TransactionTypeDto.DIVIDEND);
-    transaction.setSecurityCountOriginal(2.16);
-    transaction.setSecurityCountSplitAdjusted(8.64);
-    transaction.setGrossValue(0.28);
-    transaction.setTax(0.07);
+    transaction.setSecurityCountOriginal(BigDecimal.valueOf(2.16));
+    transaction.setSecurityCountSplitAdjusted(BigDecimal.valueOf(8.64));
+    transaction.setGrossValue(BigDecimal.valueOf(0.28));
+    transaction.setTax(BigDecimal.valueOf(0.07));
     transaction.setFee(null);
-    transaction.setNetValue(0.21);
+    transaction.setNetValue(BigDecimal.valueOf(0.21));
     transaction.setVersion(1L);
-    assertThat(responseBody.getItems().get(2)).isEqualTo(transaction);
+    assertThat(responseBody.getItems().get(2)).usingRecursiveComparison()
+        .withComparatorForType(BigDecimal::compareTo, BigDecimal.class).isEqualTo(transaction);
   }
 
   @Test
@@ -376,20 +395,21 @@ class GetTransactionsTest {
     transaction.setTime(null);
     transaction.setSecurityId(SecurityIds.NVDA);
     transaction.setTransactionType(TransactionTypeDto.DIVIDEND);
-    transaction.setSecurityCountOriginal(2.16);
-    transaction.setSecurityCountSplitAdjusted(8.64);
-    transaction.setGrossValue(0.3);
-    transaction.setTax(0.07);
+    transaction.setSecurityCountOriginal(BigDecimal.valueOf(2.16));
+    transaction.setSecurityCountSplitAdjusted(BigDecimal.valueOf(8.64));
+    transaction.setGrossValue(BigDecimal.valueOf(0.3));
+    transaction.setTax(BigDecimal.valueOf(0.07));
     transaction.setFee(null);
-    transaction.setNetValue(0.23);
+    transaction.setNetValue(BigDecimal.valueOf(0.23));
     transaction.setVersion(1L);
-    assertThat(responseBody.getItems().get(1)).isEqualTo(transaction);
+    assertThat(responseBody.getItems().get(1)).usingRecursiveComparison()
+        .withComparatorForType(BigDecimal::compareTo, BigDecimal.class).isEqualTo(transaction);
   }
 
   @Test
   void getFirstDepot_FirstPage_reverseOrder_ok() throws Exception {
     long depotId = DepotIds.FIRST_DEPOT;
-    MvcResult mvcResult = mockMvc.perform(get(String.format(ENDPOINT, depotId)).queryParam("orderByTime", "DESC"))
+    MvcResult mvcResult = mockMvc.perform(get(String.format(ENDPOINT, depotId)).queryParam("order", "DESC"))
         .andExpect(status().isOk()).andReturn();
     PaginatedTransactionReadDto responseBody =
         objectMapper.readValue(mvcResult.getResponse().getContentAsString(), PaginatedTransactionReadDto.class);
@@ -402,9 +422,9 @@ class GetTransactionsTest {
   }
 
   @Test
-  void getFirstDepot_FirstPage_minDate_ok() throws Exception {
+  void getFirstDepot_FirstPage_startDate_ok() throws Exception {
     long depotId = DepotIds.FIRST_DEPOT;
-    MvcResult mvcResult = mockMvc.perform(get(String.format(ENDPOINT, depotId)).queryParam("minDate", "2023-08-01"))
+    MvcResult mvcResult = mockMvc.perform(get(String.format(ENDPOINT, depotId)).queryParam("startDate", "2023-08-01"))
         .andExpect(status().isOk()).andReturn();
     PaginatedTransactionReadDto responseBody =
         objectMapper.readValue(mvcResult.getResponse().getContentAsString(), PaginatedTransactionReadDto.class);
@@ -417,9 +437,9 @@ class GetTransactionsTest {
   }
 
   @Test
-  void getFirstDepot_FirstPage_maxDate_ok() throws Exception {
+  void getFirstDepot_FirstPage_endDate_ok() throws Exception {
     long depotId = DepotIds.FIRST_DEPOT;
-    MvcResult mvcResult = mockMvc.perform(get(String.format(ENDPOINT, depotId)).queryParam("maxDate", "2021-01-01"))
+    MvcResult mvcResult = mockMvc.perform(get(String.format(ENDPOINT, depotId)).queryParam("endDate", "2021-01-01"))
         .andExpect(status().isOk()).andReturn();
     PaginatedTransactionReadDto responseBody =
         objectMapper.readValue(mvcResult.getResponse().getContentAsString(), PaginatedTransactionReadDto.class);
@@ -451,8 +471,8 @@ class GetTransactionsTest {
   void getFirstDepot_allFilters_desc_ok() throws Exception {
     long depotId = DepotIds.FIRST_DEPOT;
     MvcResult mvcResult = mockMvc.perform(
-            get(String.format(ENDPOINT, depotId)).queryParam("orderByTime", "DESC").queryParam("minDate", "2023-01-01")
-                .queryParam("maxDate", "2023-12-12")
+            get(String.format(ENDPOINT, depotId)).queryParam("order", "DESC").queryParam("startDate", "2023-01-01")
+                .queryParam("endDate", "2023-12-12")
                 .queryParam("securityIds", Long.toString(SecurityIds.LVMH), Long.toString(SecurityIds.HAG))
                 .queryParam("transactionTypes", TransactionTypeDto.DIVIDEND.name(), TransactionTypeDto.BUY.name()))
         .andExpect(status().isOk()).andReturn();
@@ -467,12 +487,17 @@ class GetTransactionsTest {
   }
 
   @Test
-  void getFirstDepot_taxTransactions_noContent() throws Exception {
+  void getFirstDepot_taxTransactions_emptyPage() throws Exception {
     long depotId = DepotIds.FIRST_DEPOT;
     List<TransactionTypeDto> transactionTypes = List.of(TransactionTypeDto.TAX);
     MvcResult mvcResult =
-        getSecurities(depotId, null, null, transactionTypes).andExpect(status().isNoContent()).andReturn();
-    assertThat(mvcResult.getResponse().getContentLength()).isZero();
+        getSecurities(depotId, null, null, transactionTypes).andExpect(status().isOk()).andReturn();
+    PaginatedTransactionReadDto responseBody =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), PaginatedTransactionReadDto.class);
+
+    assertThat(responseBody.getTotal()).isZero();
+    assertThat(responseBody.getLastPage()).isZero();
+    assertThat(responseBody.getItems()).isEmpty();
   }
 
   @Test
@@ -493,10 +518,10 @@ class GetTransactionsTest {
   }
 
   @Test
-  void getFirstDepot_minDateBeforeMaxDate_badRequest() throws Exception {
+  void getFirstDepot_startDateAfterEndDate_badRequest() throws Exception {
     long depotId = DepotIds.FIRST_DEPOT;
     MvcResult mvcResult = mockMvc.perform(
-            get(String.format(ENDPOINT, depotId)).queryParam("minDate", "2023-01-01").queryParam("maxDate", "2022-01-01"))
+            get(String.format(ENDPOINT, depotId)).queryParam("startDate", "2023-01-01").queryParam("endDate", "2022-01-01"))
         .andExpect(status().isBadRequest()).andReturn();
     assertThat(mvcResult.getResponse().getContentLength()).isZero();
   }
@@ -526,8 +551,8 @@ class GetTransactionsTest {
   }
 
   @Test
-  void depotDoesNotExist_noContent() throws Exception {
-    MvcResult mvcResult = getSecurities(999, null, null).andExpect(status().isNoContent()).andReturn();
+  void depotDoesNotExist_notFound() throws Exception {
+    MvcResult mvcResult = getSecurities(999, null, null).andExpect(status().isNotFound()).andReturn();
     assertThat(mvcResult.getResponse().getContentLength()).isZero();
   }
 

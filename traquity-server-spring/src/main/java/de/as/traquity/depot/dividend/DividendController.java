@@ -15,8 +15,8 @@ class DividendController implements DividendApiDelegate {
   private final DividendService dividendService;
 
   @Override
-  public ResponseEntity<DividendsDto> getDividends(List<Long> depots, Boolean includeSpecialDividends) {
-    DividendsDto dividends = dividendService.getDividends(Set.copyOf(depots),
+  public ResponseEntity<DividendsDto> getDividends(List<Long> depotIds, Boolean includeSpecialDividends) {
+    DividendsDto dividends = dividendService.getDividends(Set.copyOf(depotIds),
         includeSpecialDividends != null && includeSpecialDividends);
     return ResponseEntity.ok(dividends);
   }

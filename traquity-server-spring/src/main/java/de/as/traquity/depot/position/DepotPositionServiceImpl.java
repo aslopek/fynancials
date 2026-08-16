@@ -73,9 +73,9 @@ class DepotPositionServiceImpl implements DepotPositionService {
           existing.setBuyInAbsolute(existing.getBuyInAbsolute().add(position.getBuyInAbsolute(), mathContext));
           existing.setCurrentSizeAbsolute(existing.getCurrentSizeAbsolute().add(position.getCurrentSizeAbsolute(),
               mathContext));
-          existing.setAbsolutePerformance(existing.getCurrentSizeAbsolute().subtract(existing.getBuyInAbsolute(),
+          existing.setPerformanceAbsolute(existing.getCurrentSizeAbsolute().subtract(existing.getBuyInAbsolute(),
               mathContext));
-          existing.setRelativePerformance(existing.getAbsolutePerformance().divide(existing.getBuyInAbsolute(),
+          existing.setPerformanceRelative(existing.getPerformanceAbsolute().divide(existing.getBuyInAbsolute(),
               mathContext));
         } else {
           positionsById.put(position.getPositionId(), position);
@@ -262,32 +262,32 @@ class DepotPositionServiceImpl implements DepotPositionService {
       absoluteSize = buyIn;
     }
 
-    BigDecimal absolutePerformance = absoluteSize.subtract(buyIn, mathContext);
+    BigDecimal performanceAbsolute = absoluteSize.subtract(buyIn, mathContext);
     DepotPosition depotPosition = new DepotPosition();
     depotPosition.setSecurityIds(List.of(securityId));
     depotPosition.setCount(count);
     depotPosition.setBuyInAbsolute(buyIn);
     depotPosition.setCurrentSizeAbsolute(absoluteSize);
-    depotPosition.setAbsolutePerformance(absolutePerformance);
-    setRelativePerformance(depotPosition);
+    depotPosition.setPerformanceAbsolute(performanceAbsolute);
+    setPerformanceRelative(depotPosition);
     return depotPosition;
   }
 
-  private void setRelativePerformance(DepotPosition depotPosition) {
+  private void setPerformanceRelative(DepotPosition depotPosition) {
     BigDecimal buyIn = depotPosition.getBuyInAbsolute();
     BigDecimal absoluteSize = depotPosition.getCurrentSizeAbsolute();
-    BigDecimal relativePerformance = ZERO;
+    BigDecimal performanceRelative = ZERO;
     if (buyIn != null && ZERO.compareTo(buyIn) != 0) {
-      relativePerformance = absoluteSize.divide(buyIn, mathContext);
-      if (relativePerformance.compareTo(BigDecimal.ONE) >= 0) {
+      performanceRelative = absoluteSize.divide(buyIn, mathContext);
+      if (performanceRelative.compareTo(BigDecimal.ONE) >= 0) {
         // positive performance
-        relativePerformance = relativePerformance.subtract(BigDecimal.ONE, mathContext);
+        performanceRelative = performanceRelative.subtract(BigDecimal.ONE, mathContext);
       } else {
         // negative performance
-        relativePerformance = BigDecimal.ONE.subtract(relativePerformance, mathContext).negate();
+        performanceRelative = BigDecimal.ONE.subtract(performanceRelative, mathContext).negate();
       }
     }
-    depotPosition.setRelativePerformance(relativePerformance);
+    depotPosition.setPerformanceRelative(performanceRelative);
   }
 
   private void setDisplayNames(List<DepotPosition> depotPositions) {
@@ -361,8 +361,8 @@ class DepotPositionServiceImpl implements DepotPositionService {
     target.setBuyInRelative(add.apply(target.getBuyInRelative(), source.getBuyInRelative()));
     target.setCurrentSizeAbsolute(add.apply(target.getCurrentSizeAbsolute(), source.getCurrentSizeAbsolute()));
     target.setCurrentSizeRelative(add.apply(target.getCurrentSizeRelative(), source.getCurrentSizeRelative()));
-    target.setAbsolutePerformance(target.getCurrentSizeAbsolute().subtract(target.getBuyInAbsolute(), mathContext));
-    setRelativePerformance(target);
+    target.setPerformanceAbsolute(target.getCurrentSizeAbsolute().subtract(target.getBuyInAbsolute(), mathContext));
+    setPerformanceRelative(target);
   }
 
   private DepotComposition toDepotComposition(List<DepotPosition> positions) {
@@ -375,13 +375,13 @@ class DepotPositionServiceImpl implements DepotPositionService {
       depotComposition.setCurrentSizeAbsolute(depotComposition.getCurrentSizeAbsolute().add(depotPosition.getCurrentSizeAbsolute(),
           mathContext));
     }
-    depotComposition.setAbsolutePerformance(depotComposition.getCurrentSizeAbsolute().subtract(depotComposition.getBuyInAbsolute(),
+    depotComposition.setPerformanceAbsolute(depotComposition.getCurrentSizeAbsolute().subtract(depotComposition.getBuyInAbsolute(),
         mathContext));
     try {
-      depotComposition.setRelativePerformance(depotComposition.getAbsolutePerformance().divide(depotComposition.getBuyInAbsolute(),
+      depotComposition.setPerformanceRelative(depotComposition.getPerformanceAbsolute().divide(depotComposition.getBuyInAbsolute(),
           mathContext));
     } catch (ArithmeticException e) {
-      depotComposition.setRelativePerformance(null);
+      depotComposition.setPerformanceRelative(null);
     }
     depotComposition.setPositions(positions);
     return depotComposition;

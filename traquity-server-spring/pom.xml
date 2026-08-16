@@ -202,6 +202,27 @@
                 <artifactId>openapi-generator-maven-plugin</artifactId>
                 <version>7.24.0</version>
                 <executions>
+                    <!-- Generate source code for the Admin API -->
+                    <execution>
+                        <id>generate-admin-api</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>
+                                ${project.basedir}/../traquity-api/admin.yaml
+                            </inputSpec>
+                            <generatorName>spring</generatorName>
+                            <configurationFile>
+                                ${project.basedir}/api/openapi-config.json
+                            </configurationFile>
+                            <configOptions>
+                                <apiPackage>de.as.traquity.admin.api.controller</apiPackage>
+                                <modelPackage>de.as.traquity.admin.api.model</modelPackage>
+                            </configOptions>
+                        </configuration>
+                    </execution>
                     <!-- Generate source code for the Configuration API -->
                     <execution>
                         <id>generate-configuration-api</id>

@@ -1,5 +1,6 @@
 package de.as.traquity.depot.dividend;
 
+import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.context.jdbc.SqlMergeMode.MergeMode.MERGE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -30,7 +31,7 @@ import org.springframework.test.web.servlet.ResultActions;
 @IntegrationTest
 class DividendTest {
 
-  private static final String ENDPOINT = "/dividends";
+  private static final String ENDPOINT = "/depot-dividends";
   private static final Offset<Double> ACCURACY_ONE_THOUSANDTH = Offset.strictOffset(0.001);
   private static final Offset<Double> ACCURACY_ONE_HUNDREDTH = Offset.offset(0.01);
   private static final Offset<Double> PERCENTAGE_ACCURACY_ONE_THOUSANDTH = Offset.strictOffset(0.00001);
@@ -50,7 +51,7 @@ class DividendTest {
   @Test
   void getDividends_emptyDepots_badRequest() throws Exception {
     MvcResult mvcResult =
-        mockMvc.perform(get(String.format("%s?depots=", ENDPOINT))).andExpect(status().isBadRequest()).andReturn();
+        mockMvc.perform(get(String.format("%s?depotIds=", ENDPOINT))).andExpect(status().isBadRequest()).andReturn();
     assertThat(mvcResult.getResponse().getContentLength()).isZero();
   }
 
@@ -78,16 +79,16 @@ class DividendTest {
     DividendsDto dividends = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), DividendsDto.class);
     List<Integer> years = dividends.getByYear().stream().map(DividendsByYearDto::getYear).toList();
     assertThat(years).containsExactlyElementsOf(List.of(2020, 2021, 2022, 2023, 2024));
-    assertThat(dividends.getByYear().get(0).getSumGross()).isCloseTo(0.28, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(0).getSumNet()).isCloseTo(0.21, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(1).getSumGross()).isCloseTo(2.09, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(1).getSumNet()).isCloseTo(1.57, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(2).getSumGross()).isCloseTo(0.78, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(2).getSumNet()).isCloseTo(0.59, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(3).getSumGross()).isCloseTo(45.06, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(3).getSumNet()).isCloseTo(33.49, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(4).getSumGross()).isCloseTo(8.64, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(4).getSumNet()).isCloseTo(6.36, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(0).getSumGross().doubleValue()).isCloseTo(0.28, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(0).getSumNet().doubleValue()).isCloseTo(0.21, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(1).getSumGross().doubleValue()).isCloseTo(2.09, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(1).getSumNet().doubleValue()).isCloseTo(1.57, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(2).getSumGross().doubleValue()).isCloseTo(0.78, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(2).getSumNet().doubleValue()).isCloseTo(0.59, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(3).getSumGross().doubleValue()).isCloseTo(45.06, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(3).getSumNet().doubleValue()).isCloseTo(33.49, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(4).getSumGross().doubleValue()).isCloseTo(8.64, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(4).getSumNet().doubleValue()).isCloseTo(6.36, ACCURACY_ONE_THOUSANDTH);
 
     for (int year : years) {
       verifyPlausibility(dividends, year);
@@ -112,16 +113,16 @@ class DividendTest {
     DividendsDto dividends = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), DividendsDto.class);
     List<Integer> years = dividends.getByYear().stream().map(DividendsByYearDto::getYear).toList();
     assertThat(years).containsExactlyElementsOf(List.of(2020, 2021, 2022, 2023, 2024));
-    assertThat(dividends.getByYear().get(0).getSumGross()).isCloseTo(0.28, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(0).getSumNet()).isCloseTo(0.21, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(1).getSumGross()).isCloseTo(15.28, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(1).getSumNet()).isCloseTo(14.73, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(2).getSumGross()).isCloseTo(63.48, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(2).getSumNet()).isCloseTo(63.26, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(3).getSumGross()).isCloseTo(120.06, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(3).getSumNet()).isCloseTo(108.49, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(4).getSumGross()).isCloseTo(8.64, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(4).getSumNet()).isCloseTo(6.36, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(0).getSumGross().doubleValue()).isCloseTo(0.28, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(0).getSumNet().doubleValue()).isCloseTo(0.21, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(1).getSumGross().doubleValue()).isCloseTo(15.28, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(1).getSumNet().doubleValue()).isCloseTo(14.73, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(2).getSumGross().doubleValue()).isCloseTo(63.48, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(2).getSumNet().doubleValue()).isCloseTo(63.26, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(3).getSumGross().doubleValue()).isCloseTo(120.06, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(3).getSumNet().doubleValue()).isCloseTo(108.49, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(4).getSumGross().doubleValue()).isCloseTo(8.64, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(4).getSumNet().doubleValue()).isCloseTo(6.36, ACCURACY_ONE_THOUSANDTH);
 
     for (int year : years) {
       verifyPlausibility(dividends, year);
@@ -134,14 +135,14 @@ class DividendTest {
     DividendsDto dividends = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), DividendsDto.class);
     List<Integer> years = dividends.getByYear().stream().map(DividendsByYearDto::getYear).toList();
     assertThat(years).containsExactlyElementsOf(List.of(2020, 2021, 2022, 2023));
-    assertThat(dividends.getByYear().get(0).getSumGross()).isCloseTo(130.77, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(0).getSumNet()).isCloseTo(98.07, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(1).getSumGross()).isCloseTo(130.77, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(1).getSumNet()).isCloseTo(98.07, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(2).getSumGross()).isCloseTo(203.67, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(2).getSumNet()).isCloseTo(152.75, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(3).getSumGross()).isCloseTo(236.07, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(3).getSumNet()).isCloseTo(177.05, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(0).getSumGross().doubleValue()).isCloseTo(130.77, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(0).getSumNet().doubleValue()).isCloseTo(98.07, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(1).getSumGross().doubleValue()).isCloseTo(130.77, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(1).getSumNet().doubleValue()).isCloseTo(98.07, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(2).getSumGross().doubleValue()).isCloseTo(203.67, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(2).getSumNet().doubleValue()).isCloseTo(152.75, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(3).getSumGross().doubleValue()).isCloseTo(236.07, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(3).getSumNet().doubleValue()).isCloseTo(177.05, ACCURACY_ONE_THOUSANDTH);
 
     for (DividendsByYearDto byYear : dividends.getByYear()) {
       assertThat(byYear.getDividends()).hasSize(1);
@@ -169,17 +170,17 @@ class DividendTest {
     double expectedYieldOnCostNet = 0.0600;
 
     assertThat(dividendYield.getRegularDividendPaymentsPerYear()).isEqualTo(2);
-    assertThat(dividendYield.getEstimatedPaymentGross()).isCloseTo(2 * expectedEstimatedPaymentGross,
+    assertThat(dividendYield.getEstimatedPaymentGross().doubleValue()).isCloseTo(2 * expectedEstimatedPaymentGross,
         ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getEstimatedPaymentNet()).isCloseTo(2 * expectedEstimatedPaymentNet,
+    assertThat(dividendYield.getEstimatedPaymentNet().doubleValue()).isCloseTo(2 * expectedEstimatedPaymentNet,
         ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(2 * expectedCurrentYieldGross,
+    assertThat(dividendYield.getCurrentYieldGross().doubleValue()).isCloseTo(2 * expectedCurrentYieldGross,
         PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(2 * expectedCurrentYieldNet,
+    assertThat(dividendYield.getCurrentYieldNet().doubleValue()).isCloseTo(2 * expectedCurrentYieldNet,
         PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(2 * expectedYieldOnCostGross,
+    assertThat(dividendYield.getYieldOnCostGross().doubleValue()).isCloseTo(2 * expectedYieldOnCostGross,
         PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(2 * expectedYieldOnCostNet,
+    assertThat(dividendYield.getYieldOnCostNet().doubleValue()).isCloseTo(2 * expectedYieldOnCostNet,
         PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
   }
 
@@ -189,14 +190,14 @@ class DividendTest {
     DividendsDto dividends = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), DividendsDto.class);
     List<Integer> years = dividends.getByYear().stream().map(DividendsByYearDto::getYear).toList();
     assertThat(years).containsExactlyElementsOf(List.of(2020, 2021, 2022, 2023));
-    assertThat(dividends.getByYear().get(0).getSumGross()).isCloseTo(43.74, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(0).getSumNet()).isCloseTo(32.8, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(1).getSumGross()).isCloseTo(43.74, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(1).getSumNet()).isCloseTo(32.8, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(2).getSumGross()).isCloseTo(68.04, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(2).getSumNet()).isCloseTo(51.03, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(3).getSumGross()).isCloseTo(78.84, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(3).getSumNet()).isCloseTo(59.13, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(0).getSumGross().doubleValue()).isCloseTo(43.74, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(0).getSumNet().doubleValue()).isCloseTo(32.8, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(1).getSumGross().doubleValue()).isCloseTo(43.74, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(1).getSumNet().doubleValue()).isCloseTo(32.8, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(2).getSumGross().doubleValue()).isCloseTo(68.04, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(2).getSumNet().doubleValue()).isCloseTo(51.03, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(3).getSumGross().doubleValue()).isCloseTo(78.84, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(3).getSumNet().doubleValue()).isCloseTo(59.13, ACCURACY_ONE_THOUSANDTH);
 
     for (DividendsByYearDto byYear : dividends.getByYear()) {
       assertThat(byYear.getDividends()).hasSize(1);
@@ -227,17 +228,17 @@ class DividendTest {
     double expectedYieldOnCostNet = 0.0664;
 
     assertThat(dividendYield.getRegularDividendPaymentsPerYear()).isEqualTo(2);
-    assertThat(dividendYield.getEstimatedPaymentGross()).isCloseTo(2 * expectedEstimatedPaymentGross,
+    assertThat(dividendYield.getEstimatedPaymentGross().doubleValue()).isCloseTo(2 * expectedEstimatedPaymentGross,
         ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getEstimatedPaymentNet()).isCloseTo(2 * expectedEstimatedPaymentNet,
+    assertThat(dividendYield.getEstimatedPaymentNet().doubleValue()).isCloseTo(2 * expectedEstimatedPaymentNet,
         ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(2 * expectedCurrentYieldGross,
+    assertThat(dividendYield.getCurrentYieldGross().doubleValue()).isCloseTo(2 * expectedCurrentYieldGross,
         PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(2 * expectedCurrentYieldNet,
+    assertThat(dividendYield.getCurrentYieldNet().doubleValue()).isCloseTo(2 * expectedCurrentYieldNet,
         PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(2 * expectedYieldOnCostGross,
+    assertThat(dividendYield.getYieldOnCostGross().doubleValue()).isCloseTo(2 * expectedYieldOnCostGross,
         PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(2 * expectedYieldOnCostNet,
+    assertThat(dividendYield.getYieldOnCostNet().doubleValue()).isCloseTo(2 * expectedYieldOnCostNet,
         PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
   }
 
@@ -247,14 +248,14 @@ class DividendTest {
     DividendsDto dividends = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), DividendsDto.class);
     List<Integer> years = dividends.getByYear().stream().map(DividendsByYearDto::getYear).toList();
     assertThat(years).containsExactlyElementsOf(List.of(2020, 2021, 2022, 2023));
-    assertThat(dividends.getByYear().get(0).getSumGross()).isCloseTo(174.51, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(0).getSumNet()).isCloseTo(130.87, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(1).getSumGross()).isCloseTo(174.51, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(1).getSumNet()).isCloseTo(130.87, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(2).getSumGross()).isCloseTo(271.71, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(2).getSumNet()).isCloseTo(203.78, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(3).getSumGross()).isCloseTo(314.91, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(3).getSumNet()).isCloseTo(236.18, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(0).getSumGross().doubleValue()).isCloseTo(174.51, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(0).getSumNet().doubleValue()).isCloseTo(130.87, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(1).getSumGross().doubleValue()).isCloseTo(174.51, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(1).getSumNet().doubleValue()).isCloseTo(130.87, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(2).getSumGross().doubleValue()).isCloseTo(271.71, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(2).getSumNet().doubleValue()).isCloseTo(203.78, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(3).getSumGross().doubleValue()).isCloseTo(314.91, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(3).getSumNet().doubleValue()).isCloseTo(236.18, ACCURACY_ONE_THOUSANDTH);
 
     for (DividendsByYearDto byYear : dividends.getByYear()) {
       assertThat(byYear.getDividends()).hasSize(1);
@@ -282,17 +283,17 @@ class DividendTest {
     double expectedYieldOnCostNet = 0.0615;
 
     assertThat(dividendYield.getRegularDividendPaymentsPerYear()).isEqualTo(2);
-    assertThat(dividendYield.getEstimatedPaymentGross()).isCloseTo(2 * expectedEstimatedPaymentGross,
+    assertThat(dividendYield.getEstimatedPaymentGross().doubleValue()).isCloseTo(2 * expectedEstimatedPaymentGross,
         ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getEstimatedPaymentNet()).isCloseTo(2 * expectedEstimatedPaymentNet,
+    assertThat(dividendYield.getEstimatedPaymentNet().doubleValue()).isCloseTo(2 * expectedEstimatedPaymentNet,
         ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(2 * expectedCurrentYieldGross,
+    assertThat(dividendYield.getCurrentYieldGross().doubleValue()).isCloseTo(2 * expectedCurrentYieldGross,
         PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(2 * expectedCurrentYieldNet,
+    assertThat(dividendYield.getCurrentYieldNet().doubleValue()).isCloseTo(2 * expectedCurrentYieldNet,
         PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(2 * expectedYieldOnCostGross,
+    assertThat(dividendYield.getYieldOnCostGross().doubleValue()).isCloseTo(2 * expectedYieldOnCostGross,
         PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(2 * expectedYieldOnCostNet,
+    assertThat(dividendYield.getYieldOnCostNet().doubleValue()).isCloseTo(2 * expectedYieldOnCostNet,
         PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
   }
 
@@ -334,23 +335,23 @@ class DividendTest {
     List<DividendsByYearDto> byYear = responseBody.getByYear();
     assertThat(byYear).hasSize(1); // only 2024
     assertThat(byYear.get(0).getYear()).isEqualTo(2024);
-    assertThat(byYear.get(0).getSumGross()).isEqualTo(0.8);
-    assertThat(byYear.get(0).getSumNet()).isEqualTo(0.68);
+    assertThat(byYear.get(0).getSumGross()).isEqualByComparingTo(BigDecimal.valueOf(0.8));
+    assertThat(byYear.get(0).getSumNet()).isEqualByComparingTo(BigDecimal.valueOf(0.68));
     verifyDividends.accept(byYear.get(0).getDividends());
 
     List<DividendsByQuarterDto> byQuarter = responseBody.getByQuarter();
     assertThat(byQuarter).hasSize(4); // all four quarters of 2024
     assertThat(byQuarter.get(1).getQuarter()).isEqualTo(2);
-    assertThat(byQuarter.get(1).getSumGross()).isEqualTo(0.8);
-    assertThat(byQuarter.get(1).getSumNet()).isEqualTo(0.68);
+    assertThat(byQuarter.get(1).getSumGross()).isEqualByComparingTo(BigDecimal.valueOf(0.8));
+    assertThat(byQuarter.get(1).getSumNet()).isEqualByComparingTo(BigDecimal.valueOf(0.68));
     assertThat(byQuarter.get(1).getDividends()).hasSize(2);
     verifyDividends.accept(byQuarter.get(1).getDividends());
 
     List<DividendsByMonthDto> byMonth = responseBody.getByMonth();
     assertThat(byMonth).hasSize(12); // all twelve months of 2024
     assertThat(byMonth.get(5).getMonth()).isEqualTo(6);
-    assertThat(byMonth.get(5).getSumGross()).isEqualTo(0.8);
-    assertThat(byMonth.get(5).getSumNet()).isEqualTo(0.68);
+    assertThat(byMonth.get(5).getSumGross()).isEqualByComparingTo(BigDecimal.valueOf(0.8));
+    assertThat(byMonth.get(5).getSumNet()).isEqualByComparingTo(BigDecimal.valueOf(0.68));
     assertThat(byMonth.get(5).getDividends()).hasSize(2);
     verifyDividends.accept(byMonth.get(5).getDividends());
   }
@@ -359,14 +360,14 @@ class DividendTest {
     DividendsDto dividends = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), DividendsDto.class);
     List<Integer> years = dividends.getByYear().stream().map(DividendsByYearDto::getYear).toList();
     assertThat(years).containsExactlyElementsOf(List.of(2020, 2021, 2022, 2023));
-    assertThat(dividends.getByYear().get(0).getSumGross()).isCloseTo(0.28, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(0).getSumNet()).isCloseTo(0.21, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(1).getSumGross()).isCloseTo(2.09, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(1).getSumNet()).isCloseTo(1.57, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(2).getSumGross()).isCloseTo(0.78, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(2).getSumNet()).isCloseTo(0.59, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(3).getSumGross()).isCloseTo(23.38, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(3).getSumNet()).isCloseTo(17.53, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(0).getSumGross().doubleValue()).isCloseTo(0.28, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(0).getSumNet().doubleValue()).isCloseTo(0.21, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(1).getSumGross().doubleValue()).isCloseTo(2.09, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(1).getSumNet().doubleValue()).isCloseTo(1.57, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(2).getSumGross().doubleValue()).isCloseTo(0.78, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(2).getSumNet().doubleValue()).isCloseTo(0.59, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(3).getSumGross().doubleValue()).isCloseTo(23.38, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(3).getSumNet().doubleValue()).isCloseTo(17.53, ACCURACY_ONE_THOUSANDTH);
 
     for (int year : years) {
       verifyPlausibility(dividends, year);
@@ -379,27 +380,27 @@ class DividendTest {
     assertThat(dividendYield.getSecurityGroupId()).isNull();
     assertThat(dividendYield.getDisplayName()).isEqualTo("Nvidia");
     assertThat(dividendYield.getRegularDividendPaymentsPerYear()).isEqualTo(4);
-    assertThat(dividendYield.getEstimatedPaymentGross()).isCloseTo(3.12, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividendYield.getEstimatedPaymentNet()).isCloseTo(2.36, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(0.0009, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(0.0007, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getEstimatedPaymentGross().doubleValue()).isCloseTo(3.12, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividendYield.getEstimatedPaymentNet().doubleValue()).isCloseTo(2.36, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividendYield.getCurrentYieldGross().doubleValue()).isCloseTo(0.0009, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getCurrentYieldNet().doubleValue()).isCloseTo(0.0007, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
     // yield on cost are similar, because no historical prices exist for NVDA
-    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(0.0009, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(0.0007, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostGross().doubleValue()).isCloseTo(0.0009, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostNet().doubleValue()).isCloseTo(0.0007, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
   }
 
   private void getDividendsForDepot1And2_noSpecialDividend(MvcResult mvcResult) throws Exception {
     DividendsDto dividends = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), DividendsDto.class);
     List<Integer> years = dividends.getByYear().stream().map(DividendsByYearDto::getYear).toList();
     assertThat(years).containsExactlyElementsOf(List.of(2020, 2021, 2022, 2023));
-    assertThat(dividends.getByYear().get(0).getSumGross()).isCloseTo(0.28, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(0).getSumNet()).isCloseTo(0.21, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(1).getSumGross()).isCloseTo(15.28, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(1).getSumNet()).isCloseTo(14.73, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(2).getSumGross()).isCloseTo(63.48, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(2).getSumNet()).isCloseTo(63.26, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(3).getSumGross()).isCloseTo(98.38, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividends.getByYear().get(3).getSumNet()).isCloseTo(92.53, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(0).getSumGross().doubleValue()).isCloseTo(0.28, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(0).getSumNet().doubleValue()).isCloseTo(0.21, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(1).getSumGross().doubleValue()).isCloseTo(15.28, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(1).getSumNet().doubleValue()).isCloseTo(14.73, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(2).getSumGross().doubleValue()).isCloseTo(63.48, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(2).getSumNet().doubleValue()).isCloseTo(63.26, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(3).getSumGross().doubleValue()).isCloseTo(98.38, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividends.getByYear().get(3).getSumNet().doubleValue()).isCloseTo(92.53, ACCURACY_ONE_THOUSANDTH);
 
     for (int year : years) {
       verifyPlausibility(dividends, year);
@@ -412,33 +413,33 @@ class DividendTest {
     assertThat(dividendYield.getSecurityGroupId()).isNull();
     assertThat(dividendYield.getDisplayName()).isEqualTo("Hensoldt");
     assertThat(dividendYield.getRegularDividendPaymentsPerYear()).isEqualTo(1);
-    assertThat(dividendYield.getEstimatedPaymentGross()).isCloseTo(75, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividendYield.getEstimatedPaymentNet()).isCloseTo(75, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(0.0237, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(0.0237, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getEstimatedPaymentGross().doubleValue()).isCloseTo(75, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividendYield.getEstimatedPaymentNet().doubleValue()).isCloseTo(75, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividendYield.getCurrentYieldGross().doubleValue()).isCloseTo(0.0237, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getCurrentYieldNet().doubleValue()).isCloseTo(0.0237, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
     // yield on cost are similar, because no historical prices exist for HAG
-    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(0.0237, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(0.0237, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostGross().doubleValue()).isCloseTo(0.0237, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostNet().doubleValue()).isCloseTo(0.0237, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
 
     dividendYield = dividendYields.get(1);
     assertThat(dividendYield.getSecurityIds()).isEqualTo(List.of(SecurityIds.NVDA));
     assertThat(dividendYield.getSecurityGroupId()).isNull();
     assertThat(dividendYield.getDisplayName()).isEqualTo("Nvidia");
     assertThat(dividendYield.getRegularDividendPaymentsPerYear()).isEqualTo(4);
-    assertThat(dividendYield.getEstimatedPaymentGross()).isCloseTo(3.92, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividendYield.getEstimatedPaymentNet()).isCloseTo(3.04, ACCURACY_ONE_THOUSANDTH);
-    assertThat(dividendYield.getCurrentYieldGross()).isCloseTo(0.0009, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getCurrentYieldNet()).isCloseTo(0.0007, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getEstimatedPaymentGross().doubleValue()).isCloseTo(3.92, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividendYield.getEstimatedPaymentNet().doubleValue()).isCloseTo(3.04, ACCURACY_ONE_THOUSANDTH);
+    assertThat(dividendYield.getCurrentYieldGross().doubleValue()).isCloseTo(0.0009, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getCurrentYieldNet().doubleValue()).isCloseTo(0.0007, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
     // yield on cost are similar, because no historical prices exist for NVDA
-    assertThat(dividendYield.getYieldOnCostGross()).isCloseTo(0.0009, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
-    assertThat(dividendYield.getYieldOnCostNet()).isCloseTo(0.0007, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostGross().doubleValue()).isCloseTo(0.0009, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
+    assertThat(dividendYield.getYieldOnCostNet().doubleValue()).isCloseTo(0.0007, PERCENTAGE_ACCURACY_ONE_HUNDREDTH);
   }
 
 
   private void verifyPlausibility(DividendsDto dividends, int year) {
     DividendsByYearDto byYear = dividends.getByYear().stream().filter(e -> e.getYear() == year).toList().get(0);
     assertThat(byYear.getSumGross()).isGreaterThanOrEqualTo(byYear.getSumNet());
-    verifyDividends(byYear.getDividends(), byYear.getSumGross(), byYear.getSumNet());
+    verifyDividends(byYear.getDividends(), byYear.getSumGross().doubleValue(), byYear.getSumNet().doubleValue());
 
     List<DividendsByQuarterDto> quarters = dividends.getByQuarter().stream().filter(e -> e.getYear() == year).toList();
     List<DividendsByMonthDto> months = dividends.getByMonth().stream().filter(e -> e.getYear() == year).toList();
@@ -454,24 +455,24 @@ class DividendTest {
     for (int i = 0; i < 4; i++) {
       quarter = quarters.get(i);
       assertThat(quarter.getQuarter()).isEqualTo(i + 1);
-      verifyDividends(quarter.getDividends(), quarter.getSumGross(), quarter.getSumNet());
-      allQuartersGrossSum += quarter.getSumGross();
-      allQuartersNetSum += quarter.getSumNet();
+      verifyDividends(quarter.getDividends(), quarter.getSumGross().doubleValue(), quarter.getSumNet().doubleValue());
+      allQuartersGrossSum += quarter.getSumGross().doubleValue();
+      allQuartersNetSum += quarter.getSumNet().doubleValue();
 
       for (int k = 3 * i; k < (3 * i) + 3; k++) {
         month = months.get(k);
         assertThat(month.getMonth()).isEqualTo(k + 1);
-        verifyDividends(month.getDividends(), month.getSumGross(), month.getSumNet());
-        monthsGrossSum += month.getSumGross();
-        monthsNetsSum += month.getSumNet();
+        verifyDividends(month.getDividends(), month.getSumGross().doubleValue(), month.getSumNet().doubleValue());
+        monthsGrossSum += month.getSumGross().doubleValue();
+        monthsNetsSum += month.getSumNet().doubleValue();
       }
-      assertThat(monthsGrossSum).isCloseTo(quarter.getSumGross(), ACCURACY_ONE_THOUSANDTH);
-      assertThat(monthsNetsSum).isCloseTo(quarter.getSumNet(), ACCURACY_ONE_THOUSANDTH);
+      assertThat(monthsGrossSum).isCloseTo(quarter.getSumGross().doubleValue(), ACCURACY_ONE_THOUSANDTH);
+      assertThat(monthsNetsSum).isCloseTo(quarter.getSumNet().doubleValue(), ACCURACY_ONE_THOUSANDTH);
       monthsGrossSum = 0;
       monthsNetsSum = 0;
     }
-    assertThat(allQuartersGrossSum).isCloseTo(byYear.getSumGross(), ACCURACY_ONE_THOUSANDTH);
-    assertThat(allQuartersNetSum).isCloseTo(byYear.getSumNet(), ACCURACY_ONE_THOUSANDTH);
+    assertThat(allQuartersGrossSum).isCloseTo(byYear.getSumGross().doubleValue(), ACCURACY_ONE_THOUSANDTH);
+    assertThat(allQuartersNetSum).isCloseTo(byYear.getSumNet().doubleValue(), ACCURACY_ONE_THOUSANDTH);
   }
 
   private void verifyDividends(List<DividendDto> dividends, double expectedSumGross, double expectedSumNet) {
@@ -482,10 +483,10 @@ class DividendTest {
     double sumNetPercentage = 0;
     for (DividendDto dividend : dividends) {
       securityIds.addAll(dividend.getSecurityIds());
-      sumGross += dividend.getAbsoluteValueGross();
-      sumNet += dividend.getAbsoluteValueNet();
-      sumGrossPercentage += dividend.getRelativeValueGross();
-      sumNetPercentage += dividend.getRelativeValueNet();
+      sumGross += dividend.getAbsoluteValueGross().doubleValue();
+      sumNet += dividend.getAbsoluteValueNet().doubleValue();
+      sumGrossPercentage += dividend.getRelativeValueGross().doubleValue();
+      sumNetPercentage += dividend.getRelativeValueNet().doubleValue();
     }
     assertThat(securityIds).hasSameSizeAs(dividends);
     assertThat(sumGross).isCloseTo(expectedSumGross, ACCURACY_ONE_THOUSANDTH);
@@ -497,7 +498,7 @@ class DividendTest {
   }
 
   private ResultActions getDividends(String depotIds, Boolean includeSpecialDividends) throws Exception {
-    String url = String.format("%s?depots=%s", ENDPOINT, depotIds);
+    String url = String.format("%s?depotIds=%s", ENDPOINT, depotIds);
     if (includeSpecialDividends != null) {
       url = String.format("%s&includeSpecialDividends=%b", url, includeSpecialDividends);
     }

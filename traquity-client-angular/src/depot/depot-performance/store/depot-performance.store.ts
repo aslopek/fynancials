@@ -5,7 +5,7 @@ import {AppState} from "../../../store/app.state";
 import {computed, inject, Signal} from "@angular/core";
 import {DataRange} from "../../../common";
 import {setDataRange} from "./methods/set-data-range";
-import {extendedInternalRateOfReturns} from "./computed/extended-internal-rate-of-returns";
+import {extendedInternalRateOfReturn} from "./computed/extended-internal-rate-of-return";
 import {depotValues, DepotValuesResult} from "./computed/depot-values";
 import {RebasedDepotValue} from "./computed/rebased-depot-value.type";
 import {DepotPerformanceKpis, depotPerformanceKpis} from "./computed/depot-performance-kpis";
@@ -25,7 +25,7 @@ export type DepotPerformanceComputed = {
   benchmarkResult: Signal<BenchmarkResult | [BenchmarkResult, BenchmarkResult] | null>
   dataRanges: Signal<DataRanges>
   depotValues: Signal<RebasedDepotValue[]>
-  extendedInternalRateOfReturns: Signal<number>
+  extendedInternalRateOfReturn: Signal<number>
   filteredDepotValues: Signal<boolean>
   groupedTransactions: Signal<TransactionGroup[]>
   kpis: Signal<DepotPerformanceKpis>
@@ -67,7 +67,7 @@ export const DepotPerformanceStore = signalStore(
       benchmarkResult: benchmarkResult(signalStore, depotValuesSignal),
       dataRanges: dataRanges(globalStore, depotValuesSignal),
       depotValues: depotValuesSignal,
-      extendedInternalRateOfReturns: extendedInternalRateOfReturns(globalStore),
+      extendedInternalRateOfReturn: extendedInternalRateOfReturn(globalStore),
       filteredDepotValues: isRebasedSignal,
       groupedTransactions: groupedTransaction(signalStore),
       kpis: depotPerformanceKpis(signalStore, depotValuesSignal, isRebasedSignal)

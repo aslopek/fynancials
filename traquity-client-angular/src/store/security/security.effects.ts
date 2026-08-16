@@ -8,7 +8,7 @@ import {updateSecurity, UpdateSecurityEffectArgs} from './effects/update-securit
 import {loadSecurity} from './effects/load-security.effect';
 import {AppState} from '../app.state';
 import {updateSecurityLogo} from './effects/update-security-logo.effect';
-import {HistoricalSecurityPriceApi, HistoricalSecurityPriceDataSourceApi} from '../../gen/api/historical-security-price';
+import {HistoricalSecurityPriceConfigApi, HistoricalSecurityPriceDataSourceApi} from '../../gen/api/historical-security-price';
 import {loadHistoricalSecurityPriceConfig} from './effects/load-historical-security-price-config.effect';
 import {updateHistoricalSecurityPriceConfigEffect} from './effects/update-historical-security-price-config.effect';
 import {DividendAnnouncementConfigApi} from "../../gen/api/notification/dividend-announcement";
@@ -33,7 +33,7 @@ export class SecurityEffects {
   private readonly actions$: Actions = inject(Actions);
   private readonly securityApi: SecurityApi = inject(SecurityApi);
   private readonly securityLogoApi: SecurityLogoApi = inject(SecurityLogoApi);
-  private readonly historicalSecurityPriceApi: HistoricalSecurityPriceApi = inject(HistoricalSecurityPriceApi);
+  private readonly historicalSecurityPriceConfigApi: HistoricalSecurityPriceConfigApi = inject(HistoricalSecurityPriceConfigApi);
   private readonly historicalSecurityPriceDataSourceApi: HistoricalSecurityPriceDataSourceApi = inject(HistoricalSecurityPriceDataSourceApi);
   private readonly dividendAnnouncementConfigApi: DividendAnnouncementConfigApi = inject(DividendAnnouncementConfigApi);
 
@@ -66,12 +66,12 @@ export class SecurityEffects {
 
   readonly loadHistoricalSecurityPriceConfig = createEffect(() => loadHistoricalSecurityPriceConfig(this.actions$, {
     store: this.store,
-    historicalSecurityPriceApi: this.historicalSecurityPriceApi
+    historicalSecurityPriceConfigApi: this.historicalSecurityPriceConfigApi
   }));
 
   readonly updateHistoricalSecurityPriceConfig = createEffect(() => updateHistoricalSecurityPriceConfigEffect(this.actions$, {
     store: this.store,
-    historicalSecurityPriceApi: this.historicalSecurityPriceApi
+    historicalSecurityPriceConfigApi: this.historicalSecurityPriceConfigApi
   }));
 
   readonly loadHistoricalSecurityPriceDataSources = createEffect(() => loadHistoricalSecurityPriceDataSources({

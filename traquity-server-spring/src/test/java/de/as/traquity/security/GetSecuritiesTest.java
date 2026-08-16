@@ -1,5 +1,12 @@
 package de.as.traquity.security;
 
+import java.math.BigDecimal;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.context.jdbc.SqlMergeMode.MergeMode.MERGE;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.as.traquity.security.api.model.PaginatedSecurityReadDto;
@@ -20,21 +27,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlMergeMode;
-import static org.springframework.test.context.jdbc.SqlMergeMode.MergeMode.MERGE;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @IntegrationTest
 class GetSecuritiesTest {
@@ -65,8 +67,16 @@ class GetSecuritiesTest {
       "DELETE FROM HISTORICAL_SECURITY_PRICE_CONFIG"})
   void getSecurities_emptyDatabase() throws Exception {
     securityRepository.deleteAll();
-    MvcResult result = getSecurities(null, null).andExpect(status().isNoContent()).andReturn();
-    assertThat(result.getResponse().getContentLength()).isZero();
+    MvcResult result = getSecurities(null, null).andExpect(status().isOk()).andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+        });
+
+    assertThat(responseBody.getTotal()).isZero();
+    assertThat(responseBody.getCurrentPage()).isZero();
+    assertThat(responseBody.getLastPage()).isZero();
+    assertThat(responseBody.getPageSize()).isEqualTo(10);
+    assertThat(responseBody.getItems()).isEmpty();
   }
 
   @Test
@@ -163,9 +173,9 @@ class GetSecuritiesTest {
     assertThat(security.getName()).isEqualTo("Amazon");
 
     PriceMetaInfoDto priceMetaInfo = security.getPriceMetaInfo();
-    assertThat(priceMetaInfo.getHighTrailingTwelveMonths()).isEqualTo(140.94);
-    assertThat(priceMetaInfo.getLowTrailingTwelveMonths()).isEqualTo(133.32);
-    assertThat(priceMetaInfo.getLatestPrice()).isEqualTo(138.58);
+    assertThat(priceMetaInfo.getHighTrailingTwelveMonths()).isEqualByComparingTo(BigDecimal.valueOf(140.94));
+    assertThat(priceMetaInfo.getLowTrailingTwelveMonths()).isEqualByComparingTo(BigDecimal.valueOf(133.32));
+    assertThat(priceMetaInfo.getLatestPrice()).isEqualByComparingTo(BigDecimal.valueOf(138.58));
     assertThat(priceMetaInfo.getCurrency()).isEqualTo("EUR");
     assertThat(priceMetaInfo.getLatestPriceDate()).isEqualTo(LocalDate.of(2023, Month.DECEMBER, 29));
 
@@ -174,9 +184,9 @@ class GetSecuritiesTest {
     assertThat(security.getName()).isEqualTo("Pinterest");
 
     priceMetaInfo = security.getPriceMetaInfo();
-    assertThat(priceMetaInfo.getHighTrailingTwelveMonths()).isEqualTo(38.04);
-    assertThat(priceMetaInfo.getLowTrailingTwelveMonths()).isEqualTo(33.52);
-    assertThat(priceMetaInfo.getLatestPrice()).isEqualTo(37.04);
+    assertThat(priceMetaInfo.getHighTrailingTwelveMonths()).isEqualByComparingTo(BigDecimal.valueOf(38.04));
+    assertThat(priceMetaInfo.getLowTrailingTwelveMonths()).isEqualByComparingTo(BigDecimal.valueOf(33.52));
+    assertThat(priceMetaInfo.getLatestPrice()).isEqualByComparingTo(BigDecimal.valueOf(37.04));
     assertThat(priceMetaInfo.getCurrency()).isEqualTo("USD");
     assertThat(priceMetaInfo.getLatestPriceDate()).isEqualTo(LocalDate.of(2023, Month.DECEMBER, 29));
   }
@@ -206,8 +216,16 @@ class GetSecuritiesTest {
 
   @Test
   void getSecurities_pageWithoutContent() throws Exception {
-    MvcResult result = getSecurities(100, null).andExpect(status().isNoContent()).andReturn();
-    assertThat(result.getResponse().getContentLength()).isZero();
+    MvcResult result = getSecurities(100, null).andExpect(status().isOk()).andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+        });
+
+    assertThat(responseBody.getTotal()).isEqualTo(TOTAL_NUMBER_OF_SECURITIES);
+    assertThat(responseBody.getCurrentPage()).isEqualTo(100);
+    assertThat(responseBody.getLastPage()).isEqualTo(4);
+    assertThat(responseBody.getPageSize()).isEqualTo(10);
+    assertThat(responseBody.getItems()).isEmpty();
   }
 
   @Test
@@ -379,8 +397,14 @@ class GetSecuritiesTest {
   @Test
   void search_noResult() throws Exception {
     MvcResult mvcResult =
-        getSecurities(null, null, "thisYieldsNoResults", null, null).andExpect(status().isNoContent()).andReturn();
-    assertThat(mvcResult.getResponse().getContentLength()).isZero();
+        getSecurities(null, null, "thisYieldsNoResults", null, null).andExpect(status().isOk()).andReturn();
+    PaginatedSecurityReadDto responseBody =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), new TypeReference<>() {
+        });
+
+    assertThat(responseBody.getTotal()).isZero();
+    assertThat(responseBody.getLastPage()).isZero();
+    assertThat(responseBody.getItems()).isEmpty();
   }
 
   private ResultActions getSecurities(Integer page, Integer pageSize) throws Exception {

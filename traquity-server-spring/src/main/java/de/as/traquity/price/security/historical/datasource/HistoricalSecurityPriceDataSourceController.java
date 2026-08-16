@@ -14,7 +14,7 @@ import org.springframework.stereotype.Controller;
 @RequiredArgsConstructor
 class HistoricalSecurityPriceDataSourceController implements HistoricalSecurityPriceDataSourceApiDelegate {
 
-  private static final String URI_PATTERN = "/historicalprices/data-sources/%d";
+  private static final String URI_PATTERN = "/historical-prices/data-sources/%d";
 
   private final HistoricalSecurityPriceDataSourceService service;
   private final HistoricalSecurityPriceDataSourceMapper mapper;

@@ -3,9 +3,9 @@ package de.as.traquity.depot.transaction;
 import de.as.traquity.common.error.BadRequestException;
 import de.as.traquity.common.error.ConflictException;
 import de.as.traquity.common.error.InternalServerErrorException;
-import de.as.traquity.common.error.NoContentException;
 import de.as.traquity.common.error.NotFoundException;
 import de.as.traquity.common.pagination.PageContainer;
+import de.as.traquity.depot.DepotService;
 import de.as.traquity.depot.transaction.api.model.TransactionTypeDto;
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -30,10 +30,17 @@ class TransactionServiceImpl implements TransactionService {
 
   private final TransactionMapper transactionMapper;
   private final TransactionRepository transactionRepository;
+  private final DepotService depotService;
   private final MathContext mathContext;
 
   @Override
-  public Transaction createTransaction(Long depotId, Transaction transaction) throws BadRequestException {
+  public Transaction createTransaction(Long depotId, Transaction transaction)
+      throws BadRequestException, NotFoundException {
+    // the foreign key violation would surface as a 400 and could not be told apart from an unknown securityId
+    if (!depotService.depotExists(depotId)) {
+      throw new NotFoundException();
+    }
+
     TransactionEntity entity = transactionMapper.toEntity(transaction);
     entity.setDepotId(depotId);
     entity = persist(entity);
@@ -73,23 +80,24 @@ class TransactionServiceImpl implements TransactionService {
 
   @Override
   public PageContainer<Transaction> getTransactions(TransactionPageRequest request)
-      throws BadRequestException, NoContentException {
+      throws BadRequestException, NotFoundException {
     if (request == null) {
       throw new BadRequestException();
     }
     request.validate();
+    Set<Long> depotIds = request.getDepotIds();
+    if (depotIds != null && depotIds.stream().anyMatch(depotId -> !depotService.depotExists(depotId))) {
+      throw new NotFoundException();
+    }
     PageRequest pageRequest = PageRequest.of(request.getPage(), request.getPageSize());
     Specification<TransactionEntity> specification = new TransactionSpecification(request);
     Page<TransactionEntity> transactions = transactionRepository.findAll(specification, pageRequest);
 
-    if (transactions.isEmpty()) {
-      throw new NoContentException();
-    }
-
     PageContainer<Transaction> result = new PageContainer<>();
     result.setTotal(transactions.getTotalElements());
     result.setCurrentPage(request.getPage());
-    result.setLastPage(transactions.getTotalPages() - 1);
+    // an empty result has no pages at all, so the last page stays 0 rather than underflowing to -1
+    result.setLastPage(Math.max(0, transactions.getTotalPages() - 1));
     result.setPageSize(request.getPageSize());
     result.setItems(transactions.stream().map(transactionMapper::fromEntity).toList());
     return result;

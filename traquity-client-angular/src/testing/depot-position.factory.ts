@@ -9,8 +9,8 @@ export function depotPositionFactory(overrides?: Partial<DepotPosition>): DepotP
     buyInRelative: 10,
     currentSizeAbsolute: 1200,
     currentSizeRelative: 12,
-    absolutePerformance: 200,
-    relativePerformance: 20,
+    performanceAbsolute: 200,
+    performanceRelative: 20,
     ...overrides
   };
 }

@@ -5,6 +5,7 @@ import static de.as.traquity.depot.transaction.api.model.TransactionTypeDto.DIVI
 import static de.as.traquity.depot.transaction.api.model.TransactionTypeDto.SELL;
 import static de.as.traquity.depot.transaction.api.model.TransactionTypeDto.TAX;
 import static integration.Accuracy.ACCURACY_ONE_THOUSANDTH;
+import static integration.Arithmetic.MATH_CONTEXT;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.time.Month.APRIL;
@@ -19,8 +20,6 @@ import static org.mockito.Mockito.when;
 import de.as.traquity.depot.transaction.Transaction;
 import de.as.traquity.depot.transaction.api.model.TransactionTypeDto;
 import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -33,15 +32,12 @@ import org.junit.jupiter.api.Test;
 
 class LotTest {
 
-  private MathContext mathContext;
   private Clock clock;
   private Transaction transaction;
   private List<Lot> lots;
 
   @BeforeEach
   void beforeEach() {
-    mathContext = new MathContext(34, RoundingMode.HALF_UP);
-
     clock = mock(Clock.class);
     when(clock.instant()).thenReturn(Instant.parse("2024-01-01T16:37:08Z"));
     when(clock.getZone()).thenReturn(ZoneId.of("Europe/Berlin"));
@@ -103,8 +99,8 @@ class LotTest {
     assertThat(lot.getFee()).isZero();
     assertThat(lot.getTax()).isZero();
     assertThat(lot.getCurrentSizeAbsolute()).isZero();
-    assertThat(lot.getAbsolutePerformance()).isZero();
-    assertThat(lot.getRelativePerformance()).isZero();
+    assertThat(lot.getPerformanceAbsolute()).isZero();
+    assertThat(lot.getPerformanceRelative()).isZero();
     assertThat(lot.getCagr()).isZero();
   }
 
@@ -124,8 +120,8 @@ class LotTest {
     assertThat(lot.getFee()).isEqualTo(transaction.getFee());
     assertThat(lot.getTax()).isEqualTo(transaction.getTax());
     assertThat(lot.getCurrentSizeAbsolute()).isZero();
-    assertThat(lot.getAbsolutePerformance()).isZero();
-    assertThat(lot.getRelativePerformance()).isZero();
+    assertThat(lot.getPerformanceAbsolute()).isZero();
+    assertThat(lot.getPerformanceRelative()).isZero();
   }
 
   @Test
@@ -151,8 +147,8 @@ class LotTest {
     assertThat(lot.getFee()).isEqualTo(transaction.getFee());
     assertThat(lot.getTax()).isEqualTo(transaction.getTax());
     assertThat(lot.getCurrentSizeAbsolute()).isZero();
-    assertThat(lot.getAbsolutePerformance()).isZero();
-    assertThat(lot.getRelativePerformance()).isZero();
+    assertThat(lot.getPerformanceAbsolute()).isZero();
+    assertThat(lot.getPerformanceRelative()).isZero();
   }
 
   @Test
@@ -193,7 +189,7 @@ class LotTest {
   void subtract_emptyList() {
     when(transaction.getTransactionType()).thenReturn(SELL);
     lots = new LinkedList<>();
-    Lot.subtract(lots, transaction, mathContext);
+    Lot.subtract(lots, transaction, MATH_CONTEXT);
     assertThat(lots).isEmpty();
   }
 
@@ -202,7 +198,7 @@ class LotTest {
     when(transaction.getTransactionType()).thenReturn(SELL);
     when(transaction.getCountForArithmeticOperations()).thenReturn(new BigDecimal("10"));
 
-    Lot.subtract(lots, transaction, mathContext);
+    Lot.subtract(lots, transaction, MATH_CONTEXT);
 
     assertThat(lots).hasSize(2);
     assertThat(lots.getFirst().getCount()).isEqualByComparingTo("9.5");
@@ -214,7 +210,7 @@ class LotTest {
     when(transaction.getTransactionType()).thenReturn(SELL);
     when(transaction.getCountForArithmeticOperations()).thenReturn(new BigDecimal("9.5"));
 
-    Lot.subtract(lots, transaction, mathContext);
+    Lot.subtract(lots, transaction, MATH_CONTEXT);
 
     assertThat(lots).hasSize(3);
     Lot lot = lots.getFirst();
@@ -241,7 +237,7 @@ class LotTest {
     when(transaction.getTransactionType()).thenReturn(SELL);
     when(transaction.getCountForArithmeticOperations()).thenReturn(new BigDecimal("10.5"));
 
-    Lot.subtract(lots, transaction, mathContext);
+    Lot.subtract(lots, transaction, MATH_CONTEXT);
 
     assertThat(lots).hasSize(2);
 
@@ -263,7 +259,7 @@ class LotTest {
     when(transaction.getTransactionType()).thenReturn(SELL);
     when(transaction.getCountForArithmeticOperations()).thenReturn(new BigDecimal("28.1"));
 
-    Lot.subtract(lots, transaction, mathContext);
+    Lot.subtract(lots, transaction, MATH_CONTEXT);
 
     assertThat(lots).isEmpty();
   }
@@ -273,7 +269,7 @@ class LotTest {
     when(transaction.getTransactionType()).thenReturn(SELL);
     when(transaction.getCountForArithmeticOperations()).thenReturn(new BigDecimal("30"));
 
-    Lot.subtract(lots, transaction, mathContext);
+    Lot.subtract(lots, transaction, MATH_CONTEXT);
 
     assertThat(lots).isEmpty();
   }
@@ -281,12 +277,12 @@ class LotTest {
   @Test
   void subtract_lotsIsNull_illegalArgumentException() {
     when(transaction.getTransactionType()).thenReturn(SELL);
-    assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> Lot.subtract(null, transaction, mathContext));
+    assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> Lot.subtract(null, transaction, MATH_CONTEXT));
   }
 
   @Test
   void subtract_transactionIsNull_illegalArgumentException() {
-    assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> Lot.subtract(lots, null, mathContext));
+    assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> Lot.subtract(lots, null, MATH_CONTEXT));
   }
 
   @Test
@@ -295,7 +291,7 @@ class LotTest {
     lots = new LinkedList<>();
     for (TransactionTypeDto transactionType : transactionTypes) {
       when(transaction.getTransactionType()).thenReturn(transactionType);
-      assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> Lot.subtract(lots, transaction, mathContext));
+      assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> Lot.subtract(lots, transaction, MATH_CONTEXT));
       assertThat(lots).isEmpty();
     }
   }
@@ -308,80 +304,80 @@ class LotTest {
   @Test
   void calculatePerformance() {
     BigDecimal currentPrice = new BigDecimal("224.38");
-    Lot.calculatePerformance(lots, currentPrice, mathContext, clock);
+    Lot.calculatePerformance(lots, currentPrice, MATH_CONTEXT, clock);
 
     assertThat(lots).hasSize(3);
 
     Lot lot = lots.getFirst();
     assertThat(lot.getCurrentSizeAbsolute()).isEqualByComparingTo("2243.8");
-    assertThat(lot.getAbsolutePerformance()).isEqualByComparingTo("743.52");
-    assertThat(lot.getRelativePerformance()).isCloseTo(new BigDecimal("0.4956"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(lot.getPerformanceAbsolute()).isEqualByComparingTo("743.52");
+    assertThat(lot.getPerformanceRelative()).isCloseTo(new BigDecimal("0.4956"), ACCURACY_ONE_THOUSANDTH);
 
     lot = lots.get(1);
     assertThat(lot.getCurrentSizeAbsolute()).isEqualByComparingTo("2131.61");
-    assertThat(lot.getAbsolutePerformance()).isEqualByComparingTo("783.58");
-    assertThat(lot.getRelativePerformance()).isCloseTo(new BigDecimal("0.58128"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(lot.getPerformanceAbsolute()).isEqualByComparingTo("783.58");
+    assertThat(lot.getPerformanceRelative()).isCloseTo(new BigDecimal("0.58128"), ACCURACY_ONE_THOUSANDTH);
 
     lot = lots.get(2);
     assertThat(lot.getCurrentSizeAbsolute()).isEqualByComparingTo("1929.668");
-    assertThat(lot.getAbsolutePerformance()).isEqualByComparingTo("-170.332");
-    assertThat(lot.getRelativePerformance()).isCloseTo(new BigDecimal("-0.08111"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(lot.getPerformanceAbsolute()).isEqualByComparingTo("-170.332");
+    assertThat(lot.getPerformanceRelative()).isCloseTo(new BigDecimal("-0.08111"), ACCURACY_ONE_THOUSANDTH);
   }
 
   @Test
   void calculatePerformance_priceIsZero() {
-    Lot.calculatePerformance(lots, ZERO, mathContext, clock);
+    Lot.calculatePerformance(lots, ZERO, MATH_CONTEXT, clock);
 
     assertThat(lots).hasSize(3);
 
     Lot lot = lots.getFirst();
     assertThat(lot.getCurrentSizeAbsolute()).isZero();
-    assertThat(lot.getAbsolutePerformance()).isEqualByComparingTo("-1500.28");
-    assertThat(lot.getRelativePerformance()).isEqualByComparingTo("-1");
+    assertThat(lot.getPerformanceAbsolute()).isEqualByComparingTo("-1500.28");
+    assertThat(lot.getPerformanceRelative()).isEqualByComparingTo("-1");
 
     lot = lots.get(1);
     assertThat(lot.getCurrentSizeAbsolute()).isZero();
-    assertThat(lot.getAbsolutePerformance()).isEqualByComparingTo("-1348.03");
-    assertThat(lot.getRelativePerformance()).isEqualByComparingTo("-1");
+    assertThat(lot.getPerformanceAbsolute()).isEqualByComparingTo("-1348.03");
+    assertThat(lot.getPerformanceRelative()).isEqualByComparingTo("-1");
 
     lot = lots.get(2);
     assertThat(lot.getCurrentSizeAbsolute()).isZero();
-    assertThat(lot.getAbsolutePerformance()).isEqualByComparingTo("-2100");
-    assertThat(lot.getRelativePerformance()).isEqualByComparingTo("-1");
+    assertThat(lot.getPerformanceAbsolute()).isEqualByComparingTo("-2100");
+    assertThat(lot.getPerformanceRelative()).isEqualByComparingTo("-1");
   }
 
   @Test
   void calculatePerformance_currentPriceIsNull_performanceIsZero() {
-    Lot.calculatePerformance(lots, null, mathContext, clock);
+    Lot.calculatePerformance(lots, null, MATH_CONTEXT, clock);
 
     assertThat(lots).hasSize(3);
 
     Lot lot = lots.getFirst();
     assertThat(lot.getCurrentSizeAbsolute()).isEqualByComparingTo("1500.28");
-    assertThat(lot.getAbsolutePerformance()).isZero();
-    assertThat(lot.getRelativePerformance()).isZero();
+    assertThat(lot.getPerformanceAbsolute()).isZero();
+    assertThat(lot.getPerformanceRelative()).isZero();
 
     lot = lots.get(1);
     assertThat(lot.getCurrentSizeAbsolute()).isEqualByComparingTo("1348.03");
-    assertThat(lot.getAbsolutePerformance()).isZero();
-    assertThat(lot.getRelativePerformance()).isZero();
+    assertThat(lot.getPerformanceAbsolute()).isZero();
+    assertThat(lot.getPerformanceRelative()).isZero();
 
     lot = lots.get(2);
     assertThat(lot.getCurrentSizeAbsolute()).isEqualByComparingTo("2100");
-    assertThat(lot.getAbsolutePerformance()).isZero();
-    assertThat(lot.getRelativePerformance()).isZero();
+    assertThat(lot.getPerformanceAbsolute()).isZero();
+    assertThat(lot.getPerformanceRelative()).isZero();
   }
 
   @Test
   void calculatePerformance_emptyList() {
     lots = new LinkedList<>();
-    Lot.calculatePerformance(lots, ONE, mathContext, clock);
+    Lot.calculatePerformance(lots, ONE, MATH_CONTEXT, clock);
     assertThat(lots).isEmpty();
   }
 
   @Test
   void calculatePerformance_lotsIsNull_illegalArgumentException() {
-    assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> Lot.calculatePerformance(null, ONE, mathContext, clock));
+    assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> Lot.calculatePerformance(null, ONE, MATH_CONTEXT, clock));
   }
 
   @Test
@@ -391,6 +387,6 @@ class LotTest {
 
   @Test
   void calculatePerformance_clockIsNull_illegalArgumentException() {
-    assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> Lot.calculatePerformance(lots, ONE, mathContext, null));
+    assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> Lot.calculatePerformance(lots, ONE, MATH_CONTEXT, null));
   }
 }

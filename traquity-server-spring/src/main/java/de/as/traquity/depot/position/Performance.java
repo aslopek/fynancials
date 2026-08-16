@@ -16,11 +16,11 @@ interface Performance {
 
   void setCurrentSizeAbsolute(BigDecimal currentSizeAbsolute);
 
-  BigDecimal getAbsolutePerformance();
+  BigDecimal getPerformanceAbsolute();
 
-  void setAbsolutePerformance(BigDecimal absolutePerformance);
+  void setPerformanceAbsolute(BigDecimal performanceAbsolute);
 
-  BigDecimal getRelativePerformance();
+  BigDecimal getPerformanceRelative();
 
-  void setRelativePerformance(BigDecimal relativePerformance);
+  void setPerformanceRelative(BigDecimal performanceRelative);
 }

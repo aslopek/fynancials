@@ -5,7 +5,7 @@ import {MatSidenavModule} from "@angular/material/sidenav";
 import {Router, RouterLink, RouterOutlet} from "@angular/router";
 import {Store} from "@ngrx/store";
 import {firstValueFrom} from "rxjs";
-import {ConfigApi} from "../../gen/api/configuration";
+import {AdminApi} from "../../gen/api/admin";
 import {securityPageStore} from "../../security/security-page-store/security-page.store";
 import {AppConfigActions} from "../../store/app-config/app-config.actions";
 import {getOpenPage, isSideMenuOpen,} from "../../store/app-config/app-config.selector";
@@ -37,7 +37,7 @@ export class ShellComponent implements OnInit {
   private destroyed: boolean = false;
 
   private readonly store: Store<AppState> = inject(Store);
-  private readonly configApi: ConfigApi = inject(ConfigApi);
+  private readonly adminApi: AdminApi = inject(AdminApi);
   protected readonly sideMenuOpen: Signal<boolean> = this.store.selectSignal(isSideMenuOpen);
   protected readonly openPage: Signal<Page> = this.store.selectSignal(getOpenPage);
 
@@ -76,7 +76,7 @@ export class ShellComponent implements OnInit {
   private async waitForBackend(): Promise<void> {
     while (!this.destroyed) {
       try {
-        await firstValueFrom(this.configApi.getPid());
+        await firstValueFrom(this.adminApi.getPid());
         return;
       } catch {
         await new Promise<void>((resolve) => setTimeout(() => resolve(), 500));

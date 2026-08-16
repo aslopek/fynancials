@@ -32,9 +32,10 @@ Each domain has its own `execution` block in the `openapi-generator-maven-plugin
 
 ## Architecture
 
-- **Package-per-domain** under `de.as.traquity/`: `depot` (+ `dividend`, `performance`, `position`, `transaction` sub-packages),
+- **Package-per-domain** under `de.as.traquity/`: `admin`, `depot` (+ `dividend`, `performance`, `position`, `transaction` sub-packages),
   `configuration` (+ `securitygroup`), `security` (+ `stocksplit`), `price/security`, `notification/dividendannouncement`, `exchangerates`
-  — one package per `traquity-api` spec file.
+  — one package per `traquity-api` spec file. `admin` holds what the Admin API describes: the process itself (PID, development mode, its
+  database connection) and the third-party licenses of the libraries it ships with.
 - **Layering, consistent across every domain**:
     1. A package-private `*Controller` implements the generated `*ApiDelegate` interface (e.g.
        `DepotController implements DepotApiDelegate`) — this is the only place generated request/response DTOs are touched directly.
@@ -71,7 +72,7 @@ Each domain has its own `execution` block in the `openapi-generator-maven-plugin
 ## Implementation conventions
 
 - **Exceptions**: `common/error` defines a flat set of empty, unchecked marker exceptions named after their HTTP status
-  (`NotFoundException`, `ConflictException`, `BadRequestException`, `UnprocessableEntityException`, `NoContentException`,
+  (`NotFoundException`, `ConflictException`, `BadRequestException`, `UnprocessableEntityException`,
   `InternalServerErrorException`), each mapped 1:1 to a `ResponseEntity` with an empty body by a package-private `@ControllerAdvice`
   (`common/error/RestExceptionHandler.java`; `ConstraintViolationException` also maps to 400 there). Service interface methods declare these
   in a `throws` clause even though they're unchecked (e.g. `DepotService.createDepot(...) throws BadRequestException, ConflictException`)

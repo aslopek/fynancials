@@ -69,7 +69,7 @@ real password can change outside the app (H2 tools, restored backup), making a s
 **Decision:** salt+hash (or `passwordless`) for a pending database is persisted only once the backend spawned with that password has
 demonstrably started. That signal is sound rather than a heuristic: Liquibase runs during context refresh and takes a real JDBC
 connection, which is where H2 validates the file password — so a reachable HTTP port *proves* the file was decrypted with exactly that
-password. The main process therefore polls `GET /config/pid` on the spawned child itself (the renderer's `waitForBackend()` poll stays
+password. The main process therefore polls `GET /admin/pid` on the spawned child itself (the renderer's `waitForBackend()` poll stays
 where it is; the config write must not depend on the renderer).
 
 Conversely, a **failed** start never clears an entry. The failure is unclassifiable from the main process — a re-encrypted file, an

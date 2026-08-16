@@ -10,7 +10,7 @@ import {enableOkAndApply} from './computed/enable-ok-and-apply';
 import {setLogo} from './methods/set-logo';
 import {setMasterData} from './methods/set-master-data';
 import {persist} from './methods/persist';
-import {HistoricalSecurityPriceConfig} from '../../../gen/api/historical-security-price';
+import {HistoricalSecurityPriceConfigCreate} from '../../../gen/api/historical-security-price';
 import {setHistoricalSecurityPriceConfig} from './methods/set-historical-security-price-config';
 import {historicalSecurityPriceConfigValid} from './computed/historical-security-price-config-valid';
 import {setUntouched} from './methods/set-untouched';
@@ -32,7 +32,7 @@ export type UpdateSecurityMethods = {
   setLogo: (logo: File) => void
   setMasterData: (masterData: SecurityCreate | null) => void
   setSecurity: (securityId: number) => void
-  setHistoricalSecurityPriceConfig: (config: Omit<HistoricalSecurityPriceConfig, 'version'> | null) => void
+  setHistoricalSecurityPriceConfig: (config: HistoricalSecurityPriceConfigCreate | null) => void
   setDividendAnnouncementConfig: (config: DividendAnnouncementConfigChangedEvent | null) => void
 };
 
@@ -42,7 +42,7 @@ export type UpdateSecurityState = {
   logo: File | null
   masterDataTouched: boolean
   logoTouched: boolean
-  historicalSecurityPriceConfig: Omit<HistoricalSecurityPriceConfig, 'version'> | null
+  historicalSecurityPriceConfig: HistoricalSecurityPriceConfigCreate | null
   historicalSecurityPriceConfigTouched: boolean
   dividendAnnouncementConfig: DividendAnnouncementConfigChangedEvent | null
   dividendAnnouncementConfigTouched: boolean
@@ -81,7 +81,7 @@ export const updateSecurityStore = signalStore(
       setLogo: (logo: File) => setLogo(signalStore, logo),
       setMasterData: (masterData: SecurityCreate | null) => setMasterData(signalStore, masterData),
       setSecurity: (securityId: number) => setSecurity(signalStore, globalStore, securityId),
-      setHistoricalSecurityPriceConfig: (config: Omit<HistoricalSecurityPriceConfig, 'version'> | null) =>
+      setHistoricalSecurityPriceConfig: (config: HistoricalSecurityPriceConfigCreate | null) =>
         setHistoricalSecurityPriceConfig(signalStore, config),
       setDividendAnnouncementConfig: (config: DividendAnnouncementConfigChangedEvent | null) =>
         setDividendAnnouncementConfig(signalStore, config)

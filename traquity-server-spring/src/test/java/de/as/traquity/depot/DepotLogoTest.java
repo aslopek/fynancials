@@ -147,11 +147,11 @@ class DepotLogoTest {
   }
 
   @Test
-  void putLogo_depotDoesNotExist_badRequest() throws Exception {
+  void putLogo_depotDoesNotExist_notFound() throws Exception {
     final long depotId = 999;
     final long count = depotLogoRepository.count();
 
-    MvcResult mvcResult = putLogo(depotId, depot1Logo).andExpect(status().isBadRequest()).andReturn();
+    MvcResult mvcResult = putLogo(depotId, depot1Logo).andExpect(status().isNotFound()).andReturn();
     assertThat(mvcResult.getResponse().getContentLength()).isZero();
 
     assertThat(depotLogoRepository.count()).isEqualTo(count);

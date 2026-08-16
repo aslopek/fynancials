@@ -1,5 +1,6 @@
 package de.as.traquity.price.security.historical;
 
+import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.context.jdbc.SqlMergeMode.MergeMode.MERGE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -24,7 +25,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @IntegrationTest
 class GetHistoricalSecurityPricesTest {
 
-  private static final String ENDPOINT = "/securities/%d/historicalprices";
+  private static final String ENDPOINT = "/securities/%d/historical-prices";
   private static final Offset<Double> ACCURACY_ONE_THOUSANDTH = Offset.strictOffset(0.001);
 
   private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
@@ -54,7 +55,7 @@ class GetHistoricalSecurityPricesTest {
     }
 
     // verify values
-    List<Double> priceValues = prices.stream().map(HistoricalSecurityPriceDto::getPrice).toList();
+    List<Double> priceValues = prices.stream().map(HistoricalSecurityPriceDto::getPrice).map(BigDecimal::doubleValue).toList();
     assertThat(priceValues).containsExactlyElementsOf(
         List.of(34.79, 34.5, 34.11, 33.52, 34.02, 34.91, 35.36, 36.13, 36.51, 37.01, 37.37, 37.7, 38.04, 37.12, 37.36,
             37.38, 37.16, 37.3, 37.27, 37.04));
@@ -83,7 +84,7 @@ class GetHistoricalSecurityPricesTest {
     }
 
     // verify values
-    List<Double> priceValues = prices.stream().map(HistoricalSecurityPriceDto::getPrice).toList();
+    List<Double> priceValues = prices.stream().map(HistoricalSecurityPriceDto::getPrice).map(BigDecimal::doubleValue).toList();
     assertThat(priceValues).containsExactlyElementsOf(List.of(139.2, 139.26, 138.22, 138.34, 138.58));
   }
 
@@ -111,7 +112,7 @@ class GetHistoricalSecurityPricesTest {
     }
 
     // verify values
-    List<Double> priceValues = prices.stream().map(HistoricalSecurityPriceDto::getPrice).toList();
+    List<Double> priceValues = prices.stream().map(HistoricalSecurityPriceDto::getPrice).map(BigDecimal::doubleValue).toList();
     assertThat(priceValues).zipSatisfy(List.of(146.52975, 144.89218, 147.1112, 145.1581, 146.78719, 147.10605),
         (actual, expected) -> assertThat(actual).isCloseTo(expected, ACCURACY_ONE_THOUSANDTH));
   }
@@ -140,7 +141,7 @@ class GetHistoricalSecurityPricesTest {
     }
 
     // verify values
-    List<Double> priceValues = prices.stream().map(HistoricalSecurityPriceDto::getPrice).toList();
+    List<Double> priceValues = prices.stream().map(HistoricalSecurityPriceDto::getPrice).map(BigDecimal::doubleValue).toList();
     assertThat(priceValues).zipSatisfy(List.of(31.9908, 31.74457, 31.5337, 31.10039, 31.58481, 32.39306),
         (actual, expected) -> assertThat(actual).isCloseTo(expected, ACCURACY_ONE_THOUSANDTH));
   }
@@ -156,7 +157,7 @@ class GetHistoricalSecurityPricesTest {
     assertThat(prices).hasSize(1);
     HistoricalSecurityPriceDto price = prices.getFirst();
     assertThat(price.getSecurityId()).isEqualTo(SecurityIds.PINS);
-    assertThat(price.getPrice()).isCloseTo(32.39306, ACCURACY_ONE_THOUSANDTH);
+    assertThat(price.getPrice().doubleValue()).isCloseTo(32.39306, ACCURACY_ONE_THOUSANDTH);
     assertThat(price.getCurrency()).isEqualTo("EUR");
     assertThat(price.getDate()).isEqualTo(LocalDate.of(2023, Month.DECEMBER, 8));
   }
@@ -171,8 +172,12 @@ class GetHistoricalSecurityPricesTest {
   @Test
   void getAllPrices_securityHasNoPrices() throws Exception {
     MvcResult mvcResult =
-        mockMvc.perform(get(String.format(ENDPOINT, SecurityIds.CRM))).andExpect(status().isNotFound()).andReturn();
-    assertThat(mvcResult.getResponse().getContentLength()).isZero();
+        mockMvc.perform(get(String.format(ENDPOINT, SecurityIds.CRM))).andExpect(status().isOk()).andReturn();
+    List<HistoricalSecurityPriceDto> prices =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), new TypeReference<>() {
+        });
+
+    assertThat(prices).isEmpty();
   }
 
   @Test
