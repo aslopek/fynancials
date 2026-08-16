@@ -5,6 +5,12 @@
     "version": "7.24.0",
     "storageDir": "../openapigen",
     "generators": {
+      "traquity-admin": {
+        "generatorName": "typescript-angular",
+        "output": "src/gen/api/admin",
+        "inputSpec": "../traquity-api/admin.yaml",
+        "config": "api/openapi-config.json"
+      },
       "traquity-configuration": {
         "generatorName": "typescript-angular",
         "output": "src/gen/api/configuration",

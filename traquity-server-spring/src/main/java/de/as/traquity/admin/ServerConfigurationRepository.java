@@ -1,4 +1,4 @@
-package de.as.traquity.configuration;
+package de.as.traquity.admin;
 
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

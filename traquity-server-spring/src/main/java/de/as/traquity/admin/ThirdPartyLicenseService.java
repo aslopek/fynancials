@@ -1,7 +1,7 @@
-package de.as.traquity.configuration;
+package de.as.traquity.admin;
 
 import de.as.traquity.common.error.InternalServerErrorException;
-import de.as.traquity.config.api.model.ThirdPartyLicenseDto;
+import de.as.traquity.admin.api.model.ThirdPartyLicenseDto;
 import java.util.List;
 
 public interface ThirdPartyLicenseService {

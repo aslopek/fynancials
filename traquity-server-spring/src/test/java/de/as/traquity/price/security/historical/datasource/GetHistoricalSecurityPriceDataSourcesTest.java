@@ -12,7 +12,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.as.traquity.price.security.historical.api.model.CurrencyMappingDto;
 import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceDataSourceReadDto;
-import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceUrlPatternsDto;
+import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceUrlPatternDto;
 import de.as.traquity.price.security.historical.api.model.RequestHeaderDto;
 import de.as.traquity.price.security.historical.api.model.ZonedTimeDto;
 import integration.IntegrationTest;
@@ -28,7 +28,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @IntegrationTest
 class GetHistoricalSecurityPriceDataSourcesTest {
 
-  private static final String ENDPOINT = "/historicalprices/data-sources";
+  private static final String ENDPOINT = "/historical-prices/data-sources";
 
   private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
@@ -65,13 +65,13 @@ class GetHistoricalSecurityPriceDataSourcesTest {
     assertThat(config.getDateFormat().getCustomPattern()).isEqualTo("yyyy-MM-dd");
 
     // URLs
-    List<HistoricalSecurityPriceUrlPatternsDto> urlsSource = config.getUrlPatterns();
+    List<HistoricalSecurityPriceUrlPatternDto> urlsSource = config.getUrlPatterns();
     assertThat(urlsSource).hasSize(2);
     Map<Integer, String> expectedUrls = Map.of(
         30, "https://stock-price.api/v1/#id()?range=30d",
         365, "https://stock-price.api/v1/#id()?range=1y"
     );
-    for (HistoricalSecurityPriceUrlPatternsDto url : urlsSource) {
+    for (HistoricalSecurityPriceUrlPatternDto url : urlsSource) {
       assertThat(expectedUrls).containsKey(url.getTimespanInDays());
       assertThat(url.getUrlPattern()).isEqualTo(expectedUrls.get(url.getTimespanInDays()));
     }

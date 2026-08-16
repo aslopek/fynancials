@@ -1,5 +1,6 @@
 package de.as.traquity.security;
 
+import java.math.BigDecimal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.as.traquity.security.api.model.PriceMetaInfoDto;
 import de.as.traquity.security.api.model.SecurityLinksDto;
@@ -117,9 +118,9 @@ class GetSecurityTest {
     assertThat(responseBody.getId()).isEqualTo(13);
     assertThat(responseBody.getName()).isEqualTo("Amazon");
     PriceMetaInfoDto priceMetaInfo = responseBody.getPriceMetaInfo();
-    assertThat(priceMetaInfo.getHighTrailingTwelveMonths()).isEqualTo(140.94);
-    assertThat(priceMetaInfo.getLowTrailingTwelveMonths()).isEqualTo(133.32);
-    assertThat(priceMetaInfo.getLatestPrice()).isEqualTo(138.58);
+    assertThat(priceMetaInfo.getHighTrailingTwelveMonths()).isEqualByComparingTo(BigDecimal.valueOf(140.94));
+    assertThat(priceMetaInfo.getLowTrailingTwelveMonths()).isEqualByComparingTo(BigDecimal.valueOf(133.32));
+    assertThat(priceMetaInfo.getLatestPrice()).isEqualByComparingTo(BigDecimal.valueOf(138.58));
     assertThat(priceMetaInfo.getCurrency()).isEqualTo("EUR");
     assertThat(priceMetaInfo.getLatestPriceDate()).isEqualTo(LocalDate.of(2023, Month.DECEMBER, 29));
   }
@@ -132,9 +133,9 @@ class GetSecurityTest {
     assertThat(responseBody.getId()).isEqualTo(24);
     assertThat(responseBody.getName()).isEqualTo("Pinterest");
     PriceMetaInfoDto priceMetaInfo = responseBody.getPriceMetaInfo();
-    assertThat(priceMetaInfo.getHighTrailingTwelveMonths()).isEqualTo(38.04);
-    assertThat(priceMetaInfo.getLowTrailingTwelveMonths()).isEqualTo(33.52);
-    assertThat(priceMetaInfo.getLatestPrice()).isEqualTo(37.04);
+    assertThat(priceMetaInfo.getHighTrailingTwelveMonths()).isEqualByComparingTo(BigDecimal.valueOf(38.04));
+    assertThat(priceMetaInfo.getLowTrailingTwelveMonths()).isEqualByComparingTo(BigDecimal.valueOf(33.52));
+    assertThat(priceMetaInfo.getLatestPrice()).isEqualByComparingTo(BigDecimal.valueOf(37.04));
     assertThat(priceMetaInfo.getCurrency()).isEqualTo("USD");
     assertThat(priceMetaInfo.getLatestPriceDate()).isEqualTo(LocalDate.of(2023, Month.DECEMBER, 29));
   }

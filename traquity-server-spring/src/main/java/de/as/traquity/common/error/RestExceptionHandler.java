@@ -29,11 +29,6 @@ class RestExceptionHandler {
     return ResponseEntity.internalServerError().build();
   }
 
-  @ExceptionHandler(NoContentException.class)
-  public ResponseEntity<Void> handleNoContentException() {
-    return ResponseEntity.noContent().build();
-  }
-
   @ExceptionHandler(NotFoundException.class)
   public ResponseEntity<Void> handleNotFoundException() {
     return ResponseEntity.notFound().build();

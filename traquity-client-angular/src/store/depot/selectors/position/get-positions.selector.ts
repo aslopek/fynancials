@@ -9,8 +9,8 @@ export function getPositions(state: GetPositionsState): Positions {
   const result: Positions = state.position.positions ?? {
     buyInAbsolute: 0,
     currentSizeAbsolute: 0,
-    absolutePerformance: 0,
-    relativePerformance: 0,
+    performanceAbsolute: 0,
+    performanceRelative: 0,
     positions: []
   };
 

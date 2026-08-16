@@ -13,7 +13,7 @@ import de.as.traquity.price.security.historical.api.model.CurrencyMappingDto;
 import de.as.traquity.price.security.historical.api.model.DateConfigurationDto;
 import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceDataSourceReadDto;
 import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceDataSourceUpdateDto;
-import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceUrlPatternsDto;
+import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceUrlPatternDto;
 import de.as.traquity.price.security.historical.api.model.RequestHeaderDto;
 import de.as.traquity.price.security.historical.api.model.ZonedTimeDto;
 import integration.IntegrationTest;
@@ -36,7 +36,7 @@ import org.springframework.test.web.servlet.ResultActions;
 @IntegrationTest
 class UpdateHistoricalSecurityPriceDataSourceTest {
 
-  private static final String ENDPOINT = "/historicalprices/data-sources/%d";
+  private static final String ENDPOINT = "/historical-prices/data-sources/%d";
   private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
   @Autowired
@@ -56,10 +56,10 @@ class UpdateHistoricalSecurityPriceDataSourceTest {
     requestBody.setVersion(1L);
     requestBody.setName("Price API v1");
 
-    List<HistoricalSecurityPriceUrlPatternsDto> urlPatterns = new LinkedList<>();
-    HistoricalSecurityPriceUrlPatternsDto urlDto = new HistoricalSecurityPriceUrlPatternsDto(30, "https://stock-price.api/v1/#id()?range=30d");
+    List<HistoricalSecurityPriceUrlPatternDto> urlPatterns = new LinkedList<>();
+    HistoricalSecurityPriceUrlPatternDto urlDto = new HistoricalSecurityPriceUrlPatternDto(30, "https://stock-price.api/v1/#id()?range=30d");
     urlPatterns.add(urlDto);
-    urlDto = new HistoricalSecurityPriceUrlPatternsDto(365, "https://stock-price.api/v1/#id()?range=1y");
+    urlDto = new HistoricalSecurityPriceUrlPatternDto(365, "https://stock-price.api/v1/#id()?range=1y");
     urlPatterns.add(urlDto);
     requestBody.setUrlPatterns(urlPatterns);
 
@@ -585,7 +585,7 @@ class UpdateHistoricalSecurityPriceDataSourceTest {
 
     Map<Integer, String> expectedUrls = getExpectedUrlPatterns();
     assertThat(responseBody.getUrlPatterns().size()).isEqualTo(expectedUrls.size());
-    for (HistoricalSecurityPriceUrlPatternsDto actualUrl : responseBody.getUrlPatterns()) {
+    for (HistoricalSecurityPriceUrlPatternDto actualUrl : responseBody.getUrlPatterns()) {
       assertThat(expectedUrls).containsKey(actualUrl.getTimespanInDays());
       assertThat(actualUrl.getUrlPattern()).isEqualTo(expectedUrls.get(actualUrl.getTimespanInDays()));
     }

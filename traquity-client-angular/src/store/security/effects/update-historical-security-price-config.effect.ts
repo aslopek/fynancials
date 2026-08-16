@@ -1,4 +1,4 @@
-import {HistoricalSecurityPriceApi, HistoricalSecurityPriceConfig} from '../../../gen/api/historical-security-price';
+import {HistoricalSecurityPriceConfigApi, HistoricalSecurityPriceConfigRead} from '../../../gen/api/historical-security-price';
 import {Action, Store} from '@ngrx/store';
 import {AppState} from '../../app.state';
 import {SecurityActions, UpdateHistoricalSecurityPriceConfigActionArgs} from '../security.actions';
@@ -8,7 +8,7 @@ import {Actions, ofType} from '@ngrx/effects';
 
 export type UpdateHistoricalSecurityPriceConfigEffectArgs = {
   store: Store<AppState>
-  historicalSecurityPriceApi: HistoricalSecurityPriceApi
+  historicalSecurityPriceConfigApi: HistoricalSecurityPriceConfigApi
 };
 
 export function updateHistoricalSecurityPriceConfigEffect(actions$: Actions,
@@ -25,20 +25,24 @@ async function updateHistoricalSecurityPriceConfigEffectHelper(effectArgs: Updat
                                                                actionArgs: UpdateHistoricalSecurityPriceConfigActionArgs): Promise<Action> {
   const {
     store,
-    historicalSecurityPriceApi
+    historicalSecurityPriceConfigApi
   } = effectArgs;
   const {
     securityId,
     historicalSecurityPriceConfig
   } = actionArgs;
 
-  const existingConfig: HistoricalSecurityPriceConfig | null = store.selectSignal(getHistoricalSecurityPriceConfig(securityId))();
+  const existingConfig: HistoricalSecurityPriceConfigRead | null = store.selectSignal(getHistoricalSecurityPriceConfig(securityId))();
+
+  const request: Observable<HistoricalSecurityPriceConfigRead> = existingConfig === null
+    ? historicalSecurityPriceConfigApi.createHistoricalSecurityPriceConfig(securityId, historicalSecurityPriceConfig)
+    : historicalSecurityPriceConfigApi.updateHistoricalSecurityPriceConfig(securityId, {
+      ...historicalSecurityPriceConfig,
+      version: existingConfig.version
+    }, true);
 
   try {
-    const result: HistoricalSecurityPriceConfig = await firstValueFrom(historicalSecurityPriceApi.setHistoricalPriceConfig(securityId, {
-      ...historicalSecurityPriceConfig,
-      version: existingConfig?.version ?? 0
-    }, true));
+    const result: HistoricalSecurityPriceConfigRead = await firstValueFrom(request);
     return SecurityActions.updateHistoricalSecurityPriceConfigDone({
       securityId,
       historicalSecurityPriceConfig: result

@@ -25,12 +25,11 @@ class DividendAnnouncementController implements DividendAnnouncementApiDelegate 
   }
 
   @Override
-  public ResponseEntity<Void> updateDividendAnnouncement(Long id,
-                                                         DividendAnnouncementUpdateDto dividendAnnouncementUpdateDto) {
+  public ResponseEntity<DividendAnnouncementReadDto> updateDividendAnnouncement(
+      Long id, DividendAnnouncementUpdateDto dividendAnnouncementUpdateDto) {
     if (dividendAnnouncementUpdateDto.getIsNew()) {
       throw new BadRequestException();
     }
-    dividendAnnouncementService.markAsRead(id);
-    return ResponseEntity.noContent().build();
+    return ResponseEntity.ok(dividendAnnouncementMapper.toDto(dividendAnnouncementService.markAsRead(id)));
   }
 }

@@ -1,8 +1,8 @@
 openapi: 3.0.3
 
 info:
-  title: Security API
-  description: The API definitions for managing securities (e.g. stocks or ETFs)
+  title: Historical Security Price API
+  description: The API definitions for managing historical security prices and the external sources they are loaded from
   version: 1.0.0
 
 servers:
@@ -10,7 +10,7 @@ servers:
     description: Locally serving the API
 
 paths:
-  /historicalprices/data-sources:
+  /historical-prices/data-sources:
     post:
       tags:
         - HistoricalSecurityPriceDataSource
@@ -23,7 +23,7 @@ paths:
               $ref: '#/components/schemas/HistoricalSecurityPriceDataSourceCreate'
       responses:
         '201':
-          description: Successfully created the dividend announcement data source
+          description: Successfully created the historical security price data source
           headers:
             location:
               required: true
@@ -36,6 +36,10 @@ paths:
                 $ref: '#/components/schemas/HistoricalSecurityPriceDataSourceRead'
         '400':
           description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           description: Another historical security price data source with the same name exists already
     get:
@@ -44,7 +48,7 @@ paths:
       operationId: getHistoricalSecurityPriceDataSources
       responses:
         '200':
-          description: Successfully returned the historical security price data sources
+          description: Successfully returned the historical security price data sources, or an empty array if none exist
           content:
             application/json:
               schema:
@@ -53,8 +57,12 @@ paths:
                 minItems: 0
                 items:
                   $ref: '#/components/schemas/HistoricalSecurityPriceDataSourceRead'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
-  /historicalprices/data-sources/{id}:
+  /historical-prices/data-sources/{id}:
     parameters:
       - in: path
         name: id
@@ -81,6 +89,10 @@ paths:
                 $ref: '#/components/schemas/HistoricalSecurityPriceDataSourceRead'
         '400':
           description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: The historical security price data source to be updated does not exist
         '409':
@@ -93,13 +105,17 @@ paths:
         '204':
           description: Successfully deleted the historical security price data source
         '400':
-          description: There are data (e.g. historical security prices) referencing this historical security price data source or the data source may not be deleted for other reasons
+          description: >
+            There are data (e.g. historical security prices) referencing this historical security price data source or
+            the data source may not be deleted for other reasons
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: The historical security price data source to be deleted does not exist
-        '409':
-          description: Optimistic Lock failed
 
-  /securities/{securityId}/historicalprices:
+  /securities/{securityId}/historical-prices:
     parameters:
       - in: path
         name: securityId
@@ -107,46 +123,50 @@ paths:
         description: identifies the security
         schema:
           $ref: '#/components/schemas/Id'
-      - in: query
-        name: startDate
-        required: false
-        description: Date of the oldest historical price
-        schema:
-          type: string
-          format: date
-          nullable: false
-          example: 2021-01-01
-      - in: query
-        name: currency
-        required: false
-        description: Currency in which the prices are requested
-        schema:
-          $ref: '#/components/schemas/Currency'
     get:
+      parameters:
+        - in: query
+          name: startDate
+          required: false
+          description: Date of the oldest historical price
+          schema:
+            type: string
+            format: date
+            nullable: false
+            example: 2021-01-01
+        - in: query
+          name: currency
+          required: false
+          description: Currency in which the prices are requested
+          schema:
+            $ref: '#/components/schemas/Currency'
       tags:
         - HistoricalSecurityPrice
-      operationId: getHistoricalPrices
+      operationId: getHistoricalSecurityPrices
       responses:
         '200':
-          description: Successfully returned the security's historical prices
+          description: Successfully returned the security's historical prices, or an empty array if the security has none
           content:
             application/json:
               schema:
                 type: array
                 nullable: false
-                minItems: 1
+                minItems: 0
                 items:
                   $ref: '#/components/schemas/HistoricalSecurityPrice'
         '400':
           description: One or more of the parameters are syntactically or semantically incorrect
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: |
             One of these errors may have occurred:
             - the given security does not exist
-            - the given security has no historical prices
             - there is no foreign exchange rate available to convert the prices to the requested currency
 
-  /securities/{securityId}/historicalprices/config:
+  /securities/{securityId}/historical-prices/config:
     parameters:
       - in: path
         name: securityId
@@ -156,17 +176,54 @@ paths:
           $ref: '#/components/schemas/Id'
     get:
       tags:
-        - HistoricalSecurityPrice
-      operationId: getHistoricalPriceConfig
+        - HistoricalSecurityPriceConfig
+      operationId: getHistoricalSecurityPriceConfig
       responses:
         '200':
           description: Successfully returned the security's historical price config
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HistoricalSecurityPriceConfig'
+                $ref: '#/components/schemas/HistoricalSecurityPriceConfigRead'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
-          description: No historical security price config has been created yet, or the given security does not exist
+          description: No historical security price config exists for the specified securityId, or the security does not exist
+    post:
+      tags:
+        - HistoricalSecurityPriceConfig
+      operationId: createHistoricalSecurityPriceConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HistoricalSecurityPriceConfigCreate'
+      responses:
+        '201':
+          description: Successfully created the security's historical price config
+          headers:
+            location:
+              required: true
+              schema:
+                type: string
+                nullable: false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoricalSecurityPriceConfigRead'
+        '400':
+          description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: The security identified by securityId does not exist
+        '409':
+          description: A historical security price config exists already for the specified securityId
     put:
       parameters:
         - in: query
@@ -178,29 +235,46 @@ paths:
           schema:
             type: boolean
             nullable: false
+            default: false
             example: true
       tags:
-        - HistoricalSecurityPrice
-      operationId: setHistoricalPriceConfig
+        - HistoricalSecurityPriceConfig
+      operationId: updateHistoricalSecurityPriceConfig
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/HistoricalSecurityPriceConfig'
+              $ref: '#/components/schemas/HistoricalSecurityPriceConfigUpdate'
       responses:
         '200':
-          description: Successfully set the security's historical price config
+          description: Successfully updated the security's historical price config
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HistoricalSecurityPriceConfig'
+                $ref: '#/components/schemas/HistoricalSecurityPriceConfigRead'
         '400':
-          description: Request body invalid or no security with the given ID exists
+          description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No historical security price config exists for the specified securityId, or the security does not exist
         '409':
-          description: Conflict while updating security, e.g. optimistic locking failed
+          description: Optimistic Lock failed
 
 components:
+  responses:
+    Unauthorized:
+      description: |
+        The request carried no valid credentials, or credentials the server rejected. A deployment that does not authenticate never
+        answers this, and a caller must not treat its absence as a promise that the endpoint is open.
+    Forbidden:
+      description: |
+        The caller is authenticated but not permitted to perform this operation - a read-only registration issuing a write, for
+        instance. A deployment that does not authorize never answers this.
+
   schemas:
     Id:
       type: integer
@@ -236,7 +310,6 @@ components:
           $ref: '#/components/schemas/Id'
         price:
           type: number
-          format: double
           nullable: false
           minimum: 0
         currency:
@@ -247,19 +320,18 @@ components:
           nullable: false
           example: 2023-12-22
 
-    HistoricalSecurityPriceConfig:
+    HistoricalSecurityPriceConfigCreate:
       type: object
       nullable: false
       required:
         - dataSourceId
         - externalSecurityId
         - isActive
-        - version
       properties:
         dataSourceId:
           $ref: '#/components/schemas/Id'
         externalSecurityId:
-          description: identifies the security at the external data provider
+          description: identifies the security at the external data provider identified by dataSourceId
           type: string
           nullable: false
           minLength: 1
@@ -269,8 +341,28 @@ components:
           type: boolean
           nullable: false
           example: true
-        version:
-          $ref: '#/components/schemas/Version'
+
+    HistoricalSecurityPriceConfigUpdate:
+      allOf:
+        - $ref: '#/components/schemas/HistoricalSecurityPriceConfigCreate'
+        - type: object
+          nullable: false
+          required:
+            - version
+          properties:
+            version:
+              $ref: '#/components/schemas/Version'
+
+    HistoricalSecurityPriceConfigRead:
+      allOf:
+        - $ref: '#/components/schemas/HistoricalSecurityPriceConfigUpdate'
+        - type: object
+          nullable: false
+          required:
+            - securityId
+          properties:
+            securityId:
+              $ref: '#/components/schemas/Id'
 
     CurrencyMapping:
       type: object
@@ -316,10 +408,12 @@ components:
           type: string
           nullable: false
           minLength: 0
-          example: someSecreteApiKey
+          example: someSecretApiKey
 
     DateFormat:
       type: string
+      nullable: false
+      example: CUSTOM_STRING
       enum:
         - TIMESTAMP_SECONDS
         - TIMESTAMP_MILLISECONDS
@@ -340,7 +434,7 @@ components:
           maxLength: 255
           example: 'yyyy-MM-dd'
 
-    HistoricalSecurityPriceUrlPatterns:
+    HistoricalSecurityPriceUrlPattern:
       type: object
       nullable: false
       required:
@@ -371,7 +465,7 @@ components:
         time:
           type: string
           nullable: false
-          pattern: ^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$
+          pattern: ^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$
           example: 17:30:00
         timeZone:
           description: Timezone ID as per IANA time zone database
@@ -401,7 +495,7 @@ components:
           nullable: false
           minItems: 1
           items:
-            $ref: '#/components/schemas/HistoricalSecurityPriceUrlPatterns'
+            $ref: '#/components/schemas/HistoricalSecurityPriceUrlPattern'
         requestHeaders:
           type: array
           nullable: false

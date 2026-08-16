@@ -48,9 +48,10 @@ class TransactionController implements TransactionApiDelegate {
 
   @Override
   public ResponseEntity<PaginatedTransactionReadDto> getTransactions(Long depotId, Integer page, Integer pageSize,
+                                                                     SortOrderDto order,
                                                                      List<TransactionTypeDto> transactionTypes,
-                                                                     SortOrderDto orderByTime, LocalDate minDate,
-                                                                     LocalDate maxDate, List<Long> securityIds) {
+                                                                     LocalDate startDate, LocalDate endDate,
+                                                                     List<Long> securityIds) {
     if (transactionTypes != null && transactionTypes.isEmpty()) {
       throw new BadRequestException();
     }
@@ -59,9 +60,9 @@ class TransactionController implements TransactionApiDelegate {
     pageRequest.setPageSize(getPageSize(pageSize));
     pageRequest.setDepotIds(Set.of(depotId));
     pageRequest.setTransactionTypes(transactionTypes == null ? null : Set.copyOf(transactionTypes));
-    pageRequest.setOrderByTime(orderByTime);
-    pageRequest.setMinDate(minDate);
-    pageRequest.setMaxDate(maxDate);
+    pageRequest.setOrder(order);
+    pageRequest.setStartDate(startDate);
+    pageRequest.setEndDate(endDate);
     pageRequest.setSecurityIds(securityIds == null ? null : Set.copyOf(securityIds));
 
     PageContainer<Transaction> transactions = transactionService.getTransactions(pageRequest);

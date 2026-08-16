@@ -2,7 +2,6 @@ package de.as.traquity.security.stocksplit;
 
 import de.as.traquity.common.error.BadRequestException;
 import de.as.traquity.common.error.ConflictException;
-import de.as.traquity.common.error.NoContentException;
 import de.as.traquity.common.error.NotFoundException;
 import de.as.traquity.depot.transaction.TransactionService;
 import de.as.traquity.price.security.historical.HistoricalSecurityPriceService;
@@ -28,12 +27,9 @@ class StockSplitServiceImpl implements StockSplitService {
   private final MathContext mathContext;
 
   @Override
-  public List<StockSplit> getStockSplits(Long securityId) throws NoContentException, NotFoundException {
+  public List<StockSplit> getStockSplits(Long securityId) throws NotFoundException {
     securityService.getSecurity(securityId);
     List<StockSplitEntity> splits = stockSplitRepository.findAllBySecurityIdOrderByExDateAsc(securityId);
-    if (splits.isEmpty()) {
-      throw new NoContentException();
-    }
     return splits.stream().map(stockSplitMapper::fromEntity).toList();
   }
 

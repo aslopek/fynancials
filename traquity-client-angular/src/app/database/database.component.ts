@@ -8,7 +8,7 @@ import {MatToolbarModule} from "@angular/material/toolbar";
 import {MatTooltipModule} from "@angular/material/tooltip";
 import {DomSanitizer, SafeUrl} from "@angular/platform-browser";
 import {TitleToolbarComponent} from "../../common";
-import {DatabaseConfig} from "../../gen/api/configuration";
+import {DatabaseConfig} from "../../gen/api/admin";
 
 /**
  * The H2 console URL is bypassed through bypassSecurityTrustResourceUrl before going into an iframe - only ever trust it when it actually

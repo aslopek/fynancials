@@ -82,7 +82,7 @@ class GetDepotPerformanceTest {
     DepotPerformanceDto responseBody = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), DepotPerformanceDto.class);
     List<DepotValueDto> values = responseBody.getValues();
 
-    assertThat(responseBody.getExtendedInternalRateOfReturns()).isCloseTo(new BigDecimal("0.01497"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(responseBody.getExtendedInternalRateOfReturn()).isCloseTo(new BigDecimal("0.01497"), ACCURACY_ONE_THOUSANDTH);
 
     // check length - 2024-01-01 itself is dropped: its value is identical to the day before (no transaction/price update since 2023-05-17),
     // so it's treated as a duplicate "today" with no fresh closing price yet, and 2023-12-29 (Friday) becomes the new last entry
@@ -124,7 +124,7 @@ class GetDepotPerformanceTest {
     DepotPerformanceDto responseBody = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), DepotPerformanceDto.class);
     List<DepotValueDto> values = responseBody.getValues();
 
-    assertThat(responseBody.getExtendedInternalRateOfReturns()).isCloseTo(new BigDecimal("0.25235"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(responseBody.getExtendedInternalRateOfReturn()).isCloseTo(new BigDecimal("0.25235"), ACCURACY_ONE_THOUSANDTH);
 
     // check length
     assertThat(values).hasSize(906);
@@ -208,7 +208,7 @@ class GetDepotPerformanceTest {
     MvcResult mvcResult = getDepotPerformance(Set.of(EMPTY_DEPOT)).andExpect(status().isOk()).andReturn();
     DepotPerformanceDto responseBody = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), DepotPerformanceDto.class);
     List<DepotValueDto> values = responseBody.getValues();
-    assertThat(responseBody.getExtendedInternalRateOfReturns()).isZero();
+    assertThat(responseBody.getExtendedInternalRateOfReturn()).isZero();
     assertThat(values).isEmpty();
   }
 

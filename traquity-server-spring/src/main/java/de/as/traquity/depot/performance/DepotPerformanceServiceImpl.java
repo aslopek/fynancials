@@ -55,9 +55,9 @@ public class DepotPerformanceServiceImpl implements DepotPerformanceService {
     depotPerformance.setValues(depotValues);
 
     if (depotValues.size() < 2) {
-      depotPerformance.setExtendedInternalRateOfReturns(ZERO);
+      depotPerformance.setExtendedInternalRateOfReturn(ZERO);
     } else {
-      depotPerformance.setExtendedInternalRateOfReturns(getExtendedRateOfInternalReturn(depotValues));
+      depotPerformance.setExtendedInternalRateOfReturn(getExtendedRateOfInternalReturn(depotValues));
     }
 
     return depotPerformance;

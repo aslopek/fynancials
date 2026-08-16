@@ -69,8 +69,8 @@ describe('getGroupedPositions', (): void => {
     positions = {
       buyInAbsolute: apple.buyInAbsolute + pfizer.buyInAbsolute + microsoft.buyInAbsolute,
       currentSizeAbsolute: apple.currentSizeAbsolute + pfizer.currentSizeAbsolute + microsoft.currentSizeAbsolute,
-      absolutePerformance: apple.absolutePerformance + pfizer.absolutePerformance + microsoft.absolutePerformance,
-      relativePerformance: 0,
+      performanceAbsolute: apple.performanceAbsolute + pfizer.performanceAbsolute + microsoft.performanceAbsolute,
+      performanceRelative: 0,
       positions: [
         apple,
         pfizer,

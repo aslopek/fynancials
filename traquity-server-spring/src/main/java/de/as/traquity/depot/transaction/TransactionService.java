@@ -2,7 +2,6 @@ package de.as.traquity.depot.transaction;
 
 import de.as.traquity.common.error.BadRequestException;
 import de.as.traquity.common.error.ConflictException;
-import de.as.traquity.common.error.NoContentException;
 import de.as.traquity.common.error.NotFoundException;
 import de.as.traquity.common.pagination.PageContainer;
 import de.as.traquity.depot.transaction.api.model.TransactionTypeDto;
@@ -13,7 +12,7 @@ import java.util.Set;
 
 public interface TransactionService {
 
-  Transaction createTransaction(Long depotId, Transaction transaction) throws BadRequestException;
+  Transaction createTransaction(Long depotId, Transaction transaction) throws BadRequestException, NotFoundException;
 
   Transaction getTransactions(Long depotId, Long transactionId) throws NotFoundException;
 
@@ -24,7 +23,7 @@ public interface TransactionService {
       throws BadRequestException;
 
   PageContainer<Transaction> getTransactions(TransactionPageRequest request)
-      throws BadRequestException, NoContentException;
+      throws BadRequestException, NotFoundException;
 
   List<Transaction> getTransactions(Long depotId, TransactionTypeDto transactionType, LocalDate date);
 

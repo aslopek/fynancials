@@ -48,11 +48,11 @@ class UpdateTransactionTest {
     requestBody.setTime("21:09:34");
     requestBody.setSecurityId(SecurityIds.AMZN);
     requestBody.setTransactionType(TransactionTypeDto.BUY);
-    requestBody.setSecurityCountOriginal(1.0);
-    requestBody.setSecurityCountSplitAdjusted(20.0);
-    requestBody.setGrossValue(2807.0);
+    requestBody.setSecurityCountOriginal(BigDecimal.valueOf(1.0));
+    requestBody.setSecurityCountSplitAdjusted(BigDecimal.valueOf(20.0));
+    requestBody.setGrossValue(BigDecimal.valueOf(2807.0));
     requestBody.setTax(null);
-    requestBody.setFee(10.0);
+    requestBody.setFee(BigDecimal.valueOf(10.0));
     requestBody.setVersion(1L);
   }
 
@@ -140,13 +140,13 @@ class UpdateTransactionTest {
 
   @Test
   void updateTransaction_updateSecurityCountOriginal_ok() throws Exception {
-    requestBody.setSecurityCountOriginal(2.0);
+    requestBody.setSecurityCountOriginal(BigDecimal.valueOf(2.0));
     runPositiveTestCase(1, 1);
   }
 
   @Test
   void updateTransaction_updateSecurityCountOriginal_fractionalShares_ok() throws Exception {
-    requestBody.setSecurityCountOriginal(1.504);
+    requestBody.setSecurityCountOriginal(BigDecimal.valueOf(1.504));
     runPositiveTestCase(1, 1);
   }
 
@@ -158,13 +158,13 @@ class UpdateTransactionTest {
 
   @Test
   void updateTransaction_updateSecurityCountSplitAdjusted_ok() throws Exception {
-    requestBody.setSecurityCountSplitAdjusted(40.0);
+    requestBody.setSecurityCountSplitAdjusted(BigDecimal.valueOf(40.0));
     runPositiveTestCase(1, 1);
   }
 
   @Test
   void updateTransaction_updateSecurityCountSplitAdjusted_fractionalShares_ok() throws Exception {
-    requestBody.setSecurityCountSplitAdjusted(30.586);
+    requestBody.setSecurityCountSplitAdjusted(BigDecimal.valueOf(30.586));
     runPositiveTestCase(1, 1);
   }
 
@@ -176,7 +176,7 @@ class UpdateTransactionTest {
 
   @Test
   void updateTransaction_updateGrossValue_ok() throws Exception {
-    requestBody.setGrossValue(5647.08);
+    requestBody.setGrossValue(BigDecimal.valueOf(5647.08));
     runPositiveTestCase(1, 1);
   }
 
@@ -188,13 +188,13 @@ class UpdateTransactionTest {
 
   @Test
   void updateTransaction_updateTax_ok() throws Exception {
-    requestBody.setTax(12.34);
+    requestBody.setTax(BigDecimal.valueOf(12.34));
     runPositiveTestCase(1, 3);
   }
 
   @Test
   void updateTransaction_addTax_ok() throws Exception {
-    requestBody.setTax(12.34);
+    requestBody.setTax(BigDecimal.valueOf(12.34));
     runPositiveTestCase(1, 1);
   }
 
@@ -206,13 +206,13 @@ class UpdateTransactionTest {
 
   @Test
   void updateTransaction_updateFee_ok() throws Exception {
-    requestBody.setFee(12.34);
+    requestBody.setFee(BigDecimal.valueOf(12.34));
     runPositiveTestCase(1, 1);
   }
 
   @Test
   void updateTransaction_addFee_ok() throws Exception {
-    requestBody.setFee(12.34);
+    requestBody.setFee(BigDecimal.valueOf(12.34));
     runPositiveTestCase(1, 8);
   }
 
@@ -229,9 +229,9 @@ class UpdateTransactionTest {
     requestBody.setTime("12:54:05");
     requestBody.setSecurityId(SecurityIds.VNGGF);
     requestBody.setTransactionType(TransactionTypeDto.BUY);
-    requestBody.setSecurityCountOriginal(9.294);
+    requestBody.setSecurityCountOriginal(BigDecimal.valueOf(9.294));
     requestBody.setSecurityCountSplitAdjusted(null);
-    requestBody.setGrossValue(499.97);
+    requestBody.setGrossValue(BigDecimal.valueOf(499.97));
     requestBody.setTax(null);
     requestBody.setFee(null);
     requestBody.setVersion(0L);
@@ -308,11 +308,11 @@ class UpdateTransactionTest {
     assertThat(responseBody.getFee()).isEqualTo(requestBody.getFee());
   }
 
-  private void verifyBigDecimal(BigDecimal actual, Double expected) {
+  private void verifyBigDecimal(BigDecimal actual, BigDecimal expected) {
     if (expected == null) {
       assertThat(actual).isNull();
     } else {
-      assertThat(actual.doubleValue()).isEqualByComparingTo(expected);
+      assertThat(actual).isEqualByComparingTo(expected);
     }
   }
 }

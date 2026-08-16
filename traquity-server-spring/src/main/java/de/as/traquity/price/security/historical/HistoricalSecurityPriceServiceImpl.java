@@ -74,10 +74,6 @@ class HistoricalSecurityPriceServiceImpl implements HistoricalSecurityPriceServi
     LocalDate date = startDate != null ? startDate : LocalDate.EPOCH;
     List<HistoricalSecurityPriceEntity> prices =
         priceRepository.findAllBySecurityIdAndDateGreaterThanEqualOrderByDateAsc(securityId, date);
-    if (prices.isEmpty()) {
-      log.warn("Could not find historical security prices for security {} starting at {}", securityId, date);
-      throw new NotFoundException();
-    }
     return prices.stream().map(priceMapper::fromEntity).toList();
   }
 
@@ -141,28 +137,43 @@ class HistoricalSecurityPriceServiceImpl implements HistoricalSecurityPriceServi
   }
 
   @Override
-  public HistoricalSecurityPriceConfig setConfig(HistoricalSecurityPriceConfig config)
-      throws BadRequestException, ConflictException {
-    HistoricalSecurityPriceConfigEntity updatedValues = configMapper.toEntity(config);
-    Optional<HistoricalSecurityPriceConfigEntity> fromDb = configRepository.findBySecurityId(config.getSecurityId());
-    if (fromDb.isPresent()) {
-      updatedValues.setId(fromDb.get().getId());
+  public HistoricalSecurityPriceConfig createConfig(HistoricalSecurityPriceConfig config)
+      throws BadRequestException, ConflictException, NotFoundException {
+    // security_id carries no unique constraint, so a second config for the same security is invisible to JPA
+    if (configRepository.findBySecurityId(config.getSecurityId()).isPresent()) {
+      throw new ConflictException();
     }
 
     HistoricalSecurityPriceConfigEntity saved;
     try {
-      saved = configRepository.saveAndFlush(updatedValues);
+      saved = configRepository.saveAndFlush(configMapper.toEntity(config));
+    } catch (DataIntegrityViolationException e) {
+      throw new BadRequestException();
+    }
+
+    if (config.isActive()) {
+      updatePrices(config.getSecurityId());
+    }
+
+    return configMapper.fromEntity(saved);
+  }
+
+  @Override
+  public HistoricalSecurityPriceConfig updateConfig(HistoricalSecurityPriceConfig config)
+      throws BadRequestException, ConflictException, NotFoundException {
+    HistoricalSecurityPriceConfigEntity fromDb =
+        configRepository.findBySecurityId(config.getSecurityId()).orElseThrow(NotFoundException::new);
+
+    HistoricalSecurityPriceConfigEntity updatedValues = configMapper.toEntity(config);
+    updatedValues.setId(fromDb.getId());
+
+    try {
+      return configMapper.fromEntity(configRepository.saveAndFlush(updatedValues));
     } catch (ObjectOptimisticLockingFailureException e) {
       throw new ConflictException();
     } catch (DataIntegrityViolationException e) {
       throw new BadRequestException();
     }
-
-    if (fromDb.isEmpty() && config.isActive()) {
-      updatePrices(config.getSecurityId());
-    }
-
-    return configMapper.fromEntity(saved);
   }
 
   List<HistoricalSecurityPriceConfig> getActiveConfigs() {

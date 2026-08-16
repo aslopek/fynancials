@@ -31,12 +31,19 @@ paths:
               required: true
               schema:
                 type: string
+                nullable: false
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TransactionRead'
         '400':
-          description: Passed invalid parameters (e.g. no depot with the specified ID exists)
+          description: Passed invalid parameters, e.g. the request body references a security that does not exist
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No depot with the given ID exists
     get:
       tags:
         - Transaction
@@ -44,6 +51,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/PaginationPageNumber'
         - $ref: '#/components/parameters/PaginationPageSize'
+        - $ref: '#/components/parameters/SortOrder'
         - in: query
           name: transactionTypes
           description: Filter transactions by type
@@ -55,13 +63,7 @@ paths:
             items:
               $ref: '#/components/schemas/TransactionType'
         - in: query
-          name: orderByTime
-          description: Order transactions by time
-          required: false
-          schema:
-            $ref: '#/components/schemas/SortOrder'
-        - in: query
-          name: minDate
+          name: startDate
           description: Filter transactions by minimum date (inclusive)
           required: false
           schema:
@@ -70,7 +72,7 @@ paths:
             format: date
             example: 2023-12-22
         - in: query
-          name: maxDate
+          name: endDate
           description: Filter transactions by maximum date (inclusive)
           required: false
           schema:
@@ -90,15 +92,19 @@ paths:
               $ref: '#/components/schemas/Id'
       responses:
         '200':
-          description: Successfully returned the transactions
+          description: Successfully returned the transactions, with an empty items array if none exist
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTransactionRead'
-        '204':
-          description: No transactions to return
         '400':
           description: Pagination or filtering parameters are invalid
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No depot with the given ID exists
 
   /depots/{depotId}/transactions/{transactionId}:
     parameters:
@@ -115,6 +121,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TransactionRead'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No transaction with the given ID exists, or it is not associated to the specified depot ID
     put:
@@ -129,13 +139,17 @@ paths:
               $ref: '#/components/schemas/TransactionUpdate'
       responses:
         '200':
-          description: Successfully updated the depot
+          description: Successfully updated the transaction
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TransactionRead'
         '400':
           description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No transaction with the given ID exists, or it is not associated to the specified depot ID
         '409':
@@ -147,10 +161,12 @@ paths:
       responses:
         '204':
           description: Successfully deleted the transaction
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No transaction with the given ID exists, or it is not associated to the specified depot ID
-        '409':
-          description: Optimistic Lock failed
 
 components:
   parameters:
@@ -178,7 +194,9 @@ components:
       schema:
         type: integer
         format: int32
+        nullable: false
         minimum: 0
+        default: 0
 
     PaginationPageSize:
       name: pageSize
@@ -188,15 +206,37 @@ components:
       schema:
         type: integer
         format: int32
+        nullable: false
         minimum: 1
+        default: 10
+
+    SortOrder:
+      name: order
+      description: How the transactions should be ordered by time
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/SortOrder'
+
+  responses:
+    Unauthorized:
+      description: |
+        The request carried no valid credentials, or credentials the server rejected. A deployment that does not authenticate never
+        answers this, and a caller must not treat its absence as a promise that the endpoint is open.
+    Forbidden:
+      description: |
+        The caller is authenticated but not permitted to perform this operation - a read-only registration issuing a write, for
+        instance. A deployment that does not authorize never answers this.
 
   schemas:
     SortOrder:
       type: string
       nullable: false
+      example: ASC
       enum:
         - ASC
         - DESC
+
     Id:
       type: integer
       format: int64
@@ -252,24 +292,21 @@ components:
         transactionType:
           $ref: '#/components/schemas/TransactionType'
         securityCountOriginal:
+          description: The number of shares as recorded on the statement, before any stock split was applied
           type: number
-          format: double
           nullable: false
         securityCountSplitAdjusted:
+          description: The number of shares after applying every stock split that took effect since the transaction date
           type: number
-          format: double
           nullable: false
         grossValue:
           type: number
-          format: double
           nullable: false
         tax:
           type: number
-          format: double
           nullable: false
         fee:
           type: number
-          format: double
           nullable: false
 
     TransactionUpdate:
@@ -295,8 +332,8 @@ components:
             id:
               $ref: '#/components/schemas/Id'
             netValue:
+              description: grossValue reduced by tax and fee
               type: number
-              format: double
               nullable: false
 
     PaginatedTransactionRead:

@@ -29,12 +29,17 @@ paths:
               required: true
               schema:
                 type: string
+                nullable: false
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SecurityRead'
         '400':
           description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           description: Another security with the same ISIN or symbol exists already
     get:
@@ -45,11 +50,14 @@ paths:
         - in: query
           name: search
           required: false
-          description: Query string
+          description: >
+            Case-insensitive substring match against the security's name, sector and symbols. A security matches when at
+            least one of those contains the given string. A blank string is treated as no filter.
           schema:
             type: string
             nullable: false
             minLength: 1
+            example: Micro
         - in: query
           name: orderBy
           required: false
@@ -61,15 +69,17 @@ paths:
       operationId: getSecurities
       responses:
         '200':
-          description: Successfully returned the securities
+          description: Successfully returned the securities, with an empty items array if none exist
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedSecurityRead'
-        '204':
-          description: No securities to return
         '400':
           description: Pagination parameters are invalid
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /securities/{id}:
     parameters:
@@ -90,6 +100,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SecurityRead'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No security with the given ID exists
     put:
@@ -111,8 +125,12 @@ paths:
                 $ref: '#/components/schemas/SecurityRead'
         '400':
           description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
-          description: No security with the given ID exist
+          description: No security with the given ID exists
         '409':
           description: Conflict while updating security (e.g. ISIN already in use, optimistic locking failed)
     delete:
@@ -122,10 +140,12 @@ paths:
       responses:
         '204':
           description: Successfully deleted the security
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No security with the given ID exists
-        '409':
-          description: Optimistic Lock failed
 
   /securities/{id}/logo:
     parameters:
@@ -148,6 +168,10 @@ paths:
                 type: string
                 format: file
                 nullable: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: Could not find a logo for the given security ID
     put:
@@ -166,7 +190,13 @@ paths:
         '204':
           description: Successfully updated the logo
         '400':
-          description: Could not update the logo, e.g. because no security for the given ID exists
+          description: The request body is not a valid PNG image
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No security with the given ID exists
     delete:
       tags:
         - SecurityLogo
@@ -174,6 +204,10 @@ paths:
       responses:
         '204':
           description: Successfully deleted the logo, or there was no logo to delete
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /securities/{id}/cagr:
     parameters:
@@ -183,9 +217,10 @@ paths:
         description: identifies the security
         schema:
           $ref: '#/components/schemas/Id'
-      - $ref: '#/components/parameters/StartDate'
-      - $ref: '#/components/parameters/EndDate'
     get:
+      parameters:
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
       tags:
         - Security
       operationId: getCagr
@@ -197,9 +232,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Cagr'
         '400':
-          description: >
-            - startDate >= endDate
-            - startDate == null
+          description: startDate is not before endDate
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No security with the given ID exists
         '422':
@@ -219,17 +256,19 @@ paths:
       operationId: getStockSplits
       responses:
         '200':
-          description: Successfully returned the stock splits
+          description: Successfully returned the stock splits, or an empty array if the security has none
           content:
             application/json:
               schema:
                 type: array
                 nullable: false
-                minItems: 1
+                minItems: 0
                 items:
                   $ref: '#/components/schemas/StockSplit'
-        '204':
-          description: No stock splits exist for the specified security
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: The specified security does not exist
     post:
@@ -237,6 +276,9 @@ paths:
         - in: query
           name: updateTransactions
           required: true
+          description: >
+            Whether the split ratio is applied to the securityCountSplitAdjusted of every existing transaction of this
+            security. Required rather than defaulted, because it rewrites rows the request does not name.
           schema:
             type: boolean
             nullable: false
@@ -244,6 +286,9 @@ paths:
         - in: query
           name: updateHistoricalPrices
           required: true
+          description: >
+            Whether the split ratio is applied to every stored historical price of this security. Required rather than
+            defaulted, because it rewrites rows the request does not name.
           schema:
             type: boolean
             nullable: false
@@ -265,6 +310,7 @@ paths:
               required: true
               schema:
                 type: string
+                nullable: false
           content:
             application/json:
               schema:
@@ -276,6 +322,10 @@ paths:
             - Another stock split exists for the security, where the ex date is after the ex date of the
               stock split to be created
             '''
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: The specified security does not exist
         '409':
@@ -283,7 +333,7 @@ paths:
 
 components:
   parameters:
-    EndDate:
+    StartDate:
       name: startDate
       description: Minimum date
       in: query
@@ -293,9 +343,9 @@ components:
         format: date
         nullable: false
         example: 2023-12-22
-    StartDate:
+    EndDate:
       name: endDate
-      description: MaxDate - omitting the parameter is equivalent to sending today's date
+      description: Maximum date - omitting the parameter is equivalent to sending today's date
       in: query
       required: false
       schema:
@@ -311,7 +361,9 @@ components:
       schema:
         type: integer
         format: int32
+        nullable: false
         minimum: 0
+        default: 0
     PaginationPageSize:
       name: pageSize
       description: Number of items per page
@@ -320,7 +372,9 @@ components:
       schema:
         type: integer
         format: int32
+        nullable: false
         minimum: 1
+        default: 10
     SortOrder:
       name: order
       description: How the results should be ordered
@@ -329,10 +383,21 @@ components:
       schema:
         $ref: '#/components/schemas/SortOrder'
 
+  responses:
+    Unauthorized:
+      description: |
+        The request carried no valid credentials, or credentials the server rejected. A deployment that does not authenticate never
+        answers this, and a caller must not treat its absence as a promise that the endpoint is open.
+    Forbidden:
+      description: |
+        The caller is authenticated but not permitted to perform this operation - a read-only registration issuing a write, for
+        instance. A deployment that does not authorize never answers this.
+
   schemas:
     SortOrder:
       type: string
       nullable: false
+      example: ASC
       enum:
         - ASC
         - DESC
@@ -369,9 +434,9 @@ components:
       nullable: false
       example: ETF
       enum:
-        - Stock
+        - STOCK
         - ETF
-        - Other
+        - OTHER
 
     Currency:
       type: string
@@ -387,6 +452,7 @@ components:
 
     SecurityCreate:
       type: object
+      nullable: false
       required:
         - isin
         - symbols
@@ -415,7 +481,7 @@ components:
           $ref: '#/components/schemas/Wkn'
         sector:
           type: string
-          nullable: true
+          nullable: false
           minLength: 1
           maxLength: 255
           example: Technology
@@ -426,6 +492,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/SecurityCreate'
         - type: object
+          nullable: false
           required:
             - version
           properties:
@@ -436,6 +503,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/SecurityUpdate'
         - type: object
+          nullable: false
           required:
             - id
             - _links
@@ -449,6 +517,7 @@ components:
 
     PaginatedSecurityRead:
       type: object
+      nullable: false
       required:
         - total
         - currentPage
@@ -500,17 +569,14 @@ components:
       properties:
         highTrailingTwelveMonths:
           type: number
-          format: double
           nullable: false
           minimum: 0
         lowTrailingTwelveMonths:
           type: number
-          format: double
           nullable: false
           minimum: 0
         latestPrice:
           type: number
-          format: double
           nullable: false
           minimum: 0
         currency:
@@ -535,6 +601,7 @@ components:
     SecurityOrderProperty:
       type: string
       nullable: false
+      example: NAME
       enum:
         - NAME
         - SECTOR
@@ -556,9 +623,11 @@ components:
           type: integer
           format: int64
           nullable: false
+          minimum: 1
           example: 1
         quantityNew:
           type: integer
           format: int64
           nullable: false
+          minimum: 1
           example: 4

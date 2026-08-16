@@ -1,7 +1,9 @@
 package de.as.traquity.price.security.historical;
 
 import de.as.traquity.common.config.MapStructConfig;
-import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceConfigDto;
+import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceConfigCreateDto;
+import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceConfigReadDto;
+import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceConfigUpdateDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -15,10 +17,16 @@ interface HistoricalSecurityPriceConfigMapper {
   HistoricalSecurityPriceConfigEntity toEntity(HistoricalSecurityPriceConfig config);
 
   @Mapping(target = "id", ignore = true)
+  @Mapping(target = "version", ignore = true)
   @Mapping(target = "securityId", ignore = true)
   @Mapping(target = "active", source = "isActive")
-  HistoricalSecurityPriceConfig fromDto(HistoricalSecurityPriceConfigDto dto);
+  HistoricalSecurityPriceConfig fromCreateDto(HistoricalSecurityPriceConfigCreateDto dto);
+
+  @Mapping(target = "id", ignore = true)
+  @Mapping(target = "securityId", ignore = true)
+  @Mapping(target = "active", source = "isActive")
+  HistoricalSecurityPriceConfig fromUpdateDto(HistoricalSecurityPriceConfigUpdateDto dto);
 
   @Mapping(target = "isActive", source = "active")
-  HistoricalSecurityPriceConfigDto toDto(HistoricalSecurityPriceConfig config);
+  HistoricalSecurityPriceConfigReadDto toDto(HistoricalSecurityPriceConfig config);
 }

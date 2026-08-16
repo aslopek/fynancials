@@ -32,7 +32,7 @@ export class DepotPerformanceKpisComponent {
   protected readonly kpis: Signal<DepotPerformanceKpis> = this.depotPerformanceStore.kpis;
   protected readonly currency: Signal<string>;
   protected readonly hideAbsoluteValues: Signal<boolean>;
-  protected readonly xirr: Signal<number> = this.depotPerformanceStore.extendedInternalRateOfReturns;
+  protected readonly xirr: Signal<number> = this.depotPerformanceStore.extendedInternalRateOfReturn;
 
   constructor(store: Store<AppState>) {
     this.currency = store.selectSignal(selectedDepotCurrency);

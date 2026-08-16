@@ -2,6 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {Actions, createEffect, ofType} from '@ngrx/effects';
 import {catchError, concatMap, EMPTY, map, of} from 'rxjs';
 import {isPage, Page} from '../../app/page.type';
+import {AdminApi} from '../../gen/api/admin';
 import {ConfigApi} from '../../gen/api/configuration';
 import {clientId} from '../client-id';
 import {
@@ -22,15 +23,16 @@ import {AppActions} from '../app.actions';
 export class AppConfigEffects {
 
   private readonly actions$: Actions = inject(Actions);
+  private readonly adminApi: AdminApi = inject(AdminApi);
   private readonly configApi: ConfigApi = inject(ConfigApi);
 
   readonly loadDevModeActive = createEffect(() =>
     this.actions$.pipe(
       ofType(AppActions.initialize),
       concatMap(() =>
-        this.configApi.isDevModeActive().pipe(
+        this.adminApi.getDevModeActive().pipe(
           map(devModeActive => AppConfigActions.setDevModeActive({
-            devModeActive: devModeActive === 'true',
+            devModeActive,
             persist: false
           })),
           catchError(() => EMPTY)
@@ -195,7 +197,7 @@ export class AppConfigEffects {
       ofType(AppConfigActions.setDevModeActive),
       concatMap(({ devModeActive, persist }) => {
         if (persist) {
-          return this.configApi.setDevModeActive(`${devModeActive}`).pipe(
+          return this.adminApi.setDevModeActive(devModeActive).pipe(
             map(() => AppConfigActions.setDevModeActiveDone({devModeActive})),
             catchError(() => of(AppConfigActions.setDevModeActiveDone({devModeActive})))
           );

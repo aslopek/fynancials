@@ -7,5 +7,5 @@ public interface DividendAnnouncementService {
 
   List<DividendAnnouncement> getDividendAnnouncements(Boolean isNew);
 
-  void markAsRead(long dividendAnnouncementId) throws NotFoundException;
+  DividendAnnouncement markAsRead(long dividendAnnouncementId) throws NotFoundException;
 }

@@ -14,7 +14,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.as.traquity.exchangerates.CurrencyConversionRequest;
 import de.as.traquity.exchangerates.ExchangeRateService;
-import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceConfigDto;
+import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceConfigReadDto;
+import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceConfigUpdateDto;
 import integration.IntegrationTest;
 import integration.SecurityIds;
 import java.math.BigDecimal;
@@ -39,7 +40,7 @@ import org.springframework.web.client.RestTemplate;
 @IntegrationTest
 class UpdateHistoricalSecurityPriceConfigTest {
 
-  private static final String ENDPOINT = "/securities/%d/historicalprices/config";
+  private static final String ENDPOINT = "/securities/%d/historical-prices/config";
 
   private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
@@ -66,12 +67,12 @@ class UpdateHistoricalSecurityPriceConfigTest {
   /**
    * Initialized with values for AMZN stock.
    */
-  private HistoricalSecurityPriceConfigDto amznDataSource101;
+  private HistoricalSecurityPriceConfigUpdateDto amznDataSource101;
 
   /**
    * Initialized with values for QCOM stock.
    */
-  private HistoricalSecurityPriceConfigDto qcomDataSource102;
+  private HistoricalSecurityPriceConfigUpdateDto qcomDataSource102;
 
   @BeforeEach
   void beforeEach() {
@@ -84,13 +85,13 @@ class UpdateHistoricalSecurityPriceConfigTest {
       return items.stream().map(CurrencyConversionRequest::getValue).toList();
     });
 
-    amznDataSource101 = new HistoricalSecurityPriceConfigDto();
+    amznDataSource101 = new HistoricalSecurityPriceConfigUpdateDto();
     amznDataSource101.setDataSourceId(101L);
     amznDataSource101.setExternalSecurityId("AMZ.DE");
     amznDataSource101.setIsActive(true);
     amznDataSource101.setVersion(0L);
 
-    qcomDataSource102 = new HistoricalSecurityPriceConfigDto();
+    qcomDataSource102 = new HistoricalSecurityPriceConfigUpdateDto();
     qcomDataSource102.setDataSourceId(102L);
     qcomDataSource102.setExternalSecurityId("QCOM.XNAS");
     qcomDataSource102.setIsActive(true);
@@ -100,10 +101,9 @@ class UpdateHistoricalSecurityPriceConfigTest {
   @Test
   void changeDatasource_keepExistingPrices_ok() throws Exception {
     MvcResult mvcResult = putConfig(SecurityIds.AMZN, amznDataSource101, null).andExpect(status().isOk()).andReturn();
-    HistoricalSecurityPriceConfigDto responseBody =
-        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), HistoricalSecurityPriceConfigDto.class);
-    amznDataSource101.setVersion(1L);
-    assertThat(responseBody).isEqualTo(amznDataSource101);
+    HistoricalSecurityPriceConfigReadDto responseBody = objectMapper.readValue(
+        mvcResult.getResponse().getContentAsString(), HistoricalSecurityPriceConfigReadDto.class);
+    assertThat(responseBody).isEqualTo(expectedRead(amznDataSource101, SecurityIds.AMZN, 1L));
 
     // verify database: config
     HistoricalSecurityPriceConfigEntity configEntity =
@@ -132,10 +132,9 @@ class UpdateHistoricalSecurityPriceConfigTest {
         "fixtures/historical-security-prices/data-source-101/amzn-365-days.json");
 
     MvcResult mvcResult = putConfig(SecurityIds.AMZN, amznDataSource101, true).andExpect(status().isOk()).andReturn();
-    HistoricalSecurityPriceConfigDto responseBody =
-        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), HistoricalSecurityPriceConfigDto.class);
-    amznDataSource101.setVersion(1L);
-    assertThat(responseBody).isEqualTo(amznDataSource101);
+    HistoricalSecurityPriceConfigReadDto responseBody = objectMapper.readValue(
+        mvcResult.getResponse().getContentAsString(), HistoricalSecurityPriceConfigReadDto.class);
+    assertThat(responseBody).isEqualTo(expectedRead(amznDataSource101, SecurityIds.AMZN, 1L));
 
     // verify database: config
     HistoricalSecurityPriceConfigEntity configEntity =
@@ -157,109 +156,8 @@ class UpdateHistoricalSecurityPriceConfigTest {
   }
 
   @Test
-  void addNewConfiguration_fetchPrices_ok() throws Exception {
-    respondWithFixture(mockServer,
-        "https://stock-price.api/v2?isin=QCOM.XNAS",
-        "fixtures/historical-security-prices/data-source-102/qcom-73-days.json");
-    MvcResult mvcResult = putConfig(SecurityIds.QCOM, qcomDataSource102, null).andExpect(status().isOk()).andReturn();
-    HistoricalSecurityPriceConfigDto responseBody =
-        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), HistoricalSecurityPriceConfigDto.class);
-    assertThat(responseBody.getExternalSecurityId()).isEqualTo("QCOM.XNAS");
-    assertThat(responseBody.getIsActive()).isTrue();
-    assertThat(responseBody.getVersion()).isZero();
-
-    // verify database: config
-    HistoricalSecurityPriceConfigEntity configEntity =
-        configRepository.findBySecurityId(SecurityIds.QCOM).orElseThrow();
-    assertThat(configEntity.getExternalSecurityId()).isEqualTo(responseBody.getExternalSecurityId());
-    assertThat(configEntity.isActive()).isEqualTo(responseBody.getIsActive());
-    assertThat(configEntity.getVersion()).isEqualTo(responseBody.getVersion());
-
-    // verify database: prices (first, last and date sanity check)
-    List<HistoricalSecurityPriceEntity> prices =
-        priceRepository.findAllBySecurityIdAndDateGreaterThanEqualOrderByDateAsc(SecurityIds.QCOM, LocalDate.EPOCH);
-    assertThat(prices).hasSize(52);
-    assertThat(prices.getFirst().getPrice()).isEqualTo(new BigDecimal("104.62"));
-    assertThat(prices.getFirst().getDate()).isEqualTo(LocalDate.of(2023, OCTOBER, 17));
-    assertThat(prices.getFirst().getCurrency()).isEqualTo("USD");
-    assertThat(prices.getLast().getPrice()).isEqualTo(new BigDecimal("131.96"));
-    assertThat(prices.getLast().getDate()).isEqualTo(LocalDate.of(2023, DECEMBER, 29));
-    assertThat(prices.getLast().getCurrency()).isEqualTo("USD");
-    dateSanityCheck(prices);
-  }
-
-  @Test
-  void addNewConfiguration_inactive_ok() throws Exception {
-    qcomDataSource102.setIsActive(false);
-    MvcResult mvcResult = putConfig(SecurityIds.QCOM, qcomDataSource102, null).andExpect(status().isOk()).andReturn();
-    HistoricalSecurityPriceConfigDto responseBody =
-        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), HistoricalSecurityPriceConfigDto.class);
-    assertThat(responseBody.getExternalSecurityId()).isEqualTo("QCOM.XNAS");
-    assertThat(responseBody.getIsActive()).isFalse();
-    assertThat(responseBody.getVersion()).isZero();
-
-    // verify database: config
-    HistoricalSecurityPriceConfigEntity configEntity =
-        configRepository.findBySecurityId(SecurityIds.QCOM).orElseThrow();
-    assertThat(configEntity.getExternalSecurityId()).isEqualTo(responseBody.getExternalSecurityId());
-    assertThat(configEntity.isActive()).isEqualTo(responseBody.getIsActive());
-    assertThat(configEntity.getVersion()).isEqualTo(responseBody.getVersion());
-
-    // verify database: prices
-    List<HistoricalSecurityPriceEntity> prices =
-        priceRepository.findAllBySecurityIdAndDateGreaterThanEqualOrderByDateAsc(SecurityIds.QCOM, LocalDate.EPOCH);
-    assertThat(prices).isEmpty();
-  }
-
-  @Test
-  void fetchPrices_ignoreNulls_ok() throws Exception {
-    when(clock.instant()).thenReturn(Instant.parse("2024-01-26T20:44:38Z"));
-    when(clock.getZone()).thenReturn(ZoneId.of("Europe/Berlin"));
-
-    respondWithFixture(mockServer, "https://stock-price.api/v3/stocks/prices?id=VNGGF&range=MAX",
-        "fixtures/historical-security-prices/data-source-103/vnggf-5-days.json");
-
-    HistoricalSecurityPriceConfigDto config = new HistoricalSecurityPriceConfigDto();
-    config.setExternalSecurityId("VNGGF");
-    config.setDataSourceId(103L);
-    config.setIsActive(true);
-    config.setVersion(0L);
-
-    MvcResult mvcResult = putConfig(SecurityIds.VNGGF, config, null).andExpect(status().isOk()).andReturn();
-    HistoricalSecurityPriceConfigDto responseBody =
-        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), HistoricalSecurityPriceConfigDto.class);
-    assertThat(responseBody.getExternalSecurityId()).isEqualTo("VNGGF");
-    assertThat(responseBody.getIsActive()).isTrue();
-    assertThat(responseBody.getVersion()).isZero();
-
-    // verify database: config
-    HistoricalSecurityPriceConfigEntity configEntity =
-        configRepository.findBySecurityId(SecurityIds.VNGGF).orElseThrow();
-    assertThat(configEntity.getExternalSecurityId()).isEqualTo(responseBody.getExternalSecurityId());
-    assertThat(configEntity.isActive()).isEqualTo(responseBody.getIsActive());
-    assertThat(configEntity.getVersion()).isEqualTo(responseBody.getVersion());
-
-    // verify database: prices
-    List<HistoricalSecurityPriceEntity> prices =
-        priceRepository.findAllBySecurityIdAndDateGreaterThanEqualOrderByDateAsc(SecurityIds.VNGGF, LocalDate.EPOCH);
-    assertThat(prices).hasSize(2);
-
-    HistoricalSecurityPriceEntity price = prices.getFirst();
-    assertThat(price.getSecurityId()).isEqualTo(SecurityIds.VNGGF);
-    assertThat(price.getPrice()).isEqualByComparingTo(new BigDecimal("56.469"));
-    assertThat(price.getCurrency()).isEqualTo("EUR");
-    assertThat(price.getDate()).isEqualTo(LocalDate.of(2024, Month.JANUARY, 19));
-
-    price = prices.get(1);
-    assertThat(price.getSecurityId()).isEqualTo(SecurityIds.VNGGF);
-    assertThat(price.getPrice()).isEqualByComparingTo(new BigDecimal("57.441"));
-    assertThat(price.getCurrency()).isEqualTo("EUR");
-    assertThat(price.getDate()).isEqualTo(LocalDate.of(2024, Month.JANUARY, 25));
-  }
-
-  @Test
   void updateDatasource_conflict() throws Exception {
-    HistoricalSecurityPriceConfigDto requestBody = new HistoricalSecurityPriceConfigDto();
+    HistoricalSecurityPriceConfigUpdateDto requestBody = new HistoricalSecurityPriceConfigUpdateDto();
     requestBody.setExternalSecurityId("CRM");
     requestBody.setDataSourceId(103L);
     requestBody.setIsActive(true);
@@ -275,14 +173,14 @@ class UpdateHistoricalSecurityPriceConfigTest {
   }
 
   @Test
-  void updateDatasource_securityDoesNotExist_badRequest() throws Exception {
+  void updateDatasource_securityDoesNotExist_notFound() throws Exception {
     long configCount = configRepository.count();
-    MvcResult mvcResult = putConfig(999, amznDataSource101, null).andExpect(status().isBadRequest()).andReturn();
+    MvcResult mvcResult = putConfig(999, amznDataSource101, null).andExpect(status().isNotFound()).andReturn();
     assertThat(mvcResult.getResponse().getContentLength()).isZero();
     assertThat(configRepository.count()).isEqualTo(configCount);
   }
 
-  private ResultActions putConfig(long securityId, HistoricalSecurityPriceConfigDto config,
+  private ResultActions putConfig(long securityId, HistoricalSecurityPriceConfigUpdateDto config,
                                   Boolean removeExistingPrices) throws Exception {
     String requestBody = objectMapper.writeValueAsString(config);
     String url = String.format(ENDPOINT, securityId);
@@ -291,6 +189,17 @@ class UpdateHistoricalSecurityPriceConfigTest {
       requestBuilder = requestBuilder.queryParam("removeExistingPrices", Boolean.toString(removeExistingPrices));
     }
     return mockMvc.perform(requestBuilder.contentType(MediaType.APPLICATION_JSON).content(requestBody));
+  }
+
+  private HistoricalSecurityPriceConfigReadDto expectedRead(HistoricalSecurityPriceConfigUpdateDto request,
+                                                            long securityId, long version) {
+    HistoricalSecurityPriceConfigReadDto expected = new HistoricalSecurityPriceConfigReadDto();
+    expected.setSecurityId(securityId);
+    expected.setDataSourceId(request.getDataSourceId());
+    expected.setExternalSecurityId(request.getExternalSecurityId());
+    expected.setIsActive(request.getIsActive());
+    expected.setVersion(version);
+    return expected;
   }
 
   private void dateSanityCheck(List<HistoricalSecurityPriceEntity> prices) {

@@ -6,6 +6,7 @@ export * from './pipe/tq-date.pipe';
 export * from './pipe/tq-decimal.pipe';
 export * from './pipe/tq-percent.pipe';
 export * from './pipe/security-name.pipe';
+export * from './pipe/security-type-display-name.pipe';
 export * from './pipe/transaction-type-display-icon.pipe';
 export * from './pipe/transaction-type-display-name.pipe';
 export * from './types/data-range';

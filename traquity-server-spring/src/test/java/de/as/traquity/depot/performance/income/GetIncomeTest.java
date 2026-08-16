@@ -1,5 +1,6 @@
 package de.as.traquity.depot.performance.income;
 
+import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -21,7 +22,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 @IntegrationTest
 class GetIncomeTest {
 
-  private static final String ENDPOINT = "/depot-performance/income?depots=%s&securities=%s&incomeTypes=%s";
+  private static final String ENDPOINT = "/depot-performance/income?depotIds=%s&securityIds=%s&incomeTypes=%s";
 
   private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
@@ -56,8 +57,8 @@ class GetIncomeTest {
 
     PerformanceDto hag = getPerformance(responseBody, SecurityIds.HAG);
     assertThat(hag.getSecurityIds()).containsExactlyInAnyOrder(SecurityIds.HAG);
-    assertThat(hag.getAbsoluteValueGross()).isEqualTo(150.5);
-    assertThat(hag.getAbsoluteValueNet()).isEqualTo(150.5);
+    assertThat(hag.getAbsoluteValueGross()).isEqualByComparingTo(BigDecimal.valueOf(150.5));
+    assertThat(hag.getAbsoluteValueNet()).isEqualByComparingTo(BigDecimal.valueOf(150.5));
     List<TransactionReferenceDto> transactions = hag.getTransactions();
     assertThat(transactions).hasSize(3);
     assertThat(transactions.get(0).getDepotId()).isEqualTo(2);
@@ -69,8 +70,8 @@ class GetIncomeTest {
 
     PerformanceDto nvda = getPerformance(responseBody, SecurityIds.NVDA);
     assertThat(nvda.getSecurityIds()).containsExactlyInAnyOrder(SecurityIds.NVDA);
-    assertThat(nvda.getAbsoluteValueGross()).isEqualTo(12.18);
-    assertThat(nvda.getAbsoluteValueNet()).isEqualTo(9.06);
+    assertThat(nvda.getAbsoluteValueGross()).isEqualByComparingTo(BigDecimal.valueOf(12.18));
+    assertThat(nvda.getAbsoluteValueNet()).isEqualByComparingTo(BigDecimal.valueOf(9.06));
     transactions = nvda.getTransactions();
     assertThat(transactions).hasSize(9);
     assertThat(transactions.get(0).getDepotId()).isEqualTo(1);
@@ -107,8 +108,8 @@ class GetIncomeTest {
 
     PerformanceDto hag = getPerformance(responseBody, SecurityIds.HAG);
     assertThat(hag.getSecurityIds()).containsExactlyInAnyOrder(SecurityIds.HAG);
-    assertThat(hag.getAbsoluteValueGross()).isEqualTo(1764.0);
-    assertThat(hag.getAbsoluteValueNet()).isEqualTo(1747.58);
+    assertThat(hag.getAbsoluteValueGross()).isEqualByComparingTo(BigDecimal.valueOf(1764.0));
+    assertThat(hag.getAbsoluteValueNet()).isEqualByComparingTo(BigDecimal.valueOf(1747.58));
     List<TransactionReferenceDto> transactions = hag.getTransactions();
     assertThat(transactions).hasSize(1);
     assertThat(transactions.get(0).getDepotId()).isEqualTo(1);
@@ -116,8 +117,8 @@ class GetIncomeTest {
 
     PerformanceDto nvda = getPerformance(responseBody, SecurityIds.NVDA);
     assertThat(nvda.getSecurityIds()).containsExactlyInAnyOrder(SecurityIds.NVDA);
-    assertThat(nvda.getAbsoluteValueGross()).isEqualTo(1051.83);
-    assertThat(nvda.getAbsoluteValueNet()).isEqualTo(1015.42);
+    assertThat(nvda.getAbsoluteValueGross()).isEqualByComparingTo(BigDecimal.valueOf(1051.83));
+    assertThat(nvda.getAbsoluteValueNet()).isEqualByComparingTo(BigDecimal.valueOf(1015.42));
     transactions = nvda.getTransactions();
     assertThat(transactions).hasSize(8);
     assertThat(transactions.get(0).getDepotId()).isEqualTo(1);
@@ -139,8 +140,8 @@ class GetIncomeTest {
 
     PerformanceDto amzn = getPerformance(responseBody, SecurityIds.AMZN);
     assertThat(amzn.getSecurityIds()).containsExactlyInAnyOrder(SecurityIds.AMZN);
-    assertThat(amzn.getAbsoluteValueGross()).isEqualTo(3842.78);
-    assertThat(amzn.getAbsoluteValueNet()).isEqualTo(3832.78);
+    assertThat(amzn.getAbsoluteValueGross()).isEqualByComparingTo(BigDecimal.valueOf(3842.78));
+    assertThat(amzn.getAbsoluteValueNet()).isEqualByComparingTo(BigDecimal.valueOf(3832.78));
     transactions = amzn.getTransactions();
     assertThat(transactions).hasSize(1);
     assertThat(transactions.get(0).getDepotId()).isEqualTo(1);
@@ -148,11 +149,14 @@ class GetIncomeTest {
   }
 
   @Test
-  void getDividends_etf_noContent() throws Exception {
+  void getDividends_etf_emptyArray() throws Exception {
     String url = String.format(ENDPOINT, "4", SecurityIds.VNGGF, IncomeTypeDto.DIVIDEND);
-    MvcResult mvcResult =
-        mockMvc.perform(MockMvcRequestBuilders.get(url)).andExpect(status().isNoContent()).andReturn();
-    assertThat(mvcResult.getResponse().getContentLength()).isZero();
+    MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get(url)).andExpect(status().isOk()).andReturn();
+    List<PerformanceDto> responseBody =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), new TypeReference<>() {
+        });
+
+    assertThat(responseBody).isEmpty();
   }
 
   @Test
@@ -164,8 +168,8 @@ class GetIncomeTest {
 
     assertThat(responseBody).hasSize(1);
     PerformanceDto vnggf = getPerformance(responseBody, SecurityIds.VNGGF);
-    assertThat(vnggf.getAbsoluteValueGross()).isEqualTo(-7.89);
-    assertThat(vnggf.getAbsoluteValueNet()).isEqualTo(-7.89);
+    assertThat(vnggf.getAbsoluteValueGross()).isEqualByComparingTo(BigDecimal.valueOf(-7.89));
+    assertThat(vnggf.getAbsoluteValueNet()).isEqualByComparingTo(BigDecimal.valueOf(-7.89));
     List<TransactionReferenceDto> transactions = vnggf.getTransactions();
     assertThat(transactions).hasSize(1);
     assertThat(transactions.get(0).getDepotId()).isEqualTo(4);
@@ -185,8 +189,8 @@ class GetIncomeTest {
 
     PerformanceDto googl = getPerformance(responseBody, SecurityIds.GOOGL);
     assertThat(googl.getSecurityIds()).containsExactlyInAnyOrder(SecurityIds.GOOGL);
-    assertThat(googl.getAbsoluteValueGross()).isEqualTo(2105.64);
-    assertThat(googl.getAbsoluteValueNet()).isEqualTo(1809.85);
+    assertThat(googl.getAbsoluteValueGross()).isEqualByComparingTo(BigDecimal.valueOf(2105.64));
+    assertThat(googl.getAbsoluteValueNet()).isEqualByComparingTo(BigDecimal.valueOf(1809.85));
     List<TransactionReferenceDto> transactions = googl.getTransactions();
     assertThat(transactions).hasSize(1);
     assertThat(transactions.get(0).getDepotId()).isEqualTo(7);
@@ -194,8 +198,8 @@ class GetIncomeTest {
 
     PerformanceDto volkswagen = getPerformance(responseBody, SecurityIds.VW_VZ);
     assertThat(volkswagen.getSecurityIds()).containsExactlyInAnyOrder(SecurityIds.VW_VZ, SecurityIds.VW_STAMM);
-    assertThat(volkswagen.getAbsoluteValueGross()).isEqualTo(935.64);
-    assertThat(volkswagen.getAbsoluteValueNet()).isEqualTo(701.7);
+    assertThat(volkswagen.getAbsoluteValueGross()).isEqualByComparingTo(BigDecimal.valueOf(935.64));
+    assertThat(volkswagen.getAbsoluteValueNet()).isEqualByComparingTo(BigDecimal.valueOf(701.7));
     transactions = volkswagen.getTransactions();
     assertThat(transactions).hasSize(12);
     assertThat(transactions.get(0).getDepotId()).isEqualTo(7);
@@ -235,7 +239,7 @@ class GetIncomeTest {
   @Test
   void getDividends_depotIdsNotSet_badRequest() throws Exception {
     MvcResult mvcResult =
-        mockMvc.perform(MockMvcRequestBuilders.get("/depot-performance/income?securities=1&incomeTypes=DIVIDEND"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/depot-performance/income?securityIds=1&incomeTypes=DIVIDEND"))
             .andExpect(status().isBadRequest()).andReturn();
     assertThat(mvcResult.getResponse().getContentLength()).isZero();
   }
@@ -251,14 +255,14 @@ class GetIncomeTest {
   @Test
   void getDividends_securityIdsNotSet_badRequest() throws Exception {
     MvcResult mvcResult =
-        mockMvc.perform(MockMvcRequestBuilders.get("/depot-performance/income?depots=1&incomeTypes=DIVIDEND"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/depot-performance/income?depotIds=1&incomeTypes=DIVIDEND"))
             .andExpect(status().isBadRequest()).andReturn();
     assertThat(mvcResult.getResponse().getContentLength()).isZero();
   }
 
   @Test
   void incomeTypeNotSet() throws Exception {
-    MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/depot-performance/income?depots=1&securities=1"))
+    MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/depot-performance/income?depotIds=1&securityIds=1"))
         .andExpect(status().isBadRequest()).andReturn();
     assertThat(mvcResult.getResponse().getContentLength()).isZero();
   }
@@ -284,8 +288,8 @@ class GetIncomeTest {
   private void verifyDepot1_dividend_nvda(List<PerformanceDto> responseBody) {
     PerformanceDto nvda = getPerformance(responseBody, SecurityIds.NVDA);
     assertThat(nvda.getSecurityIds()).containsExactlyInAnyOrder(SecurityIds.NVDA);
-    assertThat(nvda.getAbsoluteValueGross()).isEqualTo(11.79);
-    assertThat(nvda.getAbsoluteValueNet()).isEqualTo(8.73);
+    assertThat(nvda.getAbsoluteValueGross()).isEqualByComparingTo(BigDecimal.valueOf(11.79));
+    assertThat(nvda.getAbsoluteValueNet()).isEqualByComparingTo(BigDecimal.valueOf(8.73));
     List<TransactionReferenceDto> transactions = nvda.getTransactions();
     assertThat(transactions).hasSize(7);
     assertThat(transactions.get(0).getDepotId()).isEqualTo(1);
@@ -307,8 +311,8 @@ class GetIncomeTest {
   private void verifyDepot1_dividend_lvmh(List<PerformanceDto> responseBody) {
     PerformanceDto lvmh = getPerformance(responseBody, SecurityIds.LVMH);
     assertThat(lvmh.getSecurityIds()).containsExactlyInAnyOrder(SecurityIds.LVMH);
-    assertThat(lvmh.getAbsoluteValueGross()).isEqualTo(45.06);
-    assertThat(lvmh.getAbsoluteValueNet()).isEqualTo(33.49);
+    assertThat(lvmh.getAbsoluteValueGross()).isEqualByComparingTo(BigDecimal.valueOf(45.06));
+    assertThat(lvmh.getAbsoluteValueNet()).isEqualByComparingTo(BigDecimal.valueOf(33.49));
     List<TransactionReferenceDto> transactions = lvmh.getTransactions();
     assertThat(transactions).hasSize(2);
     assertThat(transactions.get(0).getDepotId()).isEqualTo(1);

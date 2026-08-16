@@ -219,8 +219,8 @@ class DividendServiceImpl implements DividendService {
     }
 
     byYear.setYear(year);
-    byYear.setSumGross(sums.getGrossSum().doubleValue());
-    byYear.setSumNet(sums.getNetSum().doubleValue());
+    byYear.setSumGross(sums.getGrossSum());
+    byYear.setSumNet(sums.getNetSum());
     byYear.setDividends(dividendDtos);
     return byYear;
   }
@@ -329,18 +329,18 @@ class DividendServiceImpl implements DividendService {
           dividendYield.setSecurityGroupId(depotPositions.get(securityId).getSecurityGroupId());
           dividendYield.setRegularDividendPaymentsPerYear(regularPaymentsPerYear.intValue());
           dividendYields.put(securityId, dividendYield);
-          dividendYield.setEstimatedPaymentGross(0.0);
-          dividendYield.setEstimatedPaymentNet(0.0);
+          dividendYield.setEstimatedPaymentGross(BigDecimal.ZERO);
+          dividendYield.setEstimatedPaymentNet(BigDecimal.ZERO);
         }
 
         estimatedPaymentPerYear = regularPaymentsPerYear.multiply(latestPayment.getGrossValue(), mathContext);
         estimatedPaymentPerYear =
-            estimatedPaymentPerYear.add(BigDecimal.valueOf(dividendYield.getEstimatedPaymentGross()),
+            estimatedPaymentPerYear.add(dividendYield.getEstimatedPaymentGross(),
                 mathContext);
-        dividendYield.setEstimatedPaymentGross(estimatedPaymentPerYear.doubleValue());
+        dividendYield.setEstimatedPaymentGross(estimatedPaymentPerYear);
         estimatedYield = estimatedPaymentPerYear.divide(depotPositions.get(securityId).getCurrentSizeAbsolute(),
             mathContext);
-        dividendYield.setCurrentYieldGross(estimatedYield.doubleValue());
+        dividendYield.setCurrentYieldGross(estimatedYield);
 
         try {
           estimatedYield = estimatedPaymentPerYear.divide(depotPositions.get(securityId).getBuyInAbsolute(),
@@ -348,16 +348,16 @@ class DividendServiceImpl implements DividendService {
         } catch (ArithmeticException e) {
           estimatedYield = BigDecimal.ZERO;
         }
-        dividendYield.setYieldOnCostGross(estimatedYield.doubleValue());
+        dividendYield.setYieldOnCostGross(estimatedYield);
 
         estimatedPaymentPerYear = regularPaymentsPerYear.multiply(latestPayment.getNetValue(mathContext));
         estimatedPaymentPerYear =
-            estimatedPaymentPerYear.add(BigDecimal.valueOf(dividendYield.getEstimatedPaymentNet()),
+            estimatedPaymentPerYear.add(dividendYield.getEstimatedPaymentNet(),
                 mathContext);
-        dividendYield.setEstimatedPaymentNet(estimatedPaymentPerYear.doubleValue());
+        dividendYield.setEstimatedPaymentNet(estimatedPaymentPerYear);
         estimatedYield = estimatedPaymentPerYear.divide(depotPositions.get(securityId).getCurrentSizeAbsolute(),
             mathContext);
-        dividendYield.setCurrentYieldNet(estimatedYield.doubleValue());
+        dividendYield.setCurrentYieldNet(estimatedYield);
 
         try {
           estimatedYield = estimatedPaymentPerYear.divide(depotPositions.get(securityId).getBuyInAbsolute(),
@@ -365,12 +365,12 @@ class DividendServiceImpl implements DividendService {
         } catch (ArithmeticException e) {
           estimatedYield = BigDecimal.ZERO;
         }
-        dividendYield.setYieldOnCostNet(estimatedYield.doubleValue());
+        dividendYield.setYieldOnCostNet(estimatedYield);
       }
     }
 
     List<DividendYieldDto> result = new ArrayList<>(dividendYields.values());
-    result.sort((a, b) -> Double.compare(b.getYieldOnCostGross(), a.getYieldOnCostGross()));
+    result.sort((a, b) -> b.getYieldOnCostGross().compareTo(a.getYieldOnCostGross()));
     return result;
   }
 
@@ -484,13 +484,11 @@ class DividendServiceImpl implements DividendService {
     });
   }
 
-  private void validateDepotIds(Set<Long> depotIds) throws BadRequestException {
+  private void validateDepotIds(Set<Long> depotIds) throws BadRequestException, NotFoundException {
     if (depotIds.isEmpty()) {
       throw new BadRequestException();
     }
-    try {
-      depotService.depotsHaveSameCurrency(depotIds);
-    } catch (NotFoundException e) {
+    if (!depotService.depotsHaveSameCurrency(depotIds)) {
       throw new BadRequestException();
     }
   }

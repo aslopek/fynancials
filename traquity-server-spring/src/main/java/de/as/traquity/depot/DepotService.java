@@ -2,7 +2,6 @@ package de.as.traquity.depot;
 
 import de.as.traquity.common.error.BadRequestException;
 import de.as.traquity.common.error.ConflictException;
-import de.as.traquity.common.error.NoContentException;
 import de.as.traquity.common.error.NotFoundException;
 import java.util.List;
 import java.util.Set;
@@ -12,7 +11,7 @@ public interface DepotService {
 
   Depot createDepot(String name, String currency) throws BadRequestException, ConflictException;
 
-  List<Depot> getDepots() throws NoContentException;
+  List<Depot> getDepots();
 
   boolean depotExists(long depotId);
 
@@ -29,7 +28,7 @@ public interface DepotService {
 
   Resource getLogo(Long depotId) throws NotFoundException;
 
-  void setLogo(Long depotId, Resource logo) throws BadRequestException;
+  void setLogo(Long depotId, Resource logo) throws BadRequestException, NotFoundException;
 
   void deleteLogo(Long depotId);
 }

@@ -7,7 +7,7 @@ import {AppState} from '../../../store/app.state';
 import {persist} from './methods/persist';
 import {setMasterData} from './methods/set-master-data';
 import {setLogo} from './methods/set-logo';
-import {HistoricalSecurityPriceConfig} from '../../../gen/api/historical-security-price';
+import {HistoricalSecurityPriceConfigCreate} from '../../../gen/api/historical-security-price';
 import {setHistoricalSecurityPriceConfig} from './methods/set-historical-security-price-config';
 import {DividendAnnouncementConfigCreate} from "../../../gen/api/notification/dividend-announcement";
 import {setDividendAnnouncementConfig} from "./methods/set-dividend-announcement-config";
@@ -21,7 +21,7 @@ export type AddSecurityWizardComputed = {
 
 type Methods = {
   persist: () => void
-  setHistoricalSecurityPriceConfig: (config: Omit<HistoricalSecurityPriceConfig, 'version'> | null) => void,
+  setHistoricalSecurityPriceConfig: (config: HistoricalSecurityPriceConfigCreate | null) => void,
   setLogo: (logo: File) => void
   setMasterData: (masterData: SecurityCreate | null) => void
   setDividendAnnouncementConfig: (dividendAnnouncementConfig: DividendAnnouncementConfigCreate | null) => void
@@ -30,7 +30,7 @@ type Methods = {
 export type AddSecurityWizardState = {
   masterData: SecurityCreate | null
   logo: File | null
-  historicalSecurityPriceConfig: Omit<HistoricalSecurityPriceConfig, 'version'> | null
+  historicalSecurityPriceConfig: HistoricalSecurityPriceConfigCreate | null
   historicalSecurityPriceConfigStepOk: boolean
   dividendAnnouncementConfig: DividendAnnouncementConfigCreate | null
   dividendAnnouncementConfigStepOk: boolean
@@ -59,7 +59,7 @@ export const addSecurityWizardStore = signalStore(
                globalStore: Store<AppState> = inject(Store)): Methods => {
     return {
       persist: () => persist(signalStore, globalStore),
-      setHistoricalSecurityPriceConfig: (config: Omit<HistoricalSecurityPriceConfig, 'version'> | null) =>
+      setHistoricalSecurityPriceConfig: (config: HistoricalSecurityPriceConfigCreate | null) =>
         setHistoricalSecurityPriceConfig(signalStore, config),
       setLogo: (logo: File) => setLogo(signalStore, logo),
       setMasterData: (masterData: SecurityCreate | null) => setMasterData(signalStore, masterData),

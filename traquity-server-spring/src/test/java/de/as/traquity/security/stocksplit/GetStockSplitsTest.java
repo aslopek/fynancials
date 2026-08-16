@@ -62,9 +62,13 @@ class GetStockSplitsTest {
   }
 
   @Test
-  void getStockSplits_noStockSplitExists_noContent() throws Exception {
-    MvcResult mvcResult = getStockSplits(SecurityIds.HAG).andExpect(status().isNoContent()).andReturn();
-    assertThat(mvcResult.getResponse().getContentLength()).isZero();
+  void getStockSplits_noStockSplitExists_emptyArray() throws Exception {
+    MvcResult mvcResult = getStockSplits(SecurityIds.HAG).andExpect(status().isOk()).andReturn();
+    List<StockSplitDto> responseBody =
+        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), new TypeReference<>() {
+        });
+
+    assertThat(responseBody).isEmpty();
   }
 
   @Test

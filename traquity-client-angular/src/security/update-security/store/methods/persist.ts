@@ -4,7 +4,7 @@ import {Store} from '@ngrx/store';
 import {AppState} from '../../../../store/app.state';
 import {SecurityCreate} from '../../../../gen/api/security';
 import {SecurityActions, UpdateSecurityActionArgs} from '../../../../store/security/security.actions';
-import {HistoricalSecurityPriceConfig} from '../../../../gen/api/historical-security-price';
+import {HistoricalSecurityPriceConfigCreate} from '../../../../gen/api/historical-security-price';
 import {setUntouched} from './set-untouched';
 import {DividendAnnouncementConfigApi} from "../../../../gen/api/notification/dividend-announcement";
 import {DividendAnnouncementConfigChangedEvent} from "../../../details/dividend-announcement/dividend-announcement-config.component";
@@ -35,7 +35,7 @@ export function persist(signalStore: WritableSignalStore<UpdateSecurityState, Up
   }
 
   const historicalSecurityPriceConfigTouched: boolean = signalStore.historicalSecurityPriceConfigTouched();
-  const historicalSecurityPriceConfig: Omit<HistoricalSecurityPriceConfig, 'version'> | null = signalStore.historicalSecurityPriceConfig();
+  const historicalSecurityPriceConfig: HistoricalSecurityPriceConfigCreate | null = signalStore.historicalSecurityPriceConfig();
   if (historicalSecurityPriceConfigTouched && historicalSecurityPriceConfig !== null) {
     globalStore.dispatch(SecurityActions.updateHistoricalSecurityPriceConfig({
       securityId,

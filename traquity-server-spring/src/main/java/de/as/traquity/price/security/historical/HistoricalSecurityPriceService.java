@@ -22,6 +22,9 @@ public interface HistoricalSecurityPriceService {
 
   HistoricalSecurityPriceConfig getConfig(long securityId) throws NotFoundException;
 
-  HistoricalSecurityPriceConfig setConfig(HistoricalSecurityPriceConfig config)
-      throws BadRequestException, ConflictException;
+  HistoricalSecurityPriceConfig createConfig(HistoricalSecurityPriceConfig config)
+      throws BadRequestException, ConflictException, NotFoundException;
+
+  HistoricalSecurityPriceConfig updateConfig(HistoricalSecurityPriceConfig config)
+      throws BadRequestException, ConflictException, NotFoundException;
 }
