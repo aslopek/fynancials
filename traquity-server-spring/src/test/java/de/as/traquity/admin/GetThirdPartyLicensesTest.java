@@ -1,4 +1,4 @@
-package de.as.traquity.configuration;
+package de.as.traquity.admin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -6,7 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.as.traquity.config.api.model.ThirdPartyLicenseDto;
+import de.as.traquity.admin.api.model.ThirdPartyLicenseDto;
 import integration.IntegrationTest;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,7 +18,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @IntegrationTest
 class GetThirdPartyLicensesTest {
 
-  private static final String ENDPOINT = "/config/third-party-licenses";
+  private static final String ENDPOINT = "/admin/third-party-licenses";
 
   @Autowired
   private MockMvc mockMvc;

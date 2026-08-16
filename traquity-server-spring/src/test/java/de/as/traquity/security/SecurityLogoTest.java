@@ -173,13 +173,13 @@ class SecurityLogoTest {
   }
 
   @Test
-  void putLogo_securityDoesNotExist_badRequest() throws Exception {
+  void putLogo_securityDoesNotExist_notFound() throws Exception {
     final long securityId = 999;
     final long count = securityLogoRepository.count();
 
     MvcResult mvcResult =
         mockMvc.perform(put(String.format(ENDPOINT, securityId)).contentType(MediaType.IMAGE_PNG).content(mainLogo))
-            .andExpect(status().isBadRequest()).andReturn();
+            .andExpect(status().isNotFound()).andReturn();
     assertThat(mvcResult.getResponse().getContentLength()).isZero();
 
     assertThat(securityLogoRepository.count()).isEqualTo(count);

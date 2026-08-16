@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
-  title: Configuration API
-  description: The API definitions for reading and manipulation the application's configuration
+  title: Security Group Configuration API
+  description: The API definitions for grouping securities that are to be treated as one position
   version: 1.0.0
 servers:
   - url: 'http://localhost:23726'
@@ -27,12 +27,17 @@ paths:
               required: true
               schema:
                 type: string
+                nullable: false
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SecurityGroupRead'
         '400':
           description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           description: A security group with the same name exists already
     get:
@@ -41,7 +46,7 @@ paths:
       operationId: getSecurityGroups
       responses:
         '200':
-          description: Successfully retrieved the security groups
+          description: Successfully retrieved the security groups, or an empty array if none exist
           content:
             application/json:
               schema:
@@ -50,6 +55,10 @@ paths:
                 minItems: 0
                 items:
                   $ref: '#/components/schemas/SecurityGroupRead'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /config/security-groups/{id}:
     parameters:
@@ -78,6 +87,10 @@ paths:
                 $ref: '#/components/schemas/SecurityGroupRead'
         '400':
           description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No security group with the given ID exists
         '409':
@@ -89,12 +102,24 @@ paths:
       responses:
         '204':
           description: Successfully deleted the security group
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No security group with the given ID exists
-        '409':
-          description: Optimistic Lock failed
 
 components:
+  responses:
+    Unauthorized:
+      description: |
+        The request carried no valid credentials, or credentials the server rejected. A deployment that does not authenticate never
+        answers this, and a caller must not treat its absence as a promise that the endpoint is open.
+    Forbidden:
+      description: |
+        The caller is authenticated but not permitted to perform this operation - a read-only registration issuing a write, for
+        instance. A deployment that does not authorize never answers this.
+
   schemas:
     Id:
       type: integer
@@ -123,6 +148,7 @@ components:
           nullable: false
           minLength: 1
           maxLength: 255
+          example: Microsoft
         securities:
           type: array
           nullable: false

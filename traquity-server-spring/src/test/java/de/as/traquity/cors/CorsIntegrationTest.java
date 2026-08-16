@@ -15,11 +15,13 @@ import de.as.traquity.notification.dividendannouncement.api.model.DividendAnnoun
 import de.as.traquity.notification.dividendannouncement.api.model.DividendAnnouncementDataSourceCreateDto;
 import de.as.traquity.notification.dividendannouncement.api.model.DividendAnnouncementDataSourceUpdateDto;
 import de.as.traquity.notification.dividendannouncement.api.model.DividendAnnouncementUpdateDto;
-import de.as.traquity.price.security.historical.HistoricalSecurityPriceConfig;
+import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceConfigCreateDto;
+import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceConfigUpdateDto;
 import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceDataSourceCreateDto;
 import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceDataSourceUpdateDto;
 import de.as.traquity.security.api.model.SecurityCreateDto;
 import de.as.traquity.security.api.model.SecurityUpdateDto;
+import de.as.traquity.security.api.model.StockSplitDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +49,39 @@ class CorsIntegrationTest {
 
   @Autowired
   private MockMvc mockMvc;
+
+  // /admin/database
+
+  @Test
+  void getDatabaseConfig() throws Exception {
+    testEndpoint(HttpMethod.GET, "/admin/database", null);
+  }
+
+  // /admin/dev-mode
+
+  @Test
+  void getDevModeActive() throws Exception {
+    testEndpoint(HttpMethod.GET, "/admin/dev-mode", null);
+  }
+
+  @Test
+  void setDevModeActive() throws Exception {
+    testEndpoint(HttpMethod.PUT, "/admin/dev-mode", true);
+  }
+
+  // /admin/pid
+
+  @Test
+  void getPid() throws Exception {
+    testEndpoint(HttpMethod.GET, "/admin/pid", null);
+  }
+
+  // /admin/third-party-licenses
+
+  @Test
+  void getThirdPartyLicenses() throws Exception {
+    testEndpoint(HttpMethod.GET, "/admin/third-party-licenses", null);
+  }
 
   // /config/clients/{clientId}
 
@@ -77,51 +112,18 @@ class CorsIntegrationTest {
     testEndpoint(HttpMethod.DELETE, "/config/clients/some-client/some-key", null);
   }
 
-  // /config/currency/default-currency
+  // /config/currencies/default
 
   @Test
   void getDefaultCurrency() throws Exception {
-    testEndpoint(HttpMethod.GET, "/config/currency/default-currency", null);
+    testEndpoint(HttpMethod.GET, "/config/currencies/default", null);
   }
 
-  // /config/currency/supported-currencies
+  // /config/currencies
 
   @Test
   void getSupportedCurrencies() throws Exception {
-    testEndpoint(HttpMethod.GET, "/config/currency/supported-currencies", null);
-  }
-
-  // /config/database
-
-  @Test
-  void getDatabaseConfig() throws Exception {
-    testEndpoint(HttpMethod.GET, "/config/database", null);
-  }
-
-  // /config/backend-services
-
-  @Test
-  void getBackendServicesInfo() throws Exception {
-    testEndpoint(HttpMethod.GET, "/config/backend-services", null);
-  }
-
-  // /config/dev-mode
-
-  @Test
-  void isDevModeActive() throws Exception {
-    testEndpoint(HttpMethod.GET, "/config/dev-mode", null);
-  }
-
-  @Test
-  void setDevModeActive() throws Exception {
-    testEndpoint(HttpMethod.PUT, "/config/dev-mode", true, MediaType.TEXT_PLAIN);
-  }
-
-  // /config/pid
-
-  @Test
-  void getPid() throws Exception {
-    testEndpoint(HttpMethod.GET, "/config/pid", null);
+    testEndpoint(HttpMethod.GET, "/config/currencies", null);
   }
 
   // /config/security-groups
@@ -131,11 +133,16 @@ class CorsIntegrationTest {
     testEndpoint(HttpMethod.POST, "/config/security-groups", new SecurityGroupCreateDto());
   }
 
+  @Test
+  void getSecurityGroups() throws Exception {
+    testEndpoint(HttpMethod.GET, "/config/security-groups", null);
+  }
+
   // /config/security-groups/{groupId}
 
   @Test
   void updateDepotSecurityGroup() throws Exception {
-    testEndpoint(HttpMethod.POST, "/config/security-groups/1", new SecurityGroupUpdateDto());
+    testEndpoint(HttpMethod.PUT, "/config/security-groups/1", new SecurityGroupUpdateDto());
   }
 
   @Test
@@ -143,11 +150,18 @@ class CorsIntegrationTest {
     testEndpoint(HttpMethod.DELETE, "/config/security-groups/1", null);
   }
 
-  // /config/third-party-licenses
+  // /depot-dividends
 
   @Test
-  void getThirdPartyLicenses() throws Exception {
-    testEndpoint(HttpMethod.GET, "/config/third-party-licenses", null);
+  void getDividends() throws Exception {
+    testEndpoint(HttpMethod.GET, "/depot-dividends?depotIds=[1]", null);
+  }
+
+  // /depot-performance
+
+  @Test
+  void getDepotPerformance() throws Exception {
+    testEndpoint(HttpMethod.GET, "/depot-performance?depotIds=1", null);
   }
 
   // /depot-performance/income
@@ -161,7 +175,7 @@ class CorsIntegrationTest {
 
   @Test
   void getDepotPositions() throws Exception {
-    testEndpoint(HttpMethod.GET, "/depot-positions?depots=1", null);
+    testEndpoint(HttpMethod.GET, "/depot-positions?depotIds=1", null);
   }
 
   //  /depots
@@ -202,7 +216,7 @@ class CorsIntegrationTest {
 
   @Test
   void setLogo_depot() throws Exception {
-    testEndpoint(HttpMethod.PUT, "/depots/1/logo", new byte[1]);
+    testEndpoint(HttpMethod.PUT, "/depots/1/logo", new byte[1], MediaType.IMAGE_PNG);
   }
 
   @Test
@@ -224,6 +238,11 @@ class CorsIntegrationTest {
     testEndpoint(HttpMethod.POST, "/depots/1/transactions", new TransactionCreateDto());
   }
 
+  @Test
+  void getTransactions() throws Exception {
+    testEndpoint(HttpMethod.GET, "/depots/1/transactions", null);
+  }
+
   // /depots/{depotId}/transactions/{transactionId}
 
   @Test
@@ -241,35 +260,28 @@ class CorsIntegrationTest {
     testEndpoint(HttpMethod.DELETE, "/depots/1/transactions/1", null);
   }
 
-  // /dividends
-
-  @Test
-  void getDividends() throws Exception {
-    testEndpoint(HttpMethod.GET, "/dividends?depots=[1]", null);
-  }
-
-  // /historicalprices/data-sources
+  // /historical-prices/data-sources
 
   @Test
   void createHistoricalSecurityPriceDataSource() throws Exception {
-    testEndpoint(HttpMethod.POST, "/historicalprices/data-sources", new HistoricalSecurityPriceDataSourceCreateDto());
+    testEndpoint(HttpMethod.POST, "/historical-prices/data-sources", new HistoricalSecurityPriceDataSourceCreateDto());
   }
 
   @Test
   void getHistoricalSecurityPriceDataSources() throws Exception {
-    testEndpoint(HttpMethod.GET, "/historicalprices/data-sources", null);
+    testEndpoint(HttpMethod.GET, "/historical-prices/data-sources", null);
   }
 
-  // /historicalprices/data-sources/{id}
+  // /historical-prices/data-sources/{id}
 
   @Test
   void updateHistoricalSecurityPriceDataSource() throws Exception {
-    testEndpoint(HttpMethod.PUT, "/historicalprices/data-sources/1", new HistoricalSecurityPriceDataSourceUpdateDto());
+    testEndpoint(HttpMethod.PUT, "/historical-prices/data-sources/1", new HistoricalSecurityPriceDataSourceUpdateDto());
   }
 
   @Test
   void deleteHistoricalSecurityPriceDataSource() throws Exception {
-    testEndpoint(HttpMethod.DELETE, "/historicalprices/data-sources/1", null);
+    testEndpoint(HttpMethod.DELETE, "/historical-prices/data-sources/1", null);
   }
 
   // /notifications/dividend-announcements
@@ -389,24 +401,30 @@ class CorsIntegrationTest {
     testEndpoint(HttpMethod.GET, "/securities/1/cagr", null);
   }
 
-  // /securities/{securityId}/historicalprices
+  // /securities/{securityId}/historical-prices
 
   @Test
   void getHistoricalPrices() throws Exception {
-    testEndpoint(HttpMethod.GET, "/securities/1/historicalprices", null);
+    testEndpoint(HttpMethod.GET, "/securities/1/historical-prices", null);
   }
 
-  // /securities/{securityId}/historicalprices/config
+  // /securities/{securityId}/historical-prices/config
 
   @Test
-  void getHistoricalPriceConfig() throws Exception {
-    testEndpoint(HttpMethod.GET, "/securities/1/historicalprices/config", null);
+  void getHistoricalSecurityPriceConfig() throws Exception {
+    testEndpoint(HttpMethod.GET, "/securities/1/historical-prices/config", null);
   }
 
   @Test
-  void setHistoricalPriceConfig() throws Exception {
-    HistoricalSecurityPriceConfig requestBody = new HistoricalSecurityPriceConfig();
-    testEndpoint(HttpMethod.GET, "/securities/1/historicalprices/config", requestBody);
+  void createHistoricalSecurityPriceConfig() throws Exception {
+    testEndpoint(HttpMethod.POST, "/securities/1/historical-prices/config",
+        new HistoricalSecurityPriceConfigCreateDto());
+  }
+
+  @Test
+  void updateHistoricalSecurityPriceConfig() throws Exception {
+    testEndpoint(HttpMethod.PUT, "/securities/1/historical-prices/config",
+        new HistoricalSecurityPriceConfigUpdateDto());
   }
 
   // /securities/{securityId}/logo
@@ -418,12 +436,25 @@ class CorsIntegrationTest {
 
   @Test
   void setLogo_security() throws Exception {
-    testEndpoint(HttpMethod.PUT, "/securities/1/logo", new byte[1]);
+    testEndpoint(HttpMethod.PUT, "/securities/1/logo", new byte[1], MediaType.IMAGE_PNG);
   }
 
   @Test
   void deleteLogo_security() throws Exception {
     testEndpoint(HttpMethod.DELETE, "/securities/1/logo", null);
+  }
+
+  // /securities/{id}/stock-splits
+
+  @Test
+  void getStockSplits() throws Exception {
+    testEndpoint(HttpMethod.GET, "/securities/1/stock-splits", null);
+  }
+
+  @Test
+  void createStockSplit() throws Exception {
+    testEndpoint(HttpMethod.POST,
+        "/securities/1/stock-splits?updateTransactions=false&updateHistoricalPrices=false", new StockSplitDto());
   }
 
   private void testEndpoint(HttpMethod method, String url, Object requestBody) throws Exception {
@@ -438,6 +469,14 @@ class CorsIntegrationTest {
       builder.content(content).contentType(contentType);
     }
     MvcResult result = mockMvc.perform(builder).andReturn();
+
+    // the CORS header is written by a filter, before routing decides whether anything serves this method and path - so
+    // without this check a typo'd URL or a wrong verb passes the assertions below while testing nothing. A handler is
+    // resolved for every mapped endpoint, including one that answers 404 because the addressed entity does not exist.
+    assertThat(result.getHandler())
+        .withFailMessage("no handler is mapped for %s %s", method, url)
+        .isNotNull();
+
     assertThat(result.getResponse().getHeader(CORS_HEADER)).isEqualTo(ALLOWED_ORIGIN_1);
 
     // request with second allowed origin

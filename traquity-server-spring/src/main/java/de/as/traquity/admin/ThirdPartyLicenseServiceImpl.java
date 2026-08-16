@@ -1,9 +1,9 @@
-package de.as.traquity.configuration;
+package de.as.traquity.admin;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import de.as.traquity.common.error.InternalServerErrorException;
-import de.as.traquity.config.api.model.ThirdPartyLicenseDto;
+import de.as.traquity.admin.api.model.ThirdPartyLicenseDto;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;

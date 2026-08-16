@@ -7,7 +7,7 @@ import {MatToolbarModule} from "@angular/material/toolbar";
 import {MatTooltipModule} from "@angular/material/tooltip";
 import {Store} from "@ngrx/store";
 import {catchError, Observable, of, switchMap, take} from "rxjs";
-import {ConfigApi, DatabaseConfig} from "../../gen/api/configuration";
+import {AdminApi, DatabaseConfig} from "../../gen/api/admin";
 import {AppConfigActions} from "../../store/app-config/app-config.actions";
 import {getOpenPage, isDevModeActive, isSideMenuOpen,} from "../../store/app-config/app-config.selector";
 import {DatabaseComponent} from "../database/database.component";
@@ -42,7 +42,7 @@ export class HeaderComponent {
   protected readonly databaseConfig: Signal<DatabaseConfig | undefined> = toSignal(this.appConfigStore.select(isDevModeActive).pipe(
       switchMap((devModeActive: boolean): Observable<DatabaseConfig | undefined> =>
         devModeActive
-          ? this.configApi.getDatabaseConfig().pipe(catchError((): Observable<undefined> => of(undefined)))
+          ? this.adminApi.getDatabaseConfig().pipe(catchError((): Observable<undefined> => of(undefined)))
           : of(undefined)
       )
     ),
@@ -51,7 +51,7 @@ export class HeaderComponent {
 
   constructor(
     private readonly dialog: MatDialog,
-    private readonly configApi: ConfigApi,
+    private readonly adminApi: AdminApi,
   ) {
   }
 

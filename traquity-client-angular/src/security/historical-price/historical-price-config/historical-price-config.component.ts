@@ -4,7 +4,7 @@ import {MatCheckboxModule} from "@angular/material/checkbox";
 import {MatInputModule} from "@angular/material/input";
 import {MatSelectModule} from "@angular/material/select";
 import {MatSlideToggleModule} from "@angular/material/slide-toggle";
-import {HistoricalSecurityPriceConfig} from "../../../gen/api/historical-security-price";
+import {HistoricalSecurityPriceConfigCreate, HistoricalSecurityPriceConfigRead} from "../../../gen/api/historical-security-price";
 import {disabled, FieldTree, form, FormField, min, minLength, required, SchemaPathTree,} from "@angular/forms/signals";
 import {Store} from "@ngrx/store";
 import {AppState} from "../../../store/app.state";
@@ -20,9 +20,9 @@ type FormModel = {
 };
 
 export type Input =
-  | Pick<HistoricalSecurityPriceConfig, "isActive" | "externalSecurityId">
+  | Pick<HistoricalSecurityPriceConfigRead, "isActive" | "externalSecurityId">
   | undefined;
-export type Output = Omit<HistoricalSecurityPriceConfig, "version">;
+export type Output = HistoricalSecurityPriceConfigCreate;
 
 @Component({
   selector: "app-historical-price-config",
@@ -47,12 +47,12 @@ export class HistoricalPriceConfigComponent {
   protected readonly form: FieldTree<FormModel>;
   private readonly formModel: WritableSignal<FormModel>;
   private readonly allConfigs: Signal<HistoricalSecurityPriceConfigs>;
-  private readonly selectedConfig: Signal<HistoricalSecurityPriceConfig | null>;
+  private readonly selectedConfig: Signal<HistoricalSecurityPriceConfigRead | null>;
   protected readonly dataSources: Signal<DataSourceWithId[]>;
 
   constructor(store: Store<AppState>) {
     this.allConfigs = store.selectSignal(getHistoricalSecurityPriceConfigs);
-    this.selectedConfig = computed((): HistoricalSecurityPriceConfig | null => {
+    this.selectedConfig = computed((): HistoricalSecurityPriceConfigRead | null => {
       const id: number | undefined = this.securityId();
       if (id === undefined) {
         return null;
@@ -92,7 +92,7 @@ export class HistoricalPriceConfigComponent {
 
     // effect for updating form on changing selectedConfig
     effect((): void => {
-      const config: HistoricalSecurityPriceConfig | null = this.selectedConfig();
+      const config: HistoricalSecurityPriceConfigRead | null = this.selectedConfig();
       const isActive: boolean = config?.isActive ?? false;
       const externalSecurityId: string = config?.externalSecurityId ?? "";
       const availableDataSources: DataSourceWithId[] = this.dataSources();

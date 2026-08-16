@@ -91,36 +91,36 @@ public class Lot implements Performance {
 
     BigDecimal buyInAbsolute;
     BigDecimal currentSizeAbsolute;
-    BigDecimal absolutePerformance;
-    BigDecimal relativePerformance;
+    BigDecimal performanceAbsolute;
+    BigDecimal performanceRelative;
 
     for (Lot lot : lots) {
       buyInAbsolute = lot.getBuyInAbsolute();
       if (price == null) {
         lot.setCurrentSizeAbsolute(buyInAbsolute);
-        lot.setAbsolutePerformance(ZERO);
-        lot.setRelativePerformance(ZERO);
+        lot.setPerformanceAbsolute(ZERO);
+        lot.setPerformanceRelative(ZERO);
         continue;
       }
 
       currentSizeAbsolute = lot.count.multiply(price, mathContext);
-      absolutePerformance = currentSizeAbsolute.subtract(buyInAbsolute, mathContext);
+      performanceAbsolute = currentSizeAbsolute.subtract(buyInAbsolute, mathContext);
 
       if (buyInAbsolute.compareTo(ZERO) == 0) {
-        relativePerformance = ZERO; // actually positive or negative infinity
+        performanceRelative = ZERO; // actually positive or negative infinity
       } else {
-        relativePerformance = absolutePerformance.divide(buyInAbsolute, mathContext);
+        performanceRelative = performanceAbsolute.divide(buyInAbsolute, mathContext);
       }
 
       lot.currentSizeAbsolute = currentSizeAbsolute;
-      lot.absolutePerformance = absolutePerformance;
-      lot.relativePerformance = relativePerformance;
+      lot.performanceAbsolute = performanceAbsolute;
+      lot.performanceRelative = performanceRelative;
       lot.cagr = calculateCagr(lot, mathContext, clock);
     }
   }
 
   private static BigDecimal calculateCagr(Lot lot, MathContext mathContext, Clock clock) {
-    BigDecimal growthFactor = ONE.add(lot.relativePerformance, mathContext);
+    BigDecimal growthFactor = ONE.add(lot.performanceRelative, mathContext);
     return cagr(growthFactor, lot.date, LocalDate.now(clock), mathContext);
   }
 
@@ -147,10 +147,10 @@ public class Lot implements Performance {
   private BigDecimal currentSizeAbsolute = ZERO;
 
   @Builder.Default
-  private BigDecimal absolutePerformance = ZERO;
+  private BigDecimal performanceAbsolute = ZERO;
 
   @Builder.Default
-  private BigDecimal relativePerformance = ZERO;
+  private BigDecimal performanceRelative = ZERO;
 
   @Builder.Default
   private BigDecimal cagr = ZERO;

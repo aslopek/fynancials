@@ -95,7 +95,7 @@ export class HistoricalPriceChartComponent implements OnDestroy, OnInit {
 
     try {
       prices = await firstValueFrom(
-        this.historicalSecurityPriceApi.getHistoricalPrices(
+        this.historicalSecurityPriceApi.getHistoricalSecurityPrices(
           this.selectedSecurityId,
           startDate,
           this.selectedCurrency,

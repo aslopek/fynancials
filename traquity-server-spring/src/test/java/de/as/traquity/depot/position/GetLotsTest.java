@@ -74,8 +74,8 @@ class GetLotsTest {
     assertThat(lot.getFee()).isEqualTo("10");
     // current price 138.58 EUR
     assertThat(lot.getCurrentSizeAbsolute()).isEqualByComparingTo("3741.66");
-    assertThat(lot.getAbsolutePerformance()).isEqualByComparingTo("257.98");
-    assertThat(lot.getRelativePerformance()).isCloseTo(new BigDecimal("0.07406"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(lot.getPerformanceAbsolute()).isEqualByComparingTo("257.98");
+    assertThat(lot.getPerformanceRelative()).isCloseTo(new BigDecimal("0.07406"), ACCURACY_ONE_THOUSANDTH);
     assertThat(lot.getCagr()).isCloseTo(new BigDecimal("0.02301"), ACCURACY_ONE_THOUSANDTH);
 
     lot = lots.get(1);
@@ -91,8 +91,8 @@ class GetLotsTest {
     assertThat(lot.getFee()).isEqualTo("10");
     // current price 138.58 EUR
     assertThat(lot.getCurrentSizeAbsolute()).isEqualByComparingTo("3741.66");
-    assertThat(lot.getAbsolutePerformance()).isEqualByComparingTo("4.18");
-    assertThat(lot.getRelativePerformance()).isCloseTo(new BigDecimal("0.00112"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(lot.getPerformanceAbsolute()).isEqualByComparingTo("4.18");
+    assertThat(lot.getPerformanceRelative()).isCloseTo(new BigDecimal("0.00112"), ACCURACY_ONE_THOUSANDTH);
     assertThat(lot.getCagr()).isCloseTo(new BigDecimal("0.00042"), ACCURACY_ONE_THOUSANDTH);
   }
 
@@ -120,8 +120,8 @@ class GetLotsTest {
     assertThat(lot.getTax()).isEqualByComparingTo(ZERO);
     assertThat(lot.getFee()).isEqualTo("10");
     assertThat(lot.getCurrentSizeAbsolute()).isEqualByComparingTo("3483.68");
-    assertThat(lot.getAbsolutePerformance()).isZero();
-    assertThat(lot.getRelativePerformance()).isZero();
+    assertThat(lot.getPerformanceAbsolute()).isZero();
+    assertThat(lot.getPerformanceRelative()).isZero();
     assertThat(lot.getCagr()).isZero();
 
     lot = lots.get(1);
@@ -136,8 +136,8 @@ class GetLotsTest {
     assertThat(lot.getTax()).isEqualByComparingTo(ZERO);
     assertThat(lot.getFee()).isEqualTo("10");
     assertThat(lot.getCurrentSizeAbsolute()).isEqualByComparingTo("3737.48");
-    assertThat(lot.getAbsolutePerformance()).isZero();
-    assertThat(lot.getRelativePerformance()).isZero();
+    assertThat(lot.getPerformanceAbsolute()).isZero();
+    assertThat(lot.getPerformanceRelative()).isZero();
     assertThat(lot.getCagr()).isZero();
   }
 
@@ -173,8 +173,8 @@ class GetLotsTest {
     assertThat(lot.getFee()).isCloseTo(new BigDecimal("8.3333"), ACCURACY_ONE_THOUSANDTH);
     // current price 138.58 EUR
     assertThat(lot.getCurrentSizeAbsolute()).isEqualByComparingTo("3118.05");
-    assertThat(lot.getAbsolutePerformance()).isCloseTo(new BigDecimal("214.9833"), ACCURACY_ONE_THOUSANDTH);
-    assertThat(lot.getRelativePerformance()).isCloseTo(new BigDecimal("0.07406"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(lot.getPerformanceAbsolute()).isCloseTo(new BigDecimal("214.9833"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(lot.getPerformanceRelative()).isCloseTo(new BigDecimal("0.07406"), ACCURACY_ONE_THOUSANDTH);
     assertThat(lot.getCagr()).isCloseTo(new BigDecimal("0.02301"), ACCURACY_ONE_THOUSANDTH);
 
     lot = lots.get(1);
@@ -190,8 +190,8 @@ class GetLotsTest {
     assertThat(lot.getFee()).isEqualTo("10");
     // current price 138.58 EUR
     assertThat(lot.getCurrentSizeAbsolute()).isEqualByComparingTo("3741.66");
-    assertThat(lot.getAbsolutePerformance()).isEqualByComparingTo("4.18");
-    assertThat(lot.getRelativePerformance()).isCloseTo(new BigDecimal("0.00112"), ACCURACY_ONE_THOUSANDTH);
+    assertThat(lot.getPerformanceAbsolute()).isEqualByComparingTo("4.18");
+    assertThat(lot.getPerformanceRelative()).isCloseTo(new BigDecimal("0.00112"), ACCURACY_ONE_THOUSANDTH);
     assertThat(lot.getCagr()).isCloseTo(new BigDecimal("0.00042"), ACCURACY_ONE_THOUSANDTH);
   }
 

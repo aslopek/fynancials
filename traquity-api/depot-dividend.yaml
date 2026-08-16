@@ -1,7 +1,7 @@
 openapi: 3.0.3
 
 info:
-  title: Depot API
+  title: Depot Dividend API
   description: The API definitions for querying dividend information
   version: 1.0.0
 
@@ -10,14 +10,15 @@ servers:
     description: Locally serving the API
 
 paths:
-  /dividends:
+  /depot-dividends:
     get:
       tags:
         - Dividend
       parameters:
         - in: query
-          name: depots
+          name: depotIds
           required: true
+          description: identifies the depots the dividends are aggregated over
           schema:
             type: array
             nullable: false
@@ -27,13 +28,16 @@ paths:
         - in: query
           name: includeSpecialDividends
           required: false
+          description: When true, special dividends are counted alongside regular ones
           schema:
             type: boolean
             nullable: false
+            default: false
+            example: true
       operationId: getDividends
       responses:
         '200':
-          description: Successfully returned the dividends
+          description: Successfully returned the dividends, with empty arrays if none exist
           content:
             application/json:
               schema:
@@ -43,8 +47,24 @@ paths:
             - passed invalid query parameters
             - not all depots have the same currency
             '''
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: At least one of the specified depot IDs does not exist
 
 components:
+  responses:
+    Unauthorized:
+      description: |
+        The request carried no valid credentials, or credentials the server rejected. A deployment that does not authenticate never
+        answers this, and a caller must not treat its absence as a promise that the endpoint is open.
+    Forbidden:
+      description: |
+        The caller is authenticated but not permitted to perform this operation - a read-only registration issuing a write, for
+        instance. A deployment that does not authorize never answers this.
+
   schemas:
     Id:
       type: integer
@@ -116,6 +136,7 @@ components:
           nullable: false
           minLength: 1
           maxLength: 255
+          example: Microsoft
         securityGroupId:
           $ref: '#/components/schemas/Id'
 
@@ -127,7 +148,6 @@ components:
           required:
             - estimatedPaymentGross
             - estimatedPaymentNet
-            - totalDividendsReceived
             - currentYieldGross
             - currentYieldNet
             - yieldOnCostGross
@@ -137,12 +157,10 @@ components:
             estimatedPaymentGross:
               description: Estimated payment per year based on the latest regular payment (gross value).
               type: number
-              format: double
               nullable: false
             estimatedPaymentNet:
-              description: Estimated payment per year based on the latest regular
+              description: Estimated payment per year based on the latest regular payment (net value).
               type: number
-              format: double
               nullable: false
             currentYieldGross:
               description: '''
@@ -150,7 +168,6 @@ components:
                 percentage (e.g. 0.1 meaning 10%).
                 '''
               type: number
-              format: double
               nullable: false
             currentYieldNet:
               description: '''
@@ -158,7 +175,6 @@ components:
                 percentage (e.g. 0.1 meaning 10%).
                 '''
               type: number
-              format: double
               nullable: false
             yieldOnCostGross:
               description: '''
@@ -166,7 +182,6 @@ components:
                 percentage (e.g. 0.1 meaning 10%).
                 '''
               type: number
-              format: double
               nullable: false
             yieldOnCostNet:
               description: '''
@@ -174,7 +189,6 @@ components:
                 percentage (e.g. 0.1 meaning 10%).
                 '''
               type: number
-              format: double
               nullable: false
             regularDividendPaymentsPerYear:
               description: '''
@@ -199,21 +213,17 @@ components:
           properties:
             absoluteValueGross:
               type: number
-              format: double
               nullable: false
             absoluteValueNet:
               type: number
-              format: double
               nullable: false
             relativeValueGross:
-              description: Percentage 0 < x <= 1
+              description: Percentage (e.g. 0.1 meaning 10%)
               type: number
-              format: double
               nullable: false
             relativeValueNet:
-              description: Percentage 0 < x <= 1
+              description: Percentage (e.g. 0.1 meaning 10%)
               type: number
-              format: double
               nullable: false
 
     DividendsByYear:
@@ -232,13 +242,11 @@ components:
         sumGross:
           description: Sum of all dividends.absoluteValueGross
           type: number
-          format: double
           nullable: false
           minimum: 0
         sumNet:
           description: Sum of all dividends.absoluteValueNet
           type: number
-          format: double
           nullable: false
           minimum: 0
         dividends:

@@ -29,12 +29,17 @@ paths:
               required: true
               schema:
                 type: string
+                nullable: false
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/DepotRead'
         '400':
           description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           description: Another depot with the same name exists already
     get:
@@ -43,17 +48,19 @@ paths:
       operationId: getDepots
       responses:
         '200':
-          description: Successfully returned the depots
+          description: Successfully returned the depots, or an empty array if none exist
           content:
             application/json:
               schema:
                 type: array
                 nullable: false
-                minItems: 1
+                minItems: 0
                 items:
                   $ref: '#/components/schemas/DepotRead'
-        '204':
-          description: No depots to return
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /depots/{id}:
     parameters:
@@ -74,6 +81,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DepotRead'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No depot with the given ID exists
     put:
@@ -95,6 +106,10 @@ paths:
                 $ref: '#/components/schemas/DepotRead'
         '400':
           description: Passed invalid parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No depot with the given ID exists
         '409':
@@ -106,10 +121,12 @@ paths:
       responses:
         '204':
           description: Successfully deleted the depot
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No depot with the given ID exists
-        '409':
-          description: Optimistic Lock failed
 
   /depots/{id}/logo:
     parameters:
@@ -132,6 +149,10 @@ paths:
                 type: string
                 format: file
                 nullable: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: Could not find a logo for the given depot ID
     put:
@@ -150,7 +171,13 @@ paths:
         '204':
           description: Successfully updated the logo
         '400':
-          description: Could not update the logo, e.g. because no depot for the given ID exists
+          description: The request body is not a valid PNG image
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No depot with the given ID exists
     delete:
       tags:
         - DepotLogo
@@ -158,8 +185,22 @@ paths:
       responses:
         '204':
           description: Successfully deleted the logo, or there was no logo to delete
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
 components:
+  responses:
+    Unauthorized:
+      description: |
+        The request carried no valid credentials, or credentials the server rejected. A deployment that does not authenticate never
+        answers this, and a caller must not treat its absence as a promise that the endpoint is open.
+    Forbidden:
+      description: |
+        The caller is authenticated but not permitted to perform this operation - a read-only registration issuing a write, for
+        instance. A deployment that does not authorize never answers this.
+
   schemas:
     Id:
       type: integer
@@ -216,7 +257,6 @@ components:
           nullable: false
           required:
             - id
-            - positions
             - _links
           properties:
             id:

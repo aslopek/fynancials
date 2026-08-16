@@ -17,8 +17,8 @@ public class DepotPosition implements Comparable<DepotPosition>, Performance {
   private BigDecimal buyInRelative;
   private BigDecimal currentSizeAbsolute;
   private BigDecimal currentSizeRelative;
-  private BigDecimal absolutePerformance;
-  private BigDecimal relativePerformance;
+  private BigDecimal performanceAbsolute;
+  private BigDecimal performanceRelative;
 
   DepotPosition() {
     count = ZERO;
@@ -26,8 +26,8 @@ public class DepotPosition implements Comparable<DepotPosition>, Performance {
     buyInRelative = ZERO;
     currentSizeAbsolute = ZERO;
     currentSizeRelative = ZERO;
-    absolutePerformance = ZERO;
-    relativePerformance = ZERO;
+    performanceAbsolute = ZERO;
+    performanceRelative = ZERO;
   }
 
   @Override

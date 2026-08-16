@@ -13,8 +13,8 @@
             }
 
             <app-performance-label
-                    [absolutePerformance]="composition.absolutePerformance"
-                    [relativePerformance]="composition.relativePerformance ?? 'infinity'"
+                    [performanceAbsolute]="composition.performanceAbsolute"
+                    [performanceRelative]="composition.performanceRelative ?? 'infinity'"
                     [currency]="depotCurrency()">
             </app-performance-label>
         </div>

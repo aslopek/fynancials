@@ -1,7 +1,7 @@
 openapi: 3.0.3
 
 info:
-  title: Depot API
+  title: Depot Position API
   description: The API definitions for querying depot positions
   version: 1.0.0
 
@@ -16,8 +16,9 @@ paths:
         - DepotPosition
       parameters:
         - in: query
-          name: depots
+          name: depotIds
           required: true
+          description: identifies the depots the positions are aggregated over
           schema:
             type: array
             nullable: false
@@ -27,7 +28,7 @@ paths:
       operationId: getDepotPositions
       responses:
         '200':
-          description: Successfully returned the dividends
+          description: Successfully returned the depot positions, with an empty positions array if none exist
           content:
             application/json:
               schema:
@@ -37,6 +38,12 @@ paths:
             - passed invalid query parameters
             - not all depots have the same currency
             '''
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: At least one of the specified depot IDs does not exist
 
   /depots/{depotId}/securities/{securityId}/lots:
     parameters:
@@ -58,7 +65,7 @@ paths:
       operationId: getLots
       responses:
         '200':
-          description: Successfully returned the lots of the given security in the given depot
+          description: Successfully returned the lots of the given security in the given depot, or an empty array if there are none
           content:
             application/json:
               schema:
@@ -67,12 +74,24 @@ paths:
                 minItems: 0
                 items:
                   $ref: '#/components/schemas/Lot'
-        '400':
-          description: Invalid path parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No depot with the given ID or no security with the given ID exist
 
 components:
+  responses:
+    Unauthorized:
+      description: |
+        The request carried no valid credentials, or credentials the server rejected. A deployment that does not authenticate never
+        answers this, and a caller must not treat its absence as a promise that the endpoint is open.
+    Forbidden:
+      description: |
+        The caller is authenticated but not permitted to perform this operation - a read-only registration issuing a write, for
+        instance. A deployment that does not authorize never answers this.
+
   schemas:
     Id:
       type: integer
@@ -94,27 +113,25 @@ components:
         - currency
         - buyInAbsolute
         - currentSizeAbsolute
-        - absolutePerformance
+        - performanceAbsolute
         - positions
       properties:
         currency:
           $ref: '#/components/schemas/Currency'
         buyInAbsolute:
           type: number
-          format: double
           nullable: false
         currentSizeAbsolute:
           type: number
-          format: double
           nullable: false
-        absolutePerformance:
+        performanceAbsolute:
           type: number
-          format: double
           nullable: false
-        relativePerformance:
-          description: Percentage (e.g. 0.1 meaning 10%)
+        performanceRelative:
+          description: >
+            Percentage (e.g. 0.1 meaning 10%). Absent when buyInAbsolute is 0, because the ratio is undefined then - unlike
+            DepotPosition, which reports 0 in that case.
           type: number
-          format: double
           nullable: false
         positions:
           type: array
@@ -134,8 +151,8 @@ components:
         - buyInRelative
         - currentSizeAbsolute
         - currentSizeRelative
-        - absolutePerformance
-        - relativePerformance
+        - performanceAbsolute
+        - performanceRelative
       properties:
         securityIds:
           description: '''Contains the security IDs associated to this position. If more than one ID is provided,
@@ -152,38 +169,32 @@ components:
           nullable: false
           minLength: 1
           maxLength: 255
+          example: Microsoft
         securityGroupId:
           $ref: '#/components/schemas/Id'
         count:
           type: number
-          format: double
           nullable: false
         buyInAbsolute:
           type: number
-          format: double
           nullable: false
         buyInRelative:
           description: Percentage (e.g. 0.1 meaning 10%)
           type: number
-          format: double
           nullable: false
         currentSizeAbsolute:
           type: number
-          format: double
           nullable: false
         currentSizeRelative:
           description: Percentage (e.g. 0.1 meaning 10%)
           type: number
-          format: double
           nullable: false
-        absolutePerformance:
+        performanceAbsolute:
           type: number
-          format: double
           nullable: false
-        relativePerformance:
+        performanceRelative:
           description: Percentage (e.g. 0.1 meaning 10%)
           type: number
-          format: double
           nullable: false
 
     Time:
@@ -208,8 +219,8 @@ components:
         - fee
         - tax
         - currentSizeAbsolute
-        - absolutePerformance
-        - relativePerformance
+        - performanceAbsolute
+        - performanceRelative
         - cagr
       properties:
         depotId:
@@ -244,14 +255,14 @@ components:
         currentSizeAbsolute:
           type: number
           nullable: false
-        absolutePerformance:
+        performanceAbsolute:
           type: number
           nullable: false
-        relativePerformance:
+        performanceRelative:
           description: Percentage (e.g. 0.1 meaning 10%)
           type: number
           nullable: false
         cagr:
-          description: Compound Annual Growth Rage, denoted as a percentage per year (e.g. 0.1 meaning 10% p.a.)
+          description: Compound Annual Growth Rate, denoted as a percentage per year (e.g. 0.1 meaning 10% p.a.)
           type: number
           nullable: false

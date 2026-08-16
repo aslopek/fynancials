@@ -10,5 +10,5 @@ import lombok.Data;
 public class DepotPerformance {
 
   private List<DepotValue> values;
-  private BigDecimal extendedInternalRateOfReturns = ZERO;
+  private BigDecimal extendedInternalRateOfReturn = ZERO;
 }

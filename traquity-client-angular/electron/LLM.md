@@ -30,7 +30,7 @@ electron/
     configuration-writer.js    the configuration screen's single config write, one section's slice per config key
     configure-on-next-start.js sets the one-shot `configureOnNextStart` flag and saves the loaded config
   backend/
-    backend-reachable.js       poll GET /config/pid until reachable or child exit
+    backend-reachable.js       poll GET /admin/pid until reachable or child exit
     backend-process.js         spawn, stdin password handover, log piping, single-instance guard, proven-start recording
   java/
     java-path.js               resolve `java` on `PATH`; normalize a picked path to a binary

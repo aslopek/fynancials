@@ -1,5 +1,6 @@
 package de.as.traquity.depot.transaction;
 
+import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,11 +37,11 @@ class GetTransactionTest {
     assertThat(transaction.getTime()).isEqualTo("08:21:19");
     assertThat(transaction.getSecurityId()).isEqualTo(SecurityIds.NVDA);
     assertThat(transaction.getTransactionType()).isEqualTo(TransactionTypeDto.BUY);
-    assertThat(transaction.getSecurityCountOriginal()).isEqualTo(2.16);
-    assertThat(transaction.getSecurityCountSplitAdjusted()).isEqualTo(8.64);
-    assertThat(transaction.getGrossValue()).isEqualTo(984.64);
+    assertThat(transaction.getSecurityCountOriginal()).isEqualByComparingTo(BigDecimal.valueOf(2.16));
+    assertThat(transaction.getSecurityCountSplitAdjusted()).isEqualByComparingTo(BigDecimal.valueOf(8.64));
+    assertThat(transaction.getGrossValue()).isEqualByComparingTo(BigDecimal.valueOf(984.64));
     assertThat(transaction.getTax()).isNull();
-    assertThat(transaction.getFee()).isEqualTo(10);
+    assertThat(transaction.getFee()).isEqualByComparingTo(BigDecimal.valueOf(10));
     assertThat(transaction.getVersion()).isEqualTo(1);
     assertThat(transaction.getId()).isEqualTo(6);
   }
@@ -54,11 +55,11 @@ class GetTransactionTest {
     assertThat(transaction.getTime()).isEqualTo("11:48:34");
     assertThat(transaction.getSecurityId()).isEqualTo(SecurityIds.HAG);
     assertThat(transaction.getTransactionType()).isEqualTo(TransactionTypeDto.SELL);
-    assertThat(transaction.getSecurityCountOriginal()).isEqualTo(120);
-    assertThat(transaction.getSecurityCountSplitAdjusted()).isEqualTo(null);
-    assertThat(transaction.getGrossValue()).isEqualTo(1764);
-    assertThat(transaction.getTax()).isEqualTo(6.42);
-    assertThat(transaction.getFee()).isEqualTo(10);
+    assertThat(transaction.getSecurityCountOriginal()).isEqualByComparingTo(BigDecimal.valueOf(120));
+    assertThat(transaction.getSecurityCountSplitAdjusted()).isNull();
+    assertThat(transaction.getGrossValue()).isEqualByComparingTo(BigDecimal.valueOf(1764));
+    assertThat(transaction.getTax()).isEqualByComparingTo(BigDecimal.valueOf(6.42));
+    assertThat(transaction.getFee()).isEqualByComparingTo(BigDecimal.valueOf(10));
     assertThat(transaction.getVersion()).isEqualTo(0);
     assertThat(transaction.getId()).isEqualTo(11);
   }
@@ -72,9 +73,9 @@ class GetTransactionTest {
     assertThat(transaction.getTime()).isNull();
     assertThat(transaction.getSecurityId()).isEqualTo(SecurityIds.HAG);
     assertThat(transaction.getTransactionType()).isEqualTo(TransactionTypeDto.DIVIDEND);
-    assertThat(transaction.getSecurityCountOriginal()).isEqualTo(250);
-    assertThat(transaction.getSecurityCountSplitAdjusted()).isEqualTo(null);
-    assertThat(transaction.getGrossValue()).isEqualTo(75);
+    assertThat(transaction.getSecurityCountOriginal()).isEqualByComparingTo(BigDecimal.valueOf(250));
+    assertThat(transaction.getSecurityCountSplitAdjusted()).isNull();
+    assertThat(transaction.getGrossValue()).isEqualByComparingTo(BigDecimal.valueOf(75));
     assertThat(transaction.getTax()).isNull();
     assertThat(transaction.getFee()).isNull();
     assertThat(transaction.getVersion()).isEqualTo(0);
@@ -90,10 +91,10 @@ class GetTransactionTest {
     assertThat(transaction.getTime()).isNull();
     assertThat(transaction.getSecurityId()).isEqualTo(SecurityIds.LVMH);
     assertThat(transaction.getTransactionType()).isEqualTo(TransactionTypeDto.SPECIAL_DIVIDEND);
-    assertThat(transaction.getSecurityCountOriginal()).isEqualTo(4.25);
-    assertThat(transaction.getSecurityCountSplitAdjusted()).isEqualTo(null);
-    assertThat(transaction.getGrossValue()).isEqualTo(21.68);
-    assertThat(transaction.getTax()).isEqualTo(5.72);
+    assertThat(transaction.getSecurityCountOriginal()).isEqualByComparingTo(BigDecimal.valueOf(4.25));
+    assertThat(transaction.getSecurityCountSplitAdjusted()).isNull();
+    assertThat(transaction.getGrossValue()).isEqualByComparingTo(BigDecimal.valueOf(21.68));
+    assertThat(transaction.getTax()).isEqualByComparingTo(BigDecimal.valueOf(5.72));
     assertThat(transaction.getFee()).isNull();
     assertThat(transaction.getVersion()).isEqualTo(0);
     assertThat(transaction.getId()).isEqualTo(31);
@@ -108,9 +109,9 @@ class GetTransactionTest {
     assertThat(transaction.getTime()).isNull();
     assertThat(transaction.getSecurityId()).isEqualTo(SecurityIds.VNGGF);
     assertThat(transaction.getTransactionType()).isEqualTo(TransactionTypeDto.TAX);
-    assertThat(transaction.getSecurityCountOriginal()).isEqualTo(34.318);
-    assertThat(transaction.getSecurityCountSplitAdjusted()).isEqualTo(null);
-    assertThat(transaction.getGrossValue()).isEqualTo(7.89);
+    assertThat(transaction.getSecurityCountOriginal()).isEqualByComparingTo(BigDecimal.valueOf(34.318));
+    assertThat(transaction.getSecurityCountSplitAdjusted()).isNull();
+    assertThat(transaction.getGrossValue()).isEqualByComparingTo(BigDecimal.valueOf(7.89));
     assertThat(transaction.getTax()).isNull();
     assertThat(transaction.getFee()).isNull();
     assertThat(transaction.getVersion()).isEqualTo(0);

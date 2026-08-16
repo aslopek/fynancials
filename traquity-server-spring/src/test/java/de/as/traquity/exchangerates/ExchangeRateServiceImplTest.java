@@ -1,5 +1,6 @@
 package de.as.traquity.exchangerates;
 
+import static integration.Arithmetic.MATH_CONTEXT;
 import static java.math.BigDecimal.TEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -12,8 +13,6 @@ import static org.mockito.Mockito.when;
 import de.as.traquity.common.config.ArithmeticConfig;
 import de.as.traquity.common.error.NotFoundException;
 import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayList;
@@ -55,7 +54,7 @@ class ExchangeRateServiceImplTest {
     Supplier<EcbExchangeRateFetcher> ecbExchangeRateFetcherSupplier = mock(Supplier.class);
     exchangeRateRepositoryMock = mock(ExchangeRateRepository.class);
     ArithmeticConfig arithmeticConfig = mock(ArithmeticConfig.class);
-    when(arithmeticConfig.mathContext()).thenReturn(new MathContext(34, RoundingMode.HALF_UP));
+    when(arithmeticConfig.mathContext()).thenReturn(MATH_CONTEXT);
     subject = new ExchangeRateServiceImpl(ecbExchangeRateFetcherSupplier, exchangeRateRepositoryMock, arithmeticConfig);
   }
 

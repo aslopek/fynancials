@@ -9,7 +9,8 @@
     "**/*.yaml"
   ],
   "scripts": {
-    "test": "npm run test:configuration && npm run test:configuration-security-group && npm run test:depot && npm run test:depot-dividend && npm run test:depot-performance && npm run test:depot-position && npm run test:depot-transaction && npm run test:historical-security-prices && npm run test:notification-dividend-announcement && npm run test:security",
+    "test": "npm run test:admin && npm run test:configuration && npm run test:configuration-security-group && npm run test:depot && npm run test:depot-dividend && npm run test:depot-performance && npm run test:depot-position && npm run test:depot-transaction && npm run test:historical-security-price && npm run test:notification-dividend-announcement && npm run test:security",
+    "test:admin": "npx @openapitools/openapi-generator-cli validate -i admin.yaml",
     "test:configuration": "npx @openapitools/openapi-generator-cli validate -i configuration.yaml",
     "test:configuration-security-group": "npx @openapitools/openapi-generator-cli validate -i configuration-security-group.yaml",
     "test:depot": "npx @openapitools/openapi-generator-cli validate -i depot.yaml",
@@ -17,7 +18,7 @@
     "test:depot-performance": "npx @openapitools/openapi-generator-cli validate -i depot-performance.yaml",
     "test:depot-position": "npx @openapitools/openapi-generator-cli validate -i depot-position.yaml",
     "test:depot-transaction": "npx @openapitools/openapi-generator-cli validate -i depot-transaction.yaml",
-    "test:historical-security-prices": "npx @openapitools/openapi-generator-cli validate -i historical-security-price.yaml",
+    "test:historical-security-price": "npx @openapitools/openapi-generator-cli validate -i historical-security-price.yaml",
     "test:notification-dividend-announcement": "npx @openapitools/openapi-generator-cli validate -i notification-dividend-announcement.yaml",
     "test:security": "npx @openapitools/openapi-generator-cli validate -i security.yaml"
   },

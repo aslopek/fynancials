@@ -3,7 +3,6 @@ package de.as.traquity.security;
 import de.as.traquity.common.error.BadRequestException;
 import de.as.traquity.common.error.ConflictException;
 import de.as.traquity.common.error.InternalServerErrorException;
-import de.as.traquity.common.error.NoContentException;
 import de.as.traquity.common.error.NotFoundException;
 import de.as.traquity.common.error.UnprocessableEntityException;
 import de.as.traquity.common.pagination.PageContainer;
@@ -27,7 +26,7 @@ public interface SecurityService {
   Map<Long, String> getNamesById(Set<Long> securityIds);
 
   PageContainer<Security> getSecurities(int page, int perPage, String search, SecurityOrderPropertyDto orderBy,
-                                        SortOrderDto order) throws NoContentException;
+                                        SortOrderDto order);
 
   boolean securityExists(long securityId);
 
@@ -42,7 +41,7 @@ public interface SecurityService {
 
   Resource getLogo(Long securityId) throws NotFoundException;
 
-  void setLogo(Long securityId, Resource logo) throws BadRequestException;
+  void setLogo(Long securityId, Resource logo) throws BadRequestException, NotFoundException;
 
   void deleteLogo(Long securityId);
 

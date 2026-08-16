@@ -19,8 +19,8 @@ describe('setPerformanceDataReducer', (): void => {
       currency: 'EUR',
       buyInAbsolute: 1000,
       currentSizeAbsolute: 1200,
-      absolutePerformance: 200,
-      relativePerformance: 20,
+      performanceAbsolute: 200,
+      performanceRelative: 20,
       positions: [depotPositionFactory({securityIds: [1]})]
     };
     income = performanceFactory({securityIds: [1]});
@@ -78,8 +78,8 @@ describe('setPerformanceDataReducer', (): void => {
     const previousPositions: Positions = {
       buyInAbsolute: 500,
       currentSizeAbsolute: 600,
-      absolutePerformance: 100,
-      relativePerformance: 20,
+      performanceAbsolute: 100,
+      performanceRelative: 20,
       positions: [depotPositionFactory()]
     };
     state = {

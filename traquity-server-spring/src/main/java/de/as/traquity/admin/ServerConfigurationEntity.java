@@ -1,4 +1,4 @@
-package de.as.traquity.configuration;
+package de.as.traquity.admin;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -75,11 +75,19 @@ class DividendAnnouncementServiceImpl implements DividendAnnouncementService {
   }
 
   @Override
-  public void markAsRead(long dividendAnnouncementId) throws NotFoundException {
+  public DividendAnnouncement markAsRead(long dividendAnnouncementId) throws NotFoundException {
     DividendAnnouncementEntity entity =
         dividendAnnouncementRepository.findById(dividendAnnouncementId).orElseThrow(NotFoundException::new);
     entity.setNew(false);
-    dividendAnnouncementRepository.saveAndFlush(entity);
+    DividendAnnouncementEntity saved = dividendAnnouncementRepository.saveAndFlush(entity);
+
+    DividendAnnouncement dividendAnnouncement = dividendAnnouncementMapper.fromEntity(saved);
+    try {
+      dividendAnnouncement.setDataSource(dataSourceService.getDataSource(saved.getDataSourceId()));
+    } catch (NotFoundException e) {
+      throw new InternalServerErrorException();
+    }
+    return dividendAnnouncement;
   }
 
   void createDividendAnnouncement(long securityId, long dataSourceId, LocalDate payDate, BigDecimal amountPerShare,

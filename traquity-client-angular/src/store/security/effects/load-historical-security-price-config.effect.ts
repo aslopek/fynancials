@@ -1,29 +1,13 @@
-import {
-  HistoricalSecurityPriceApi,
-  HistoricalSecurityPriceConfig
-} from '../../../gen/api/historical-security-price';
-import {
-  Action,
-  Store
-} from '@ngrx/store';
+import {HistoricalSecurityPriceConfigApi, HistoricalSecurityPriceConfigRead} from '../../../gen/api/historical-security-price';
+import {Action, Store} from '@ngrx/store';
 import {AppState} from '../../app.state';
-import {
-  LoadHistoricalSecurityPriceConfigActionArgs,
-  SecurityActions
-} from '../security.actions';
+import {LoadHistoricalSecurityPriceConfigActionArgs, SecurityActions} from '../security.actions';
 import {getHistoricalSecurityPriceConfig} from '../security.selector';
-import {
-  firstValueFrom,
-  mergeMap,
-  Observable
-} from 'rxjs';
-import {
-  Actions,
-  ofType
-} from '@ngrx/effects';
+import {firstValueFrom, mergeMap, Observable} from 'rxjs';
+import {Actions, ofType} from '@ngrx/effects';
 
 export type LoadHistoricalSecurityPriceConfigEffectArgs = {
-  historicalSecurityPriceApi: HistoricalSecurityPriceApi
+  historicalSecurityPriceConfigApi: HistoricalSecurityPriceConfigApi
   store: Store<AppState>
 };
 
@@ -39,19 +23,19 @@ export function loadHistoricalSecurityPriceConfig(actions$: Actions, effectArgs:
 async function loadHistoricalSecurityPriceConfigHelper(effectArgs: LoadHistoricalSecurityPriceConfigEffectArgs,
                                                        actionArgs: LoadHistoricalSecurityPriceConfigActionArgs): Promise<Action> {
   const {
-    historicalSecurityPriceApi,
+    historicalSecurityPriceConfigApi,
     store
   } = effectArgs;
   const {securityId} = actionArgs;
-  const config: HistoricalSecurityPriceConfig | null = store.selectSignal(getHistoricalSecurityPriceConfig(securityId))();
+  const config: HistoricalSecurityPriceConfigRead | null = store.selectSignal(getHistoricalSecurityPriceConfig(securityId))();
 
   if (config !== null) {
     return SecurityActions.loadHistoricalSecurityPriceConfigDone({securityId});
   }
 
   try {
-    const historicalSecurityPriceConfig: HistoricalSecurityPriceConfig
-      = await firstValueFrom(historicalSecurityPriceApi.getHistoricalPriceConfig(securityId));
+    const historicalSecurityPriceConfig: HistoricalSecurityPriceConfigRead
+      = await firstValueFrom(historicalSecurityPriceConfigApi.getHistoricalSecurityPriceConfig(securityId));
     return SecurityActions.loadHistoricalSecurityPriceConfigDone({
       securityId,
       historicalSecurityPriceConfig

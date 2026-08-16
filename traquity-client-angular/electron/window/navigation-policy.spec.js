@@ -7,7 +7,7 @@ describe('isOpenableExternally', () => {
   });
 
   it('opens a plain http URL', () => {
-    expect(isOpenableExternally('http://localhost:23726/config/pid')).toBe(true);
+    expect(isOpenableExternally('http://localhost:23726/admin/pid')).toBe(true);
   });
 
   it('refuses a file URL', () => {

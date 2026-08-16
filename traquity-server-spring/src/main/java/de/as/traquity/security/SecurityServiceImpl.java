@@ -5,7 +5,6 @@ import static de.as.traquity.common.arithmetic.MathFunctions.cagr;
 import de.as.traquity.common.error.BadRequestException;
 import de.as.traquity.common.error.ConflictException;
 import de.as.traquity.common.error.InternalServerErrorException;
-import de.as.traquity.common.error.NoContentException;
 import de.as.traquity.common.error.NotFoundException;
 import de.as.traquity.common.error.UnprocessableEntityException;
 import de.as.traquity.common.image.ImageService;
@@ -101,7 +100,7 @@ class SecurityServiceImpl implements SecurityService {
 
   @Override
   public PageContainer<Security> getSecurities(int page, int pageSize, String search, SecurityOrderPropertyDto orderBy,
-                                               SortOrderDto order) throws NoContentException {
+                                               SortOrderDto order) {
     final PageRequest pageRequest;
     if (orderBy != null) {
       Sort.Direction direction = SortOrderDto.DESC.equals(order) ? Sort.Direction.DESC : Sort.Direction.ASC;
@@ -119,13 +118,11 @@ class SecurityServiceImpl implements SecurityService {
     } else {
       securities = securityRepository.findAll(pageRequest);
     }
-    if (securities.isEmpty()) {
-      throw new NoContentException();
-    }
     PageContainer<Security> result = new PageContainer<>();
     result.setTotal(securities.getTotalElements());
     result.setCurrentPage(page);
-    result.setLastPage(securities.getTotalPages() - 1);
+    // an empty result has no pages at all, so the last page stays 0 rather than underflowing to -1
+    result.setLastPage(Math.max(0, securities.getTotalPages() - 1));
     result.setPageSize(pageSize);
     result.setItems(securities.stream().map(securityMapper::fromEntity).toList());
     result.getItems().forEach(security -> security.setPriceMetaInfo(getPriceMetaInfo(security.getId())));
@@ -180,9 +177,9 @@ class SecurityServiceImpl implements SecurityService {
   }
 
   @Override
-  public void setLogo(Long securityId, Resource logo) throws BadRequestException {
+  public void setLogo(Long securityId, Resource logo) throws BadRequestException, NotFoundException {
     if (!securityRepository.existsById(securityId)) {
-      throw new BadRequestException();
+      throw new NotFoundException();
     }
 
     byte[] pngBytes;
@@ -290,11 +287,11 @@ class SecurityServiceImpl implements SecurityService {
     PriceMetaInfoDto priceMetaInfo = new PriceMetaInfoDto();
     HistoricalSecurityPrice latestPrice = prices.getLast();
     priceMetaInfo.setCurrency(latestPrice.getCurrency());
-    priceMetaInfo.setLatestPrice(latestPrice.getPrice().doubleValue());
+    priceMetaInfo.setLatestPrice(latestPrice.getPrice());
     priceMetaInfo.setLatestPriceDate(latestPrice.getDate());
 
-    List<Double> priceValues = new ArrayList<>(prices.stream().map(price -> price.getPrice().doubleValue()).toList());
-    priceValues.sort(Double::compareTo);
+    List<BigDecimal> priceValues = new ArrayList<>(prices.stream().map(HistoricalSecurityPrice::getPrice).toList());
+    priceValues.sort(BigDecimal::compareTo);
     priceMetaInfo.setLowTrailingTwelveMonths(priceValues.getFirst());
     priceMetaInfo.setHighTrailingTwelveMonths(priceValues.getLast());
     return priceMetaInfo;

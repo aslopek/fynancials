@@ -27,19 +27,19 @@ class TransactionSpecification implements Specification<TransactionEntity> {
       predicates.add(root.get("transactionType").in(request.getTransactionTypes()));
     }
 
-    if (request.getMinDate() != null) {
-      predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("date"), request.getMinDate()));
+    if (request.getStartDate() != null) {
+      predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("date"), request.getStartDate()));
     }
 
-    if (request.getMaxDate() != null) {
-      predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("date"), request.getMaxDate()));
+    if (request.getEndDate() != null) {
+      predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("date"), request.getEndDate()));
     }
 
     if (request.getSecurityIds() != null && !request.getSecurityIds().isEmpty()) {
       predicates.add(root.get("securityId").in(request.getSecurityIds()));
     }
 
-    if (request.getOrderByTime() == null || request.getOrderByTime() == SortOrderDto.ASC) {
+    if (request.getOrder() == null || request.getOrder() == SortOrderDto.ASC) {
       query.orderBy(criteriaBuilder.asc(root.get("date")), criteriaBuilder.asc(root.get("time")),
           criteriaBuilder.asc(root.get("id")));
     } else {

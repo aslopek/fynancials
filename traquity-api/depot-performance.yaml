@@ -1,7 +1,7 @@
 openapi: 3.0.3
 
 info:
-  title: Depot API
+  title: Depot Performance API
   description: The API definitions for querying performance information
   version: 1.0.0
 
@@ -11,39 +11,36 @@ servers:
 
 paths:
   /depot-performance:
-    parameters:
-      - $ref: '#/components/parameters/DepotIds'
     get:
+      parameters:
+        - $ref: '#/components/parameters/DepotIds'
       tags:
         - DepotPerformance
       operationId: getDepotPerformance
       responses:
         '200':
-          description: Successfully returned the depot values for the specified time window
+          description: Successfully returned the depot values, with an empty values array if none exist
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/DepotPerformance'
         '400':
           description: Specified depot IDs reference depots with different currencies or syntactically malformed query parameters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: At least one of the specified depot IDs does not exist
 
   /depot-performance/income:
     get:
       parameters:
+        - $ref: '#/components/parameters/DepotIds'
         - in: query
-          name: depots
+          name: securityIds
           required: true
-          schema:
-            type: array
-            nullable: false
-            minItems: 1
-            items:
-              $ref: '#/components/schemas/Id'
-        - in: query
-          name: securities
-          required: true
+          description: identifies the securities the income is reported for
           schema:
             type: array
             nullable: false
@@ -53,6 +50,7 @@ paths:
         - in: query
           name: incomeTypes
           required: true
+          description: which kinds of income are reported
           schema:
             type: array
             nullable: false
@@ -64,22 +62,26 @@ paths:
       operationId: getIncome
       responses:
         '200':
-          description: Successfully returned the income
+          description: Successfully returned the income, or an empty array if none exists
           content:
             application/json:
               schema:
                 type: array
                 nullable: false
-                minItems: 1
+                minItems: 0
                 items:
                   $ref: '#/components/schemas/Performance'
-        '204':
-          description: No income exists for the specified input parameters
         '400':
           description: '''
             - passed invalid query parameters
             - not all depots have the same currency
             '''
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: At least one of the specified depot IDs does not exist
 
 components:
   parameters:
@@ -94,6 +96,17 @@ components:
         minItems: 1
         items:
           $ref: '#/components/schemas/Id'
+
+  responses:
+    Unauthorized:
+      description: |
+        The request carried no valid credentials, or credentials the server rejected. A deployment that does not authenticate never
+        answers this, and a caller must not treat its absence as a promise that the endpoint is open.
+    Forbidden:
+      description: |
+        The caller is authenticated but not permitted to perform this operation - a read-only registration issuing a write, for
+        instance. A deployment that does not authorize never answers this.
+
   schemas:
     Id:
       type: integer
@@ -104,6 +117,8 @@ components:
 
     IncomeType:
       type: string
+      nullable: false
+      example: DIVIDEND
       enum:
         - DIVIDEND
         - SELL
@@ -132,16 +147,17 @@ components:
             $ref: '#/components/schemas/TransactionReference'
         absoluteValueGross:
           type: number
-          format: double
           nullable: false
         absoluteValueNet:
           type: number
-          format: double
           nullable: false
 
     TransactionReference:
       type: object
       nullable: false
+      required:
+        - depotId
+        - transactionId
       properties:
         depotId:
           $ref: '#/components/schemas/Id'
@@ -153,7 +169,7 @@ components:
       nullable: false
       required:
         - values
-        - extendedInternalRateOfReturns
+        - extendedInternalRateOfReturn
       properties:
         values:
           type: array
@@ -161,7 +177,7 @@ components:
           minItems: 0
           items:
             $ref: '#/components/schemas/DepotValue'
-        extendedInternalRateOfReturns:
+        extendedInternalRateOfReturn:
           description: 'Extended Internal Rate of Return (XIRR). Example: 10% XIRR is represented by value 0.1'
           type: number
           nullable: false
@@ -197,6 +213,6 @@ components:
           type: number
           nullable: false
         performanceRelative:
-          description: performanceAbsolute / investedCapital
+          description: performanceAbsolute / investedCapital, as a percentage (e.g. 0.1 meaning 10%)
           type: number
           nullable: false

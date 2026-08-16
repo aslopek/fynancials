@@ -12,6 +12,7 @@ import {MatOption, MatSelect} from "@angular/material/select";
 import {MatButton} from "@angular/material/button";
 import {FilePreviewPipe} from "../../../common/pipe/file-preview.pipe";
 import {SecurityLogoUrlPipe} from "../../../common/pipe/security-logo-url.pipe";
+import {SecurityTypeDisplayNamePipe} from "../../../common/pipe/security-type-display-name.pipe";
 
 type FormModel = {
   isin: string;
@@ -39,6 +40,7 @@ type FormModel = {
     FormField,
     FilePreviewPipe,
     SecurityLogoUrlPipe,
+    SecurityTypeDisplayNamePipe,
   ],
   templateUrl: "./security-master-data.component.html",
   styleUrl: "./security-master-data.component.scss",

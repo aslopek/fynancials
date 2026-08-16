@@ -3,7 +3,6 @@ package de.as.traquity.depot;
 import de.as.traquity.common.error.BadRequestException;
 import de.as.traquity.common.error.ConflictException;
 import de.as.traquity.common.error.InternalServerErrorException;
-import de.as.traquity.common.error.NoContentException;
 import de.as.traquity.common.error.NotFoundException;
 import de.as.traquity.common.image.ImageService;
 import de.as.traquity.configuration.ServerConfigurationService;
@@ -44,12 +43,8 @@ class DepotServiceImpl implements DepotService {
   }
 
   @Override
-  public List<Depot> getDepots() throws NoContentException {
+  public List<Depot> getDepots() {
     List<DepotEntity> depots = depotRepository.findAll();
-    if (depots.isEmpty()) {
-      throw new NoContentException();
-    }
-
     return depots.stream().map(depotMapper::fromEntity).toList();
   }
 
@@ -124,9 +119,9 @@ class DepotServiceImpl implements DepotService {
   }
 
   @Override
-  public void setLogo(Long depotId, Resource logo) throws BadRequestException {
+  public void setLogo(Long depotId, Resource logo) throws BadRequestException, NotFoundException {
     if (!depotRepository.existsById(depotId)) {
-      throw new BadRequestException();
+      throw new NotFoundException();
     }
 
     byte[] pngBytes;

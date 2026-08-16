@@ -46,24 +46,15 @@ export function getTransactions(signalStore: WritableSignalStore<TransactionPage
     selectedDepotIdsValue[0],
     args.page,
     pageSize,
-    filteredTransactionTypes,
     'DESC',
+    filteredTransactionTypes,
     undefined,
     undefined,
     filteredSecurityIds ?? undefined
   ).pipe(
     take(1),
     catchError((): Observable<never> => EMPTY)
-  ).subscribe((page: PaginatedTransactionRead | null): void => {
-    // The API responds 204 (empty body, i.e. page === null here) when a depot has no matching transactions.
-    const transactionPage: PaginatedTransactionRead = page ?? {
-      total: 0,
-      currentPage: args.page,
-      lastPage: 0,
-      pageSize,
-      items: []
-    };
-
+  ).subscribe((transactionPage: PaginatedTransactionRead): void => {
     for (const transaction of transactionPage.items) {
       globalStore.dispatch(SecurityActions.loadSecurity({securityId: transaction.securityId}));
     }

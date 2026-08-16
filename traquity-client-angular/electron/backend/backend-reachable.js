@@ -1,5 +1,5 @@
 /**
- * Observes, in the main process itself, whether a spawned backend became reachable. A 200 on `/config/pid` is what
+ * Observes, in the main process itself, whether a spawned backend became reachable. A 200 on `/admin/pid` is what
  * proves the H2 file was decrypted with the password the backend was started with: Liquibase takes a real JDBC
  * connection during context refresh, which is where H2 validates the file password, so a serving HTTP port cannot
  * happen with a wrong password.
@@ -9,7 +9,7 @@
  */
 
 /** @type {string} */
-const BACKEND_PID_URL = 'http://127.0.0.1:23726/config/pid';
+const BACKEND_PID_URL = 'http://127.0.0.1:23726/admin/pid';
 
 /** @type {number} how often the port is probed while waiting */
 const POLL_INTERVAL_MILLISECONDS = 500;

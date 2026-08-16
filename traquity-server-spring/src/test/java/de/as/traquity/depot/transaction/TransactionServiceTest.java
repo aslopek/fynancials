@@ -1,12 +1,13 @@
 package de.as.traquity.depot.transaction;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static integration.Arithmetic.MATH_CONTEXT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import de.as.traquity.common.error.ConflictException;
-import java.math.MathContext;
+import de.as.traquity.depot.DepotService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +21,8 @@ class TransactionServiceTest {
   @BeforeEach
   void beforeEach() {
     transactionRepository = mock(TransactionRepository.class);
-    subject = new TransactionServiceImpl(mock(TransactionMapper.class), transactionRepository, MathContext.DECIMAL64);
+    subject = new TransactionServiceImpl(mock(TransactionMapper.class), transactionRepository, mock(DepotService.class),
+        MATH_CONTEXT);
   }
 
   @Test

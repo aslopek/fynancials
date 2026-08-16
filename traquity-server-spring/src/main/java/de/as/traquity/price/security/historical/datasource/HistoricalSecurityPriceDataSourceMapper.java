@@ -12,7 +12,7 @@ import de.as.traquity.price.security.historical.api.model.DateFormatDto;
 import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceDataSourceCreateDto;
 import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceDataSourceReadDto;
 import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceDataSourceUpdateDto;
-import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceUrlPatternsDto;
+import de.as.traquity.price.security.historical.api.model.HistoricalSecurityPriceUrlPatternDto;
 import de.as.traquity.price.security.historical.api.model.RequestHeaderDto;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -40,7 +40,7 @@ abstract class HistoricalSecurityPriceDataSourceMapper {
   @Mapping(target = "urlPatterns", qualifiedByName = "fromHistoricalSecurityPriceUrlPatternDto")
   abstract HistoricalSecurityPriceDataSource fromUpdateDto(HistoricalSecurityPriceDataSourceUpdateDto dto);
 
-  @Mapping(target = "urlPatterns", qualifiedByName = "toHistoricalSecurityPriceUrlPatternsDto")
+  @Mapping(target = "urlPatterns", qualifiedByName = "toHistoricalSecurityPriceUrlPatternDto")
   abstract HistoricalSecurityPriceDataSourceReadDto toDto(HistoricalSecurityPriceDataSource source);
 
   abstract HistoricalSecurityPriceDataSource fromEntity(HistoricalSecurityPriceDataSourceEntity historicalSecurityPriceDataSourceEntity);
@@ -116,28 +116,28 @@ abstract class HistoricalSecurityPriceDataSourceMapper {
   }
 
   @Named("fromHistoricalSecurityPriceUrlPatternDto")
-  protected Map<Integer, String> fromHistoricalSecurityPriceUrlPatternDto(List<HistoricalSecurityPriceUrlPatternsDto> dtos) {
+  protected Map<Integer, String> fromHistoricalSecurityPriceUrlPatternDto(List<HistoricalSecurityPriceUrlPatternDto> dtos) {
     Map<Integer, String> result = new HashMap<>();
     if (dtos == null) {
       return result;
     }
 
-    for (HistoricalSecurityPriceUrlPatternsDto dto : dtos) {
+    for (HistoricalSecurityPriceUrlPatternDto dto : dtos) {
       result.put(dto.getTimespanInDays(), dto.getUrlPattern());
     }
     return result;
   }
 
-  @Named("toHistoricalSecurityPriceUrlPatternsDto")
-  protected List<HistoricalSecurityPriceUrlPatternsDto> toHistoricalSecurityPriceUrlPatternsDto(
+  @Named("toHistoricalSecurityPriceUrlPatternDto")
+  protected List<HistoricalSecurityPriceUrlPatternDto> toHistoricalSecurityPriceUrlPatternDto(
       Map<Integer, String> map) {
-    List<HistoricalSecurityPriceUrlPatternsDto> result = new LinkedList<>();
+    List<HistoricalSecurityPriceUrlPatternDto> result = new LinkedList<>();
     if (map == null) {
       return result;
     }
 
     for (Map.Entry<Integer, String> entry : map.entrySet()) {
-      result.add(new HistoricalSecurityPriceUrlPatternsDto(entry.getKey(), entry.getValue()));
+      result.add(new HistoricalSecurityPriceUrlPatternDto(entry.getKey(), entry.getValue()));
     }
     return result;
   }

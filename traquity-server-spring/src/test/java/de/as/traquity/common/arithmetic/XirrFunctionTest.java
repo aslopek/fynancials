@@ -1,12 +1,12 @@
 package de.as.traquity.common.arithmetic;
 
+import static integration.Arithmetic.MATH_CONTEXT;
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.time.LocalDate;
 import java.util.List;
 import org.assertj.core.data.Offset;
@@ -20,7 +20,6 @@ class XirrFunctionTest {
   private List<BigDecimal> cashFlows;
   private List<LocalDate> cashFlowDates;
   private BigDecimal liquidationValue;
-  private MathContext mathContext;
   private XirrFunction xirrFunction;
 
   @BeforeEach
@@ -35,9 +34,8 @@ class XirrFunctionTest {
         LocalDate.of(2021, 1, 1)
     );
     liquidationValue = BigDecimal.valueOf(900); // final value
-    mathContext = MathContext.DECIMAL64;
 
-    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, mathContext);
+    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, MATH_CONTEXT);
   }
 
   @Test
@@ -48,21 +46,21 @@ class XirrFunctionTest {
 
   @Test
   void shouldThrowIfCashFlowsIsNull() {
-    xirrFunction = new XirrFunction(null, cashFlowDates, liquidationValue, mathContext);
+    xirrFunction = new XirrFunction(null, cashFlowDates, liquidationValue, MATH_CONTEXT);
     assertThatThrownBy(() -> xirrFunction.value(0.1))
         .isInstanceOf(IllegalStateException.class);
   }
 
   @Test
   void shouldThrowIfCashFlowDatesIsNull() {
-    xirrFunction = new XirrFunction(cashFlows, null, liquidationValue, mathContext);
+    xirrFunction = new XirrFunction(cashFlows, null, liquidationValue, MATH_CONTEXT);
     assertThatThrownBy(() -> xirrFunction.value(0.1))
         .isInstanceOf(IllegalStateException.class);
   }
 
   @Test
   void shouldThrowIfCashFlowsIsEmpty() {
-    xirrFunction = new XirrFunction(emptyList(), emptyList(), liquidationValue, mathContext);
+    xirrFunction = new XirrFunction(emptyList(), emptyList(), liquidationValue, MATH_CONTEXT);
     assertThatThrownBy(() -> xirrFunction.value(0.1))
         .isInstanceOf(IllegalStateException.class);
   }
@@ -73,7 +71,7 @@ class XirrFunctionTest {
         List.of(BigDecimal.valueOf(-1000), BigDecimal.valueOf(200)),
         List.of(LocalDate.of(2020, 1, 1)),
         liquidationValue,
-        mathContext
+        MATH_CONTEXT
     );
     assertThatThrownBy(() -> xirrFunction.value(0.1))
         .isInstanceOf(IllegalStateException.class);
@@ -81,14 +79,14 @@ class XirrFunctionTest {
 
   @Test
   void shouldThrowIfLiquidationValueIsNull() {
-    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, null, mathContext);
+    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, null, MATH_CONTEXT);
     assertThatThrownBy(() -> xirrFunction.value(0.1))
         .isInstanceOf(IllegalStateException.class);
   }
 
   @Test
   void shouldThrowIfLiquidationValueIsNegative() {
-    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, BigDecimal.valueOf(-1), mathContext);
+    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, BigDecimal.valueOf(-1), MATH_CONTEXT);
     assertThatThrownBy(() -> xirrFunction.value(0.1))
         .isInstanceOf(IllegalStateException.class);
   }
@@ -96,7 +94,7 @@ class XirrFunctionTest {
   @Test
   void shouldReturnNegativeValueIfAllCashFlowsAreNegative() {
     cashFlows = List.of(BigDecimal.valueOf(-1000), BigDecimal.valueOf(-200));
-    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, BigDecimal.valueOf(0), mathContext);
+    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, BigDecimal.valueOf(0), MATH_CONTEXT);
     double result = xirrFunction.value(0.1);
     assertThat(result).isCloseTo(-1181.78260, ACCURACY);
   }
@@ -106,7 +104,7 @@ class XirrFunctionTest {
     cashFlows = List.of(BigDecimal.valueOf(-1000), BigDecimal.valueOf(1000));
     cashFlowDates = List.of(LocalDate.of(2020, 1, 1), LocalDate.of(2021, 1, 1));
     liquidationValue = ZERO;
-    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, mathContext);
+    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, MATH_CONTEXT);
     double result = xirrFunction.value(0);
     assertThat(result).isZero();
   }
@@ -122,7 +120,7 @@ class XirrFunctionTest {
     cashFlows = List.of(BigDecimal.valueOf(-1000));
     cashFlowDates = List.of(LocalDate.of(2020, 1, 1));
     liquidationValue = BigDecimal.valueOf(1100);
-    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, mathContext);
+    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, MATH_CONTEXT);
     double result = xirrFunction.value(0.1);
     assertThat(result).isCloseTo(100, ACCURACY);
   }
@@ -132,7 +130,7 @@ class XirrFunctionTest {
     cashFlows = List.of(BigDecimal.valueOf(-1000));
     cashFlowDates = List.of(LocalDate.of(1980, 1, 1));
     liquidationValue = BigDecimal.valueOf(10000);
-    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, mathContext);
+    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, MATH_CONTEXT);
     double result = xirrFunction.value(0.08); // 8% over 45 years
     assertThat(result).isCloseTo(9000, ACCURACY);
   }
@@ -142,7 +140,7 @@ class XirrFunctionTest {
     cashFlows = List.of();
     cashFlowDates = List.of();
     liquidationValue = BigDecimal.valueOf(1000);
-    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, mathContext);
+    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, MATH_CONTEXT);
     assertThatThrownBy(() -> xirrFunction.value(0.1))
         .isInstanceOf(IllegalStateException.class); // because dates are empty
   }
@@ -156,7 +154,7 @@ class XirrFunctionTest {
         LocalDate.of(2021, 1, 1)
     );
     liquidationValue = BigDecimal.ZERO;
-    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, mathContext);
+    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, MATH_CONTEXT);
     double result = xirrFunction.value(0.1);
     assertThat(result).isCloseTo(-0.19569, ACCURACY);
   }
@@ -182,7 +180,7 @@ class XirrFunctionTest {
         LocalDate.of(2021, 1, 1)
     );
     liquidationValue = BigDecimal.ZERO;
-    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, mathContext);
+    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, MATH_CONTEXT);
     double result = xirrFunction.value(0.1);
     assertThat(result).isCloseTo(-0.19569, ACCURACY);
   }
@@ -192,7 +190,7 @@ class XirrFunctionTest {
     cashFlows = List.of(BigDecimal.valueOf(-1000));
     cashFlowDates = List.of(LocalDate.of(2020, 1, 1));
     liquidationValue = BigDecimal.valueOf(1000);
-    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, mathContext);
+    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, MATH_CONTEXT);
     double result = xirrFunction.value(0.1);
     assertThat(result).isCloseTo(0.0, ACCURACY);
   }
@@ -202,7 +200,7 @@ class XirrFunctionTest {
     cashFlows = List.of(BigDecimal.valueOf(-0.01), BigDecimal.valueOf(0.011));
     cashFlowDates = List.of(LocalDate.of(2020, 1, 1), LocalDate.of(2021, 1, 1));
     liquidationValue = BigDecimal.ZERO;
-    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, mathContext);
+    xirrFunction = new XirrFunction(cashFlows, cashFlowDates, liquidationValue, MATH_CONTEXT);
     double result = xirrFunction.value(0.1);
     assertThat(result).isCloseTo(-0.00009, ACCURACY); // approximate NPV
   }

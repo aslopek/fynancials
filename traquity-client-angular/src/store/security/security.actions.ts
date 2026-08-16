@@ -1,6 +1,10 @@
 import {createActionGroup, emptyProps, props} from '@ngrx/store';
 import {SecurityCreate, SecurityRead, SecurityUpdate} from '../../gen/api/security';
-import {HistoricalSecurityPriceConfig, HistoricalSecurityPriceDataSourceRead} from '../../gen/api/historical-security-price';
+import {
+  HistoricalSecurityPriceConfigCreate,
+  HistoricalSecurityPriceConfigRead,
+  HistoricalSecurityPriceDataSourceRead
+} from '../../gen/api/historical-security-price';
 import {DividendAnnouncementConfigCreate} from "../../gen/api/notification/dividend-announcement";
 import {MultiUrlDataSource} from "../../settings/data-source/data-source.type";
 
@@ -11,7 +15,7 @@ export type SetSecuritiesActionArgs = {
 export type CreateSecurityActionArgs = {
   security: SecurityCreate
   logo?: File
-  historicalSecurityPriceConfig?: Omit<HistoricalSecurityPriceConfig, 'version'>
+  historicalSecurityPriceConfig?: HistoricalSecurityPriceConfigCreate
   dividendAnnouncementConfig?: DividendAnnouncementConfigCreate
 };
 
@@ -35,17 +39,17 @@ export type LoadHistoricalSecurityPriceConfigActionArgs = {
 
 export type LoadHistoricalSecurityPriceConfigDoneActionArgs = {
   securityId: number
-  historicalSecurityPriceConfig?: HistoricalSecurityPriceConfig
+  historicalSecurityPriceConfig?: HistoricalSecurityPriceConfigRead
 };
 
 export type UpdateHistoricalSecurityPriceConfigActionArgs = {
   securityId: number
-  historicalSecurityPriceConfig: Omit<HistoricalSecurityPriceConfig, 'version'>
+  historicalSecurityPriceConfig: HistoricalSecurityPriceConfigCreate
 };
 
 export type UpdateHistoricalSecurityPriceConfigDoneActionArgs = {
   securityId: number
-  historicalSecurityPriceConfig?: HistoricalSecurityPriceConfig
+  historicalSecurityPriceConfig?: HistoricalSecurityPriceConfigRead
 };
 
 export type LoadHistoricalSecurityPriceDataSourcesDoneActionArgs = {

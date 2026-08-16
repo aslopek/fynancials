@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.as.traquity.notification.dividendannouncement.api.model.DividendAnnouncementReadDto;
 import de.as.traquity.notification.dividendannouncement.api.model.DividendAnnouncementUpdateDto;
 import integration.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,8 +39,11 @@ class UpdateDividendAnnouncementTest {
   void updateIsNew_false2false_ok() throws Exception {
     requestBody.setIsNew(false);
     long id = 1;
-    MvcResult mvcResult = updateDividendAnnouncement(id).andExpect(status().isNoContent()).andReturn();
-    assertThat(mvcResult.getResponse().getContentLength()).isZero();
+    MvcResult mvcResult = updateDividendAnnouncement(id).andExpect(status().isOk()).andReturn();
+    DividendAnnouncementReadDto responseBody = objectMapper.readValue(
+        mvcResult.getResponse().getContentAsString(), DividendAnnouncementReadDto.class);
+    assertThat(responseBody.getId()).isEqualTo(id);
+    assertThat(responseBody.getIsNew()).isFalse();
     DividendAnnouncementEntity entity = dividendAnnouncementRepository.findById(id).orElseThrow();
     assertThat(entity.isNew()).isFalse();
   }
@@ -58,8 +62,11 @@ class UpdateDividendAnnouncementTest {
   void updateIsNew_true2false_ok() throws Exception {
     requestBody.setIsNew(false);
     long id = 4;
-    MvcResult mvcResult = updateDividendAnnouncement(id).andExpect(status().isNoContent()).andReturn();
-    assertThat(mvcResult.getResponse().getContentLength()).isZero();
+    MvcResult mvcResult = updateDividendAnnouncement(id).andExpect(status().isOk()).andReturn();
+    DividendAnnouncementReadDto responseBody = objectMapper.readValue(
+        mvcResult.getResponse().getContentAsString(), DividendAnnouncementReadDto.class);
+    assertThat(responseBody.getId()).isEqualTo(id);
+    assertThat(responseBody.getIsNew()).isFalse();
     DividendAnnouncementEntity entity = dividendAnnouncementRepository.findById(id).orElseThrow();
     assertThat(entity.isNew()).isFalse();
   }

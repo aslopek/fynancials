@@ -1,0 +1,181 @@
+openapi: 3.0.3
+info:
+  title: Admin API
+  description: The API definitions for inspecting and administering the running backend process
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:23726'
+    description: Locally serving the API
+
+paths:
+  /admin/database:
+    get:
+      tags:
+        - Admin
+      operationId: getDatabaseConfig
+      responses:
+        '200':
+          description: Successfully retrieved the database configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseConfig'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: The database has no accessible web interface
+
+  /admin/third-party-licenses:
+    get:
+      tags:
+        - Admin
+      operationId: getThirdPartyLicenses
+      responses:
+        '200':
+          description: Returns license information for every third-party dependency shipped with the backend
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: false
+                minItems: 1
+                items:
+                  $ref: '#/components/schemas/ThirdPartyLicense'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/dev-mode:
+    get:
+      tags:
+        - Admin
+      operationId: getDevModeActive
+      responses:
+        '200':
+          description: Returns whether the backend is currently in development mode
+          content:
+            application/json:
+              schema:
+                type: boolean
+                nullable: false
+                example: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      tags:
+        - Admin
+      operationId: setDevModeActive
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: boolean
+              nullable: false
+              example: false
+      responses:
+        '204':
+          description: Successfully updated the development mode status
+        '400':
+          description: The request body did not contain a valid boolean value
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/pid:
+    get:
+      tags:
+        - Admin
+      operationId: getPid
+      responses:
+        '200':
+          description: Successfully retrieved the backend's PID
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+                nullable: false
+                minimum: 1
+                example: 48936
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  responses:
+    Unauthorized:
+      description: |
+        The request carried no valid credentials, or credentials the server rejected. A deployment that does not authenticate never
+        answers this, and a caller must not treat its absence as a promise that the endpoint is open.
+    Forbidden:
+      description: |
+        The caller is authenticated but not permitted to perform this operation - a read-only registration issuing a write, for
+        instance. A deployment that does not authorize never answers this.
+
+  schemas:
+    DatabaseConfig:
+      type: object
+      nullable: false
+      required:
+        - username
+        - password
+        - connectionString
+        - webInterfaceUrl
+      properties:
+        username:
+          type: string
+          nullable: false
+          example: admin
+        password:
+          description: Empty unless development mode is active
+          type: string
+          nullable: false
+          example: admin
+        connectionString:
+          type: string
+          nullable: false
+          example: jdbc:h2:~/traquity.db
+        webInterfaceUrl:
+          type: string
+          nullable: false
+          example: http://localhost:8080/h2-console
+        fileLocation:
+          type: string
+          nullable: false
+          example: /path/to/file
+
+    ThirdPartyLicense:
+      type: object
+      nullable: false
+      required:
+        - name
+        - version
+      properties:
+        name:
+          type: string
+          nullable: false
+          example: jackson-core
+        version:
+          type: string
+          nullable: false
+          example: 2.18.2
+        license:
+          type: string
+          nullable: false
+          example: Apache License 2.0
+        licenseText:
+          type: string
+          nullable: false
+          description: The verbatim license text (including copyright header) as shipped inside the library's artifact
+        noticeText:
+          type: string
+          nullable: false
+          description: The verbatim NOTICE file content, if the library ships one (relevant for Apache-2.0 attribution)

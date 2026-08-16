@@ -86,6 +86,7 @@ The Angular + NgRx frontend, packaged as the Electron desktop app that ships to 
   - `security-name.pipe.ts`: use to display security names. Unlike security groups, it is not allowed to access raw `security.name` property
     for this purpose.
   - `security-symbols.pipe.ts`: use to concatenate all `security.symbols` for displaying.
+  - `security-type-display-name.pipe.ts`: use to display a human-readable name for the given `SecurityType`. It must never be rendered raw.
   - `transaction-type-display-icon.pipe.ts`: use in conjunction with `<mat-icon>` for displaying an icon for the given `TransactionType`
   - `transaction-type-display-name.pipe.ts`: use to display a human-readable name for the given `TransactionType`
 - **Generated API clients** (`src/gen/api/<domain>/`): one Angular service class per spec (e.g. `DepotApi`, `ConfigApi`, `DividendApi`),

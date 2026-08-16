@@ -35,22 +35,22 @@
     <div class="position-item-column margin-right"
          style="width: 15%;">
         @if (hideAbsoluteValues()) {
-            <h4 [class]="pos.relativePerformance >= 0 ? 'performance-positive' : 'performance-negative'">
+            <h4 [class]="pos.performanceRelative >= 0 ? 'performance-positive' : 'performance-negative'">
                 @if (pos.buyInAbsolute === 0) {
                     +&infin;
                 } @else {
-                    {{ pos.relativePerformance >= 0 ? '+' : '' }}{{ pos.relativePerformance | tqPercent }}
+                    {{ pos.performanceRelative >= 0 ? '+' : '' }}{{ pos.performanceRelative | tqPercent }}
                 }
             </h4>
         } @else {
-            <h4 [class]="pos.absolutePerformance >= 0 ? 'performance-positive' : 'performance-negative'">
-                {{ pos.absolutePerformance >= 0 ? '+' : '' }}{{ pos.absolutePerformance | tqCurrency:depotCurrency() }}
+            <h4 [class]="pos.performanceAbsolute >= 0 ? 'performance-positive' : 'performance-negative'">
+                {{ pos.performanceAbsolute >= 0 ? '+' : '' }}{{ pos.performanceAbsolute | tqCurrency:depotCurrency() }}
             </h4>
-            <h5 [class]="pos.relativePerformance >= 0 ? 'performance-positive' : 'performance-negative'">
+            <h5 [class]="pos.performanceRelative >= 0 ? 'performance-positive' : 'performance-negative'">
                 @if (pos.buyInAbsolute === 0) {
                     +&infin;
                 } @else {
-                    {{ pos.relativePerformance >= 0 ? '+' : '' }}{{ pos.relativePerformance | tqPercent }}
+                    {{ pos.performanceRelative >= 0 ? '+' : '' }}{{ pos.performanceRelative | tqPercent }}
                 }
             </h5>
         }

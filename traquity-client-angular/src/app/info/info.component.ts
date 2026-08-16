@@ -4,11 +4,10 @@ import {MatButtonModule} from "@angular/material/button";
 import {MatDialogRef} from "@angular/material/dialog";
 import {MatIconModule} from "@angular/material/icon";
 import {MatToolbarModule} from "@angular/material/toolbar";
-import {MatTooltip} from "@angular/material/tooltip";
 import {firstValueFrom} from "rxjs";
 import * as packageJson from "../../../package.json";
 import {TitleToolbarComponent} from "../../common";
-import {BackendServiceInfo, ConfigApi, ThirdPartyLicense} from "../../gen/api/configuration";
+import {AdminApi, ThirdPartyLicense} from "../../gen/api/admin";
 import {LicenseComponent} from "../license/license.component";
 import {LicenseEntryKeyPipe, LicenseSection} from "./license-entry-key.pipe";
 import {ThirdPartyLicenseEntry, ThirdPartyLicensesFile} from "./third-party-license-entry.type";
@@ -21,7 +20,6 @@ import {ThirdPartyLicenseEntry, ThirdPartyLicensesFile} from "./third-party-lice
     MatIconModule,
     TitleToolbarComponent,
     LicenseComponent,
-    MatTooltip,
     LicenseEntryKeyPipe,
   ],
   templateUrl: "info.component.html",
@@ -30,27 +28,17 @@ import {ThirdPartyLicenseEntry, ThirdPartyLicensesFile} from "./third-party-lice
 export class InfoComponent implements OnInit {
 
   protected readonly feVersion: WritableSignal<string> = signal<string>(packageJson.version);
-  protected readonly beVersion: WritableSignal<string> = signal<string>("");
   protected readonly frontendLicenses: WritableSignal<ThirdPartyLicenseEntry[]> = signal<ThirdPartyLicenseEntry[]>([]);
   protected readonly backendLicenses: WritableSignal<ThirdPartyLicense[]> = signal<ThirdPartyLicense[]>([]);
   protected readonly expandedEntry: WritableSignal<string | null> = signal<string | null>(null);
   private readonly dialogRef: MatDialogRef<InfoComponent> = inject(MatDialogRef<InfoComponent>);
-  private readonly configApi: ConfigApi = inject(ConfigApi);
+  private readonly adminApi: AdminApi = inject(AdminApi);
   private readonly httpClient: HttpClient = inject(HttpClient);
   private readonly licenseEntryKeyPipe: LicenseEntryKeyPipe = new LicenseEntryKeyPipe();
 
   async ngOnInit(): Promise<void> {
     try {
-      const backendServices: BackendServiceInfo[] = await firstValueFrom(this.configApi.getBackendServicesInfo());
-      if (backendServices.length === 1) {
-        this.beVersion.set(backendServices[0].version);
-      }
-    } catch {
-      // backend not reachable — the header tooltip simply stays empty
-    }
-
-    try {
-      const backendLicenses: ThirdPartyLicense[] = await firstValueFrom(this.configApi.getThirdPartyLicenses());
+      const backendLicenses: ThirdPartyLicense[] = await firstValueFrom(this.adminApi.getThirdPartyLicenses());
       this.backendLicenses.set(backendLicenses);
     } catch {
       // show error in dialog

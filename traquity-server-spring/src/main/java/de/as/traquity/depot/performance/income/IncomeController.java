@@ -1,6 +1,5 @@
 package de.as.traquity.depot.performance.income;
 
-import de.as.traquity.common.error.NoContentException;
 import de.as.traquity.depot.performance.api.controller.DepotPerformanceIncomeApiDelegate;
 import de.as.traquity.depot.performance.api.model.IncomeTypeDto;
 import de.as.traquity.depot.performance.api.model.PerformanceDto;
@@ -20,13 +19,10 @@ class IncomeController implements DepotPerformanceIncomeApiDelegate {
   private final PerformanceMapper incomeMapper;
 
   @Override
-  public ResponseEntity<List<PerformanceDto>> getIncome(List<Long> depots, List<Long> securities,
+  public ResponseEntity<List<PerformanceDto>> getIncome(List<Long> depotIds, List<Long> securityIds,
                                                         List<IncomeTypeDto> incomeTypes) {
     List<Performance> income =
-        incomeService.getIncome(Set.copyOf(depots), Set.copyOf(securities), Set.copyOf(incomeTypes));
-    if (income.isEmpty()) {
-      throw new NoContentException();
-    }
+        incomeService.getIncome(Set.copyOf(depotIds), Set.copyOf(securityIds), Set.copyOf(incomeTypes));
     List<PerformanceDto> responseBody = income.stream().map(incomeMapper::toPerformanceDto).toList();
     return ResponseEntity.ok(responseBody);
   }
