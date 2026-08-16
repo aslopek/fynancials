@@ -40,9 +40,47 @@ to check for available updates.
 
 ## Getting started
 
-Users: see the [user manual](./USER_MANUAL.md) for installation, database setup, and a feature walkthrough.
+Users: see the [user manual](./USER_MANUAL.md) for database setup, the startup screens, and a feature walkthrough.
 
-You can download TraQuity from the [GitHub Releases page](https://github.com/aslopek/traquity/releases).
+Download TraQuity from the [GitHub Releases page](https://github.com/aslopek/traquity/releases). Each release carries one archive per
+platform. Every archive holds the complete application directory. There is no installer: unpack it wherever you want the app to live and
+start it from there.
+
+The builds are **not code-signed**, so Windows and macOS both flag them on first launch. Getting past that warning means accepting that you
+trust this app; the steps below are the same steps that let any unsigned app run, so apply them only to a download you actually wanted.
+
+### Windows
+
+SmartScreen shows *"Windows protected your PC"* when `traquity.exe` is started for the first time. Choose **More info → Run anyway**.
+
+### macOS
+
+macOS quarantines anything downloaded by a browser, and since the app is neither signed nor notarized, Gatekeeper refuses to open it and
+may report it as *"damaged"*. Clear the quarantine attribute once, from a terminal:
+
+```shell
+xattr -cr <path-to-traquity.app>
+```
+
+Depending on where the app was unpacked this may need `sudo`. Afterwards TraQuity starts normally, and no further launch needs admin rights.
+
+Downloading the release from a terminal avoids the quarantine attribute in the first place, because `curl` does not set it — no `xattr` run
+is then necessary:
+
+```shell
+mkdir -p ~/Downloads/TraQuity && cd ~/Downloads/TraQuity
+curl -fsSL https://api.github.com/repos/aslopek/traquity/releases/latest \
+  | grep -o 'https://[^"]*macos-arm64\.zip' \
+  | xargs curl -fL -o traquity-macos-arm64.zip
+ditto -x -k traquity-macos-arm64.zip .
+```
+
+**Where to put the app:** `/Applications` is a poor choice. If you let TraQuity download a Java runtime for you, that runtime is installed
+next to the `.app` bundle into `/Applications`. Recommendation: Choose a path in your home directory, e.g. `~/traquity/app`.
+
+### Linux
+
+Unpack the `.tar.gz` and run the `traquity` binary inside it. Nothing has to be accepted or cleared here.
 
 ### Build from source
 
