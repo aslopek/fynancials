@@ -252,6 +252,27 @@ container component's `providers: [XStore]`, then have descendant components
   pattern. Add a one-line comment explaining the coupling when you use it, and don't reach for it otherwise.
 - Avoid inline styling. Only if it supports readability, this is allowed. E.g. when dividing `width` among columns.
 
+## Fonts
+
+All families the app renders are **bundled, never fetched at runtime**. They enter the build through `angular.json`'s `styles` array (the
+two package stylesheets) and `src/fonts/noto-color-emoji-flags.scss` (the one hand-written `@font-face`), and `ng build` emits the
+referenced files into `dist/traquity/browser/media/`. `index.html` links no stylesheet and the CSP grants `font-src 'self'` only, so a
+remote font cannot load even if one is added by accident.
+
+Three reasons this is a rule rather than a preference, in the order they bite:
+
+- `<mat-icon>` renders **ligatures** (`app.config.ts`'s `setDefaultFontSetClass`), so an icon whose font did not load shows its own
+  name as text.
+- A request per start tells a third party when this app runs, which is the opposite of what the README promises.
+- `country.pipe.ts` maps a country code into `U+1F1E6`-`U+1F1FF` and nothing else, so the `@font-face` for Noto Color Emoji carries
+  a `unicode-range` of exactly that — a 5.5 MB color font has no business being consulted for any other character.
+
+Adding or changing a font means: import it in `angular.json`'s `styles`, keep it in `dependencies`, and **never subset or otherwise
+modify the file** — under OFL-1.1 a modified font may not keep its reserved name. Attribution needs no action:
+`scripts/generate-third-party-licenses.js` collects any package a stylesheet references, so the import itself is what puts the license into
+the "About" dialog. `forge.config.js` keeps the font binaries under `node_modules` out of the package — they are build input, and the copies
+in `dist/` are the ones that ship.
+
 ## Testing
 
 Electron main-process specs live under `electron/`, with their own jest config and their own conventions on top of the ones below — see

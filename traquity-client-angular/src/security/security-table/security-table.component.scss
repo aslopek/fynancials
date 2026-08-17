@@ -17,6 +17,8 @@
 .row {
   display: flex;
   flex-direction: row;
+  // the flag and the ISIN are one line of content, so they share a centre line rather than each filling the cell
+  align-items: center;
 }
 
 .security-table {

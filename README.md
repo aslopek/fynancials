@@ -2,9 +2,23 @@
 
 Local-first portfolio tracking for the desktop. TraQuity keeps your complete investment
 history — depots, transactions, dividends, performance — in an AES-encrypted database on your
-own machine. No account, no cloud, no telemetry: the only network traffic is fetching market
-data from sources you configure yourself. And a request to GitHub itself on application startup
-to check for available updates.
+own machine. No account, no cloud, no telemetry.
+
+Your portfolio never leaves your computer. These are all the requests that do:
+
+- **Your market data sources** — the HTTP/JSON APIs you configured yourself, called with the API
+  key you gave them. Historical prices on each app start, and again whenever you point a security
+  at a source; dividend announcements on each app start.
+- **The ECB**, for the official euro reference rates that convert multi-currency depots
+  (`ecb.europa.eu`). Once per app start.
+- **GitHub**, to compare the latest release tag against the running version
+  (`api.github.com`). Once per app start; it fails silently when offline.
+- **Amazon Corretto**, for the JDK archive and its signature (`corretto.aws`) — only if you ask
+  the app to download a Java runtime for you, and never otherwise.
+
+That is the whole list. Fonts and icons are bundled rather than fetched, so the app renders
+fully offline; without market data / dividend sources configured, only the ECB and GitHub requests
+remain. Links you click — the repository, a dependency's page — open in your own browser, not in the app.
 
 ![TraQuity — local-first portfolio tracking for the desktop](./doc-assets/social-preview.png)
 

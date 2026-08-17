@@ -24,7 +24,17 @@ const unpackagedPaths = [
     /^\/electron\/.*\.md$/,
     // electron-packager drops these itself only while `ignore` is a list of patterns; a function replaces its
     // defaults instead of extending them, so what is still relevant of them has to be restated here
-    /^\/node_modules\/\.bin($|\/)/
+    /^\/node_modules\/\.bin($|\/)/,
+    // Font binaries under node_modules are build-time input, not runtime files: `ng build` copies the ones the
+    // stylesheets actually reference into dist/traquity/browser/media/ and rewrites the URLs to point there, so a
+    // copy in the asar is the same glyphs a second time. It is also the *whole* package rather than the used part -
+    // every weight, every subset, and for material-symbols the rounded and sharp styles this app never renders.
+    // What stays is the text: LICENSE, NOTICE and package.json are kept, so the packaged app carries the licenses of
+    // the fonts it ships next to them.
+    /^\/node_modules\/.*\.(woff2?|ttf|otf|eot)$/,
+    // The same glyphs in a second format. Chromium reads the `src` list left to right and every fontsource
+    // stylesheet lists woff2 first, so the woff behind it is never requested by this app's only renderer.
+    /^\/dist\/traquity\/browser\/media\/.*\.woff$/
 ];
 
 /**

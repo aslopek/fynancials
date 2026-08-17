@@ -33,6 +33,9 @@
     "watch": "ng build --watch --configuration development"
   },
   "dependencies": {
+    "@fontsource/noto-color-emoji": "^5.3.0",
+    "@fontsource/roboto": "^5.3.0",
+    "material-symbols": "^0.45.10",
     "zod": "^4.4.3"
   },
   "devDependencies": {
