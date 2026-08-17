@@ -30,17 +30,17 @@ short sentences, names buttons and screens exactly as the app labels them, and a
 
 ## Quick reference
 
-| Item                    | Value                                                                                     |
-|-------------------------|-------------------------------------------------------------------------------------------|
-| Database file           | One AES-encrypted [H2](https://h2database.com) file, `<name>.mv.db`, at a path you choose |
-| Database password       | Chosen when the database is created; there is **no recovery**                             |
-| Configuration file      | `traquity.config.json` in your home directory, e.g. `C:\Users\<you>\traquity.config.json` |
-| Log file                | `traquity.log` in the app's working directory, deleted and rewritten on every start       |
-| Downloaded Java runtime | `java/` in the app's working directory (only if you choose the download)                  |
-| Backend port            | `127.0.0.1:23726`                                                                         |
-| H2 console port         | `127.0.0.1:29232` (reachable through the app's dev mode)                                  |
-| Required runtime        | Java 25 (any distribution) — configured, found on the `PATH`, or downloaded by the app    |
-| Supported platforms     | Windows x64, macOS Apple Silicon, Linux x64                                               |
+| Item                    | Value                                                                                                                     |
+|-------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| Database file           | One AES-encrypted [H2](https://h2database.com) file, `<name>.mv.db`, at a path you choose                                 |
+| Database password       | Chosen when the database is created; there is **no recovery**                                                             |
+| Configuration file      | `traquity.config.json` in a `traquity` folder in your home directory, e.g. `C:\Users\<you>\traquity\traquity.config.json` |
+| Log file                | `traquity.log` next to it, deleted and rewritten on every start                                                           |
+| Downloaded Java runtime | `java/` in the app's working directory (only if you choose the download)                                                  |
+| Backend port            | `127.0.0.1:23726`                                                                                                         |
+| H2 console port         | `127.0.0.1:29232` (reachable through the app's dev mode)                                                                  |
+| Required runtime        | Java 25 (any distribution) — configured, found on the `PATH`, or downloaded by the app                                    |
+| Supported platforms     | Windows x64, macOS Apple Silicon, Linux x64                                                                               |
 
 ## Installation
 
@@ -225,8 +225,9 @@ the app still compares your input against the hash of the old password.
 
 ## The configuration file
 
-Startup settings live in `traquity.config.json` in your home directory. TraQuity writes it with owner-only permissions. It is read once at
-start; edits made while the app runs are overwritten by the next write.
+Startup settings live in `traquity.config.json`, in a `traquity` folder in your home directory (e.g. `C:\Users\<you>\traquity\` on
+Windows). TraQuity writes it with owner-only permissions. It is read once at start; edits made while the app runs are overwritten by the
+next write. `traquity.log` (see [Troubleshooting](#troubleshooting)) lives in the same folder.
 
 ```json
 {
@@ -934,5 +935,5 @@ view.
 The configured path does not point at a runnable `java`. Pick another one with **Custom path…**, switch to **Automatic**, or use **Download
 Corretto**.
 
-`traquity.log` sits in the app's working directory and is rewritten on every start, so reproduce a problem first and read the log
-afterwards.
+`traquity.log` sits next to `traquity.config.json` (see [The configuration file](#the-configuration-file)) and is rewritten on every start,
+so reproduce a problem first and read the log afterwards.
