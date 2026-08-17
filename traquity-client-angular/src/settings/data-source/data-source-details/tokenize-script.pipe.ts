@@ -15,7 +15,8 @@ export class ScriptTokenizerPipe implements PipeTransform {
       return [];
     }
 
-    const scriptRegex: RegExp = /(#\w+\((?:[^()]+|\([^()]*\))*\))/g;
+    // The alternation consumes a single character per iteration, so every input has exactly one parse and no backtracking is possible.
+    const scriptRegex: RegExp = /(#\w+\((?:[^()]|\([^()]*\))*\))/g;
     const parts: string[] = value.split(scriptRegex);
     return parts.map((part: string): TextToken => {
       return {
