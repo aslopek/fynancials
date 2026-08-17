@@ -1,3 +1,13 @@
+// The flag is one glyph rendered next to text, so the component occupies exactly that glyph's box and nothing more:
+// a stray margin or an inherited line box is what makes it sit off the line the text next to it is on.
+:host {
+  display: inline-flex;
+  align-items: center;
+}
+
 .emoji {
   font-family: 'Noto Color Emoji', sans-serif;
+  // Noto Color Emoji declares a far taller ascent than the text font around it, so an inherited line-height turns
+  // into leading above the glyph and drops it below the neighbouring text.
+  line-height: 1;
 }

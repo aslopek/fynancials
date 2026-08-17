@@ -1,0 +1,18 @@
+// The flag glyphs `country.pipe.ts` produces: it maps a two-letter code into `U+1F1E6`-`U+1F1FF`, the regional
+// indicators, a pair of which the font's own ligatures turn into one flag. The `unicode-range` below is what keeps a
+// 5.5 MB color font out of every other character in the app.
+//
+// It has to be the package's *full* file rather than one of its numbered unicode-range subsets, and this is the one
+// thing to know before touching this rule: a color font carries its artwork in a table, and the subsets carry only
+// `SVG ` (SVG-in-OpenType), which Chromium does not implement. The full file carries `COLR`/`CPAL` as well, which
+// Chromium does. Pointing this at `files/noto-color-emoji-0-400-normal.woff2` costs 4.3 MB less and renders nothing
+// at all - the glyphs are simply absent, with no error anywhere. Verify a replacement by reading its table
+// directory, not by reading its file size.
+@font-face {
+  font-family: 'Noto Color Emoji';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('@fontsource/noto-color-emoji/files/noto-color-emoji-emoji-400-normal.woff2') format('woff2');
+  unicode-range: U+1f1e6-1f1ff;
+}

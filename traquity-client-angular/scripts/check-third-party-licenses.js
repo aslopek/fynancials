@@ -23,6 +23,7 @@ const ALLOWED_LICENSES = [
   'BlueOak-1.0.0',
   'CC0-1.0',
   'Unlicense',
+  'OFL-1.1',
 ];
 
 /**
