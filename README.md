@@ -134,7 +134,7 @@ At runtime, the Electron main process spawns the Spring Boot backend as a local 
 (`127.0.0.1:23726`) and points the Angular UI at it. Data lives in a single encrypted H2 file
 database, schema-managed by Liquibase. Its web console listens on `127.0.0.1:29232`.
 
-These port numbers are not arbitrary: `23726` and `29232` are the birthdays of my grandparents — July 26, 1926 and February 29, 1932 — and
+These port numbers are not arbitrary: `23726` and `29232` are the birthdays of my grandparents — July 23, 1926 and February 29, 1932 — and
 the ports are named in their honor.
 
 ### The domain is the unit, not the layer
@@ -162,22 +162,96 @@ MockMvc — real controllers, services, and H2 database, with outbound third-par
 ECB exchange rates) stubbed at the edge. Every endpoint is verified against actual persistence
 and real payloads, not mocks standing in for the components that matter.
 
-Frontend test coverage is still a known gap. A Jest suite now covers first pieces of the store
-logic, but most of the frontend remains untested. The priority so far has been the backend,
-where the actual portfolio calculations live; broadening store, pipe, and component coverage
-is the next area to invest in.
+The frontend is tested with Jest, in two suites that run independently of each other. The Angular
+suite covers the logic layer: reducers, selectors and effects of the global NgRx store, the
+computeds, methods and effects of the per-screen Signal Stores, and the pipes that turn derived
+state into rendered artifacts. Effects — and anything else that resolves purely through rxjs — are
+tested with marbles (`TestScheduler`), so that a `switchMap` dropping an in-flight request is
+asserted rather than assumed; timing and cancellation are invisible to a test that just awaits a
+value.
+
+The Electron main-process suite covers the desktop shell: the config file and its scrypt auth
+records, the startup mode, the backend spawn including the password handover, the Java resolution
+chain, the JDK download's signature verification, and the IPC boundary. The `electron/` directory
+is laid out for exactly that — everything with logic lives in a module that takes its I/O
+dependencies (file system, `fetch`, timers, the spawned child) as arguments, and `main.js` is
+wiring only. There is no integration-test harness for Electron main code, and a piece of logic
+that can only be reached by booting Electron is a piece of logic nothing will ever test.
+
+What neither suite covers is deliberate on one count and a real limit on the other. Components and
+templates have no specs, because logic is kept out of them by design: it belongs in stores and
+pipes, which is where the tests are. But nothing here exercises the *packaged* app — wiring,
+resource paths, dependency pruning and the Electron fuses are verifiable only on a real packaged
+run, so a green suite is never on its own evidence that the shipped app starts.
 
 ## Security model
 
-TraQuity is a **single-user local desktop application**, and its security model is built on
-that assumption: the backend binds to `127.0.0.1` only, CORS is restricted to the bundled app
-and the local dev server, the database is an encrypted local file, and there is no
-authentication layer — on a single-user machine, the only thing that can reach the port is the
-user's own Electron app. The database connection details are only exposed to the UI when the
-user explicitly enables dev mode.
+TraQuity is a **single-user local desktop application**, and its security model is built on that
+assumption: everything runs on one machine, for one person, and nothing is exposed to a network.
+What follows is the summary — the reasoning behind the individual decisions lives in the
+[security ADRs](./architecture/security.md) and in the `LLM.md` files, above all
+`traquity-client-angular/electron/LLM.md`.
 
-Those trade-offs are sound locally but mean `traquity-server-spring` is **not suitable to
-deploy as a hosted service as-is**. That would require, at minimum: authentication/
+**The database.** One AES-encrypted H2 file at a path you choose, with a password fixed when the
+file is created. There is no recovery and no backdoor: lose the password and the data in that file
+is gone. The password itself is never stored. What `~/traquity/traquity.config.json` keeps is an
+scrypt salt and hash per database, and only so that the unlock screen can tell you that what you
+typed differs from what worked last time, before the file is ever asked to open. That record is
+written only once a backend start has actually succeeded with that password — the file remains the
+sole authority on what its password is — and the config file is written with mode `0600`. A
+database you choose to leave unprotected is recorded as an explicit `passwordless` marker rather
+than as an empty password.
+
+**The password handover.** The password reaches the backend as the entire content of the spawned
+process's standard input, closed immediately afterwards, with the buffer zeroed once written. The
+child's environment carries a marker telling it to read stdin, and no password at all: a process's
+environment block is readable from outside it on common systems, a pipe between parent and child
+is not.
+
+**The backend.** It binds to `127.0.0.1` only, so the port is never on a network, and CORS is
+restricted to two origins: the literal `null` Chromium sends for the packaged app's `file://`
+document, and the local dev server. There is no authentication layer — no login, no session, no
+cookie — because the process boundary and the operating system's user account are what the access
+control rests on. CSRF protection is deliberately disabled: with no ambient credential to forge a
+request with, a token would add nothing the origin allowlist does not already provide, and
+[ADR-001](./architecture/security.md) argues that case in full, including what would have to change
+to revisit it. What that leaves in the open is stated there rather than glossed over: another
+program running as the same user on the same machine can call every endpoint. The database
+connection details, and the embedded H2 console, are exposed to the UI only when the user
+explicitly enables dev mode.
+
+**The desktop shell.** The renderer runs sandboxed, with context isolation on and Node integration
+off, and its only door to the main process is a preload bridge of named IPC channels. Each of those
+channels first checks that the event came from the main frame of the app's own window, then
+validates its payload against a zod schema with explicit length bounds — the renderer is not the
+trustworthy source it looks like, since it renders what a database and third-party HTTP responses
+contain. The window refuses to navigate away from its own document (a window that navigates takes
+the bridge along to wherever it lands), refuses webviews, answers every permission request and
+check with `false` — camera, microphone, location, notifications, and device access via
+WebHID/WebUSB/Web Serial — and hands a URL to the operating system only when it is `http:` or
+`https:`. The document ships a restrictive CSP; DevTools and spellchecking are off. In the packaged
+binary, the Electron fuses `RunAsNode`, `EnableNodeOptionsEnvironmentVariable` and
+`EnableNodeCliInspectArguments` are disabled and `OnlyLoadAppFromAsar` is enabled: each of those is
+a way to make the shipped executable run something other than this app, before `main.js` is ever
+consulted, and they are closed in the binary rather than in code they would bypass anyway.
+
+**Spawning Java.** The JVM is the one binary this app runs that it did not ship, and its path comes
+from a config file or a file dialog, so it is treated as untrusted input. A candidate is only ever
+an absolute path named `java`/`java.exe`, run without a shell, with an argument vector, a timeout,
+a byte budget across its output streams, and an environment stripped of everything that would turn
+into an argument of that JVM or of its dynamic linker (`JAVA_TOOL_OPTIONS`, `JDK_JAVA_OPTIONS`,
+`_JAVA_OPTIONS`, `LD_PRELOAD`, `LD_AUDIT`, `DYLD_INSERT_LIBRARIES`). If you let the app download a
+JDK for you, its detached OpenPGP signature is verified against the Amazon Corretto release signing
+key pinned in the source before anything is extracted.
+
+**Refusing to start.** `NODE_TLS_REJECT_UNAUTHORIZED` set to any value other than `1` turns off
+certificate verification for the whole process. The app treats that as a state it cannot work in
+rather than as a setting: it starts into a dead end that explains the variable, spawns no JVM, and
+registers two IPC channels — read the startup state, and quit.
+
+Every one of these trade-offs is made for a process that lives and dies with one desktop app on one
+machine, which is also what makes `traquity-server-spring` **not suitable to deploy as a hosted
+service as-is**. That would require, at minimum: authentication/
 authorization, per-tenant data isolation instead of one embedded H2 file, TLS, a real CORS/
 network exposure policy, disabling the H2 console or entirely switching the database, proper
 secrets management, rate limiting, audit logging, and compliance with the terms of the
