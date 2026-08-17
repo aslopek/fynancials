@@ -8,3 +8,4 @@ Architectural principles, patterns and other coding rules can be found in any of
 [Configuration](configuration.md)
 [Dependabot](dependabot.md)
 [Licensing](licensing.md)
+[Security](security.md)
