@@ -9,8 +9,8 @@
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self';
                    script-src 'self';
-                   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-                   font-src 'self' https://fonts.gstatic.com;
+                   style-src 'self' 'unsafe-inline';
+                   font-src 'self';
                    img-src 'self' data: blob: http://localhost:* http://127.0.0.1:*;
                    connect-src 'self' http://localhost:* http://127.0.0.1:* https://api.github.com;
                    frame-src http://localhost:* http://127.0.0.1:*;
@@ -21,12 +21,9 @@
     <link href="favicon.ico"
           rel="icon"
           type="image/x-icon">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap"
-        rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
-          rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap"
-        rel="stylesheet">
+    <!-- The three font families are bundled (angular.json's `styles`) rather than fetched from Google's CDN: the app
+         is offline-capable by design, `<mat-icon>` renders ligatures and would show the icon's name as text without
+         its font, and a request on every start would tell a third party when this app runs. -->
 </head>
 <body class="mat-typography mat-app-background">
 <app-root></app-root>

@@ -1,4 +1,4 @@
-export type ThirdPartyLicenseEntrySource = 'angular-bundle' | 'electron-shell' | 'runtime-note';
+export type ThirdPartyLicenseEntrySource = 'angular-bundle' | 'electron-shell' | 'stylesheet-asset' | 'runtime-note';
 
 export type ThirdPartyLicenseEntry = {
   name: string

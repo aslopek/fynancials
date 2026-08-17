@@ -52,6 +52,11 @@
               "src/assets"
             ],
             "styles": [
+              "@fontsource/roboto/300.css",
+              "@fontsource/roboto/400.css",
+              "@fontsource/roboto/500.css",
+              "material-symbols/outlined.css",
+              "src/fonts/noto-color-emoji-flags.scss",
               "src/styles.scss"
             ],
             "scripts": [],

@@ -8,6 +8,12 @@
  *  2. The Electron shell packages that are distributed outside the Angular bundle: the `electron` runtime itself, and
  *     every `dependencies` entry of package.json — the main process's own runtime closure, which electron-packager
  *     keeps in the asar.
+ *  3. Every package a stylesheet pulls in — angular.json's `styles` entries and the `@use`/`@import`/`url()`
+ *     specifiers in src/. These reach the shipped app as *assets* (fonts, images) rather than as bundled
+ *     JavaScript, which is why neither source above sees them: a font contributes nothing to a JS chunk, so it
+ *     never appears in 3rdpartylicenses.txt, and it needs no `dependencies` entry to be built in. Scanning the
+ *     stylesheets is what makes the attribution follow from the import itself — the act that puts the file into the
+ *     release is the same act that puts its license into the About dialog, whichever dependency block it sits in.
  *
  * Run via `npm run licenses:generate` (part of `npm run build`, after `ng build`).
  */
@@ -18,6 +24,8 @@ const path = require('path');
 const projectRoot = path.join(__dirname, '..');
 const bundleLicensesPath = path.join(projectRoot, 'dist', 'traquity', '3rdpartylicenses.txt');
 const nodeModulesPath = path.join(projectRoot, 'node_modules');
+const sourcePath = path.join(projectRoot, 'src');
+const angularJsonPath = path.join(projectRoot, 'angular.json');
 const outputPath = path.join(projectRoot, 'dist', 'traquity', 'browser', 'assets', 'third-party-licenses.json');
 const ownPackageJson = JSON.parse(fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf-8'));
 
@@ -33,9 +41,25 @@ const shellPackageRoots = [
   ...Object.keys(ownPackageJson.dependencies ?? {}).map(name => ({name, traverse: true}))
 ];
 
-const blockSeparator = /^-{10,}$/m;
+// The rule the bundle file draws between two records, matched only where it trails a record: anchored at the end of
+// the block and without the `m` flag, so a rule *inside* a license text is never mistaken for it.
+const trailingSeparator = /\n-{10,}\s*$/;
 const licenseFileNames = ['LICENSE', 'LICENSE.txt', 'LICENSE.md', 'LICENCE', 'LICENSE-MIT.txt'];
 const noticeFileNames = ['NOTICE', 'NOTICE.txt', 'NOTICE.md'];
+
+const stylesheetExtensions = ['.scss', '.css'];
+
+// @use 'package' or @use "package"
+const usePattern = /@use\s+['"]([^'"]+)['"]/g;
+
+// @import 'package' or @import "package"
+const importPattern = /@import\s+['"]([^'"]+)['"]/g;
+
+// url('path'), url("path"), or url(path)
+const urlPattern = /url\(\s*['"]?([^'")]+?)['"]?\s*\)/g;
+
+/** @type {RegExp[]} */
+const stylesheetReferencePatterns = [usePattern, importPattern, urlPattern];
 
 function fail(message) {
   console.error(`[third-party-licenses] ${message}`);
@@ -68,30 +92,43 @@ function parseBundleLicenses() {
   const content = fs.readFileSync(bundleLicensesPath, 'utf-8');
   const packagesByName = new Map();
 
-  for (const rawBlock of content.split(blockSeparator)) {
-    const block = rawBlock.trim();
-    const nameMatch = block.match(/^Package: (.+)$/m);
-    if (!nameMatch) {
-      continue;
+  // A record runs from its own `Package:` line to the next one. Splitting on the rule the file draws between records
+  // is what this must not do: a license text may draw a rule of its own, and the OFL draws one of 59 dashes above and
+  // below its title where the file's own separator is 80. Splitting on any dash run therefore cut every OFL text off
+  // at "This license is copied below" and dropped the remainder - it landed in blocks carrying no `Package:` line,
+  // which the loop then skipped as noise.
+  const headers = [...content.matchAll(/^Package: (.+)$/gm)];
+  for (const [index, header] of headers.entries()) {
+    const name = header[1].trim();
+    if (packagesByName.has(name)) {
+      continue; // duplicate record (same package bundled into several chunks) — the license text is identical
     }
 
-    const name = nameMatch[1].trim();
+    const blockStart = header.index + header[0].length;
+    const blockEnd = index + 1 < headers.length ? headers[index + 1].index : content.length;
+    const block = content.slice(blockStart, blockEnd);
+
     const licenseMatch = block.match(/^License: "?(.*?)"?$/m);
-    const licenseText = block
-      .replace(/^Package: .+$/m, '')
+    const bundleLicenseText = block
       .replace(/^License: .+$/m, '')
+      .replace(trailingSeparator, '')
       .trim();
 
-    if (packagesByName.has(name)) {
-      continue; // duplicate block (same package bundled into several chunks) — the license text is identical
-    }
+    // The package's own LICENSE file is preferred over the text the build re-emitted: it is the canonical copy, it is
+    // what the licenses actually require to be reproduced, and it cannot be truncated by however this file is parsed.
+    // The bundle text stays as the fallback for a package that ships none.
+    // The NOTICE is read here for the same reason - the bundle file never carries one, and Apache-2.0 §4(d) requires
+    // the NOTICE of a package that ships one to be reproduced in the distribution.
+    const packageDirectory = path.join(nodeModulesPath, ...name.split('/'));
+    const packageExists = fs.existsSync(packageDirectory);
+    const fileLicenseText = packageExists ? readFirstExistingFile(packageDirectory, licenseFileNames) : null;
 
     packagesByName.set(name, {
       name,
       version: readPackageJson(name)?.version ?? 'unknown',
       license: licenseMatch ? licenseMatch[1] : null,
-      licenseText: licenseText.length > 0 ? licenseText : null,
-      noticeText: null,
+      licenseText: fileLicenseText ?? (bundleLicenseText.length > 0 ? bundleLicenseText : null),
+      noticeText: packageExists ? readFirstExistingFile(packageDirectory, noticeFileNames) : null,
       source: 'angular-bundle'
     });
   }
@@ -138,6 +175,95 @@ function collectShellPackages(packagesByName) {
   }
 }
 
+/**
+ * The package a stylesheet specifier refers to, or null when it refers to something that is not a package: a relative
+ * or absolute path, a data/remote URL, or one of this project's own files (angular.json lists those workspace-
+ * relative, e.g. `src/styles.scss`, which is spelled exactly like a package subpath and is told apart from one by
+ * being there).
+ */
+function packageNameOf(specifier) {
+  if (isLocalPathOrReference(specifier) || isUrlOrProtocol(specifier)) {
+    return null;
+  }
+  if (fs.existsSync(path.join(projectRoot, specifier))) {
+    return null;
+  }
+  const segments = specifier.split('/');
+  const name = specifier.startsWith('@') ? segments.slice(0, 2).join('/') : segments[0];
+  return name.length > 0 ? name : null;
+}
+
+// Checks if the specifier starts with special path characters: ., ~, /, or #
+function isLocalPathOrReference(specifier) {
+  const pathPrefixRegex = /^[.~/#]/;
+  return pathPrefixRegex.test(specifier);
+}
+
+// Checks for a valid URL protocol scheme (e.g., http:, https:, data:, file:)
+function isUrlOrProtocol(specifier) {
+  const urlProtocolRegex = /^[a-z][a-z0-9+.-]*:/i;
+  return urlProtocolRegex.test(specifier);
+}
+
+function stylesheetSpecifiers() {
+  const specifiers = new Set();
+
+  // angular.json's `styles` - a global stylesheet is listed there rather than imported from anywhere in src/
+  const angularJson = JSON.parse(fs.readFileSync(angularJsonPath, 'utf-8'));
+  for (const project of Object.values(angularJson.projects ?? {})) {
+    for (const style of project.architect?.build?.options?.styles ?? []) {
+      specifiers.add(typeof style === 'string' ? style : style.input);
+    }
+  }
+
+  // every stylesheet in src/, including the component-level ones: a `url()` in any of them ships an asset too
+  const entries = fs.readdirSync(sourcePath, {recursive: true, withFileTypes: true});
+  for (const entry of entries) {
+    if (!entry.isFile() || !stylesheetExtensions.includes(path.extname(entry.name))) {
+      continue;
+    }
+    const content = fs.readFileSync(path.join(entry.parentPath, entry.name), 'utf-8');
+    for (const pattern of stylesheetReferencePatterns) {
+      for (const match of content.matchAll(pattern)) {
+        specifiers.add(match[1]);
+      }
+    }
+  }
+
+  return specifiers;
+}
+
+function collectStylesheetPackages(packagesByName) {
+  const names = new Set();
+  for (const specifier of stylesheetSpecifiers()) {
+    const name = packageNameOf(specifier);
+    if (name !== null) {
+      names.add(name);
+    }
+  }
+
+  for (const name of names) {
+    if (packagesByName.has(name)) {
+      continue;
+    }
+
+    const packageJson = readPackageJson(name);
+    if (packageJson === null) {
+      fail(`Stylesheet package "${name}" not found in node_modules — run "npm install" first.`);
+    }
+
+    const packageDirectory = path.join(nodeModulesPath, ...name.split('/'));
+    packagesByName.set(name, {
+      name,
+      version: packageJson.version,
+      license: packageJson.license ?? null,
+      licenseText: readFirstExistingFile(packageDirectory, licenseFileNames),
+      noticeText: readFirstExistingFile(packageDirectory, noticeFileNames),
+      source: 'stylesheet-asset'
+    });
+  }
+}
+
 function addRuntimeNotes(packagesByName) {
   packagesByName.set('Electron runtime components (Chromium, Node.js)', {
     name: 'Electron runtime components (Chromium, Node.js)',
@@ -154,6 +280,7 @@ function addRuntimeNotes(packagesByName) {
 function main() {
   const packagesByName = parseBundleLicenses();
   collectShellPackages(packagesByName);
+  collectStylesheetPackages(packagesByName);
   addRuntimeNotes(packagesByName);
 
   const packages = [...packagesByName.values()].sort((a, b) => a.name.localeCompare(b.name, 'en', {sensitivity: 'base'}));
