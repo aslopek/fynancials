@@ -39,8 +39,8 @@ jobs:
             traquity-client-angular/package.json traquity-client-angular/package-lock.json \
             traquity-server-spring/pom.xml
           git commit -m "Release v${{ steps.bump.outputs.version }}" --allow-empty
-          git tag "v${{ steps.bump.outputs.version }}"
-          git push origin main "v${{ steps.bump.outputs.version }}"
+          git tag "${{ steps.bump.outputs.version }}"
+          git push origin main "${{ steps.bump.outputs.version }}"
       - uses: actions/upload-artifact@v7
         with:
           name: release-notes
@@ -56,7 +56,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: v${{ needs.prepare.outputs.version }}
+          ref: ${{ needs.prepare.outputs.version }}
       - uses: actions/setup-java@v5.7.0
         with:
           distribution: corretto
@@ -90,13 +90,13 @@ jobs:
           # it
           case "${{ runner.os }}" in
             Windows)
-              7z a "release-artifacts/traquity-${version}-windows-x64.zip" ./out/traquity-win32-x64 ;;
+              7z a "release-artifacts/traquity-${version}-windows-x64.zip" ./out/TraQuity-win32-x64 ;;
             macOS)
               # ditto rather than zip, so the bundle's symlinks and extended attributes survive the round trip
-              ditto -c -k --sequesterRsrc --keepParent out/traquity-darwin-arm64 \
+              ditto -c -k --sequesterRsrc --keepParent out/TraQuity-darwin-arm64 \
                 "release-artifacts/traquity-${version}-macos-arm64.zip" ;;
             Linux)
-              tar -czf "release-artifacts/traquity-${version}-linux-x64.tar.gz" -C out traquity-linux-x64 ;;
+              tar -czf "release-artifacts/traquity-${version}-linux-x64.tar.gz" -C out TraQuity-linux-x64 ;;
           esac
       - uses: actions/upload-artifact@v7
         with:
@@ -112,7 +112,7 @@ jobs:
         with:
           path: artifacts
       - run: |
-          gh release create "v${{ needs.prepare.outputs.version }}" \
+          gh release create "${{ needs.prepare.outputs.version }}" \
             --repo "${{ github.repository }}" \
             --title "TraQuity ${{ needs.prepare.outputs.version }}" \
             --notes-file artifacts/release-notes/release-notes.md \

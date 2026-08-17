@@ -10,8 +10,13 @@ const {isOpenableExternally, isSameDocument} = require('./navigation-policy.js')
  */
 
 // paths here are relative to electron/window/, so two '..' reach the package root
-const frontendUrlPath = path.join(__dirname, '..', '..', 'dist', 'traquity', 'browser', 'index.html');
-const frontendIconPath = path.join(__dirname, '..', '..', 'dist', 'traquity', 'browser', 'favicon.ico');
+const browserPath = path.join(__dirname, '..', '..', 'dist', 'traquity', 'browser');
+const frontendUrlPath = path.join(browserPath, 'index.html');
+// `nativeImage` decodes ICO on Windows alone, so everywhere else the same file loads as an empty image and leaves the
+// window with the default Electron icon rather than this app's
+const frontendIconPath = process.platform === 'win32'
+  ? path.join(browserPath, 'favicon.ico')
+  : path.join(browserPath, 'assets', 'logo.png');
 const preloadPath = path.join(__dirname, '..', 'preload.js');
 
 /** @type {import('electron').BrowserWindow | null} */

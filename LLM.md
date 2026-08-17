@@ -133,15 +133,14 @@ its parent POM if not set directly)before adding it.
 ## How the pieces fit together at runtime
 
 The Electron app (`traquity-client-angular`) is the shipped product. `app.on('ready')` opens its single `BrowserWindow` on the built
-Angular app immediately — it does not resolve Java, ask for a password or spawn the backend first. The Angular shell reads a computed
-startup mode (`boot`, `unlock` or `configure`) over an IPC bridge and, once past any unlock/configure screen, triggers the backend start
-itself via that same bridge. In `configure` mode the shell renders the configuration screen, where the user picks or creates the database
-file and, for a newly created one, defines its password; finishing there continues the very same startup flow in the same window, without
-a relaunch. `electron/main.js` then spawns a bundled Java process running the Spring Boot backend (`backend.jar`) as a
-child process and reports back whether it became reachable. The database password reaches that child over its stdin — the entire content
-of the stream, closed right after — rather than through its environment. The backend listens on port `23726` (H2 console on `29232`),
-backed by a local encrypted H2 file database whose path is configurable via `TQ_DB_FILE_PATH`. See
-`traquity-client-angular/electron/LLM.md` for the boot order in full.
+Angular app immediately — it does not wait for Java to resolve, ask for a password or spawn the backend first. The Angular shell reads a
+computed startup mode over an IPC bridge and, once past any unlock/configure screen, triggers the backend start itself via that same bridge.
+In `configure` mode the shell renders the configuration screen, where the user picks or creates the database file and, for a newly created
+one, defines its password; finishing there continues the very same startup flow in the same window, without a relaunch. `electron/main.js`
+then spawns a bundled Java process running the Spring Boot backend (`backend.jar`) as a child process and reports back whether it became
+reachable. The database password reaches that child over its stdin — the entire content of the stream, closed right after — rather than
+through its environment. The backend listens on port `23726` (H2 console on `29232`), backed by a local encrypted H2 file database whose
+path is configurable via `TQ_DB_FILE_PATH`. See `traquity-client-angular/electron/LLM.md` for the boot order in full.
 
 `forge.config.js` copies `traquity-server-spring/target/traquity-server-spring-<version>.jar` into
 `traquity-client-angular/resources/backend.jar` during electron-forge packaging — the Spring backend must be built (`mvn package`) before

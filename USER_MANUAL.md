@@ -232,10 +232,10 @@ next write. `traquity.log` (see [Troubleshooting](#troubleshooting)) lives in th
 ```json
 {
   "env": {
-    "TQ_DB_FILE_PATH": "C:\\Users\\you\\traquity"
+    "TQ_DB_FILE_PATH": "C:\\Users\\you\\traquity\\traquity"
   },
   "auth": {
-    "C:\\Users\\you\\traquity": {
+    "C:\\Users\\you\\traquity\\traquity": {
       "scrypt": {
         "salt": "<base64>",
         "hash": "<base64>",

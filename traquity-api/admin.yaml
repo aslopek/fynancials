@@ -142,15 +142,15 @@ components:
         connectionString:
           type: string
           nullable: false
-          example: jdbc:h2:~/traquity.db
+          example: 'jdbc:h2:file:~/traquity/traquity;CIPHER=AES;TRACE_LEVEL_FILE=0'
         webInterfaceUrl:
           type: string
           nullable: false
-          example: http://localhost:8080/h2-console
+          example: http://localhost:29232
         fileLocation:
           type: string
           nullable: false
-          example: /path/to/file
+          example: C:/Users/you/traquity/traquity.mv.db
 
     ThirdPartyLicense:
       type: object
