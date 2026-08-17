@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:h2:file:${TQ_DB_FILE_PATH:~/traquity};TRACE_LEVEL_FILE=0
+    url: jdbc:h2:file:${TQ_DB_FILE_PATH:~/traquity/traquity};TRACE_LEVEL_FILE=0
     username: admin
     password: admin
   liquibase:

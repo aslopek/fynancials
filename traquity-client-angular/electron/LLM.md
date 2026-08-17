@@ -156,7 +156,7 @@ Nothing in `webPreferences` may be relaxed without saying which of the above it 
 disk exactly as it is, with the reason logged to `traquity.log` and nowhere else. `missing` and `unreadable` both mean `configure` mode,
 which is the one mode that needs no readable config and spawns no backend. The default configuration `load()` falls back to for either
 **names no database at all**: a proposed path is one "Save & start" away from becoming a decision the user never made, so the configuration
-screen asks for one instead of inheriting a silent `~/traquity`.
+screen asks for one instead of inheriting the backend's own built-in default silently.
 
 Every write of that file lands as mode `0600`, and a `chmod` to the same mode follows each one, since a `mode` passed to a write only
 applies to a file being created and an install predating this rule still carries whatever umask it was written under.

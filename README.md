@@ -51,7 +51,7 @@ trust this app; the steps below are the same steps that let any unsigned app run
 
 ### Windows
 
-SmartScreen shows *"Windows protected your PC"* when `traquity.exe` is started for the first time. Choose **More info → Run anyway**.
+SmartScreen shows *"Windows protected your PC"* when `TraQuity.exe` is started for the first time. Choose **More info → Run anyway**.
 
 ### macOS
 
@@ -59,7 +59,7 @@ macOS quarantines anything downloaded by a browser, and since the app is neither
 may report it as *"damaged"*. Clear the quarantine attribute once, from a terminal:
 
 ```shell
-xattr -cr <path-to-traquity.app>
+xattr -cr <path-to-TraQuity.app>
 ```
 
 Depending on where the app was unpacked this may need `sudo`. Afterwards TraQuity starts normally, and no further launch needs admin rights.
@@ -76,11 +76,26 @@ ditto -x -k traquity-macos-arm64.zip .
 ```
 
 **Where to put the app:** `/Applications` is a poor choice. If you let TraQuity download a Java runtime for you, that runtime is installed
-next to the `.app` bundle into `/Applications`. Recommendation: Choose a path in your home directory, e.g. `~/traquity/app`.
+next to the `.app` bundle into `/Applications`. Recommendation: Choose a path in your home directory, e.g. `~/Applications/TraQuity`.
+Keep it out of `~/traquity/`, which is where the app keeps its configuration file and its log.
 
 ### Linux
 
-Unpack the `.tar.gz` and run the `traquity` binary inside it. Nothing has to be accepted or cleared here.
+Unpack the `.tar.gz` and run the `traquity` binary inside it. There is no signature warning to get past here.
+
+What some distributions do require is one adjustment to the unpacked directory. Electron sandboxes its renderer through unprivileged
+user namespaces where the kernel permits them, and falls back to the bundled `chrome-sandbox` helper where it does not — Ubuntu 24.04
+and its derivatives restrict those namespaces by default. That helper has to be owned by `root`, which unpacking as a normal user
+cannot arrange, so the app aborts on start with *"The SUID sandbox helper binary was found, but is not configured correctly"*. Hand it
+over once, inside the unpacked directory:
+
+```shell
+sudo chown root:root chrome-sandbox
+sudo chmod 4755 chrome-sandbox
+```
+
+Starting the app with `--no-sandbox` makes the same message go away, but it does so by dropping the renderer sandbox that isolates
+the files you import into TraQuity. The two commands above keep that sandbox intact, which is why they are the recommended route.
 
 ### Build from source
 

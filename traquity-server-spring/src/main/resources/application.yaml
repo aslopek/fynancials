@@ -10,7 +10,7 @@ spring:
     driver-class-name: org.h2.Driver
     username: ${TQ_DB_USER:admin}
     password: ${TQ_DB_FILE_PASSWORD:} ${TQ_DB_USER_PASSWORD:admin}
-    url: jdbc:h2:file:${TQ_DB_FILE_PATH:~/traquity};CIPHER=AES;TRACE_LEVEL_FILE=0
+    url: jdbc:h2:file:${TQ_DB_FILE_PATH:~/traquity/traquity};CIPHER=AES;TRACE_LEVEL_FILE=0
   liquibase:
     change-log: classpath:db/liquibase.xml
 

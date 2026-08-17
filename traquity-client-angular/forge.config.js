@@ -59,6 +59,7 @@ module.exports = {
     packagerConfig: {
         asar: true,
         icon: 'src/assets/icon',
+        ...(process.platform === 'linux' ? {executableName: 'traquity'} : {}),
         extraResource: 'resources/backend.jar',
         ignore: filePath => !isPackaged(filePath)
     },
@@ -76,11 +77,23 @@ module.exports = {
         },
         {
             name: '@electron-forge/maker-deb',
-            config: {},
+            config: {
+                options: {
+                    name: 'traquity',
+                    productName: 'TraQuity',
+                    bin: 'traquity'
+                }
+            },
         },
         {
             name: '@electron-forge/maker-rpm',
-            config: {},
+            config: {
+                options: {
+                    name: 'traquity',
+                    productName: 'TraQuity',
+                    bin: 'traquity'
+                }
+            },
         },
     ],
     plugins: [
@@ -95,7 +108,7 @@ module.exports = {
         // `NODE_OPTIONS=--require` or an `ELECTRON_RUN_AS_NODE=1` that this process never gets to see.
         new FusesPlugin({
             version: FuseVersion.V1,
-            // `ELECTRON_RUN_AS_NODE=1 traquity.exe evil.js` would otherwise turn the shipped binary into a plain
+            // `ELECTRON_RUN_AS_NODE=1 TraQuity.exe evil.js` would otherwise turn the shipped binary into a plain
             // Node interpreter, with this app's own signature/installation on it
             [FuseV1Options.RunAsNode]: false,
             // `NODE_OPTIONS=--require=evil.js` is code loaded into the *main* process, before main.js runs at all
