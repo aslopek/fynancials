@@ -1,6 +1,10 @@
 import {UrlPattern} from "../data-source.type";
 
-const MASKED_VALUE_PATTERN: RegExp = /#mask\(((?:[^()]+|\([^()]*\))*)\)/;
+/**
+ * Matches `#mask(...)` with an argument that may contain one level of nested parentheses. The alternation consumes a single character per
+ * iteration, so every input has exactly one parse and no backtracking is possible.
+ */
+const MASKED_VALUE_PATTERN: RegExp = /#mask\(((?:[^()]|\([^()]*\))*)\)/;
 
 export function extractMaskedValue(urlPattern: string): string | null {
   const match: RegExpMatchArray | null = urlPattern.match(MASKED_VALUE_PATTERN);
