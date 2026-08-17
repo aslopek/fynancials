@@ -234,3 +234,39 @@ accepted with the location:
   deleted. This needs no attacker: a Linux `.desktop` launch commonly leaves cwd at `$HOME`, where `~/java` is a plausible thing for a user
   to have. A guard that refuses a target which exists and does not look like a previous download of this app is worth having on its own
   merits.
+
+## ADR-011: `traquity.config.json` and `traquity.log` move into `~/traquity/`
+
+**Status:** ACCEPTED
+
+**Context:** `traquity.config.json` was written directly into the user's home directory (`os.homedir()`), and `traquity.log` into the app's
+own working directory (`process.cwd()`) — two different locations for the app's own technical input/output, one of which clutters a
+directory the user does not otherwise associate with TraQuity at all. Both files are read and written only by the Electron main process
+(ADR-009); neither is meant for the user to browse casually, but both are worth being able to find — the config file to hand-edit per
+[The configuration file](../USER_MANUAL.md#the-configuration-file), the log file to diagnose a failed start.
+
+**Decision:** Both files move into a single new directory, `~/traquity/`, created once at startup if missing
+(`traquity-client-angular/electron/main.js`'s `ensureAppDataDir`). `traquity.config.json` moves from `~/traquity.config.json` to
+`~/traquity/traquity.config.json`; `traquity.log` moves from the app's working directory to `~/traquity/traquity.log`. No migration of an
+existing `~/traquity.config.json` is performed — the same "an upgraded config is simply not found" pattern ADR-002 already accepts for a
+key rename applies here to the whole file: an upgrade starts into the configuration screen once, exactly as a first run would.
+
+The downloaded JDK is deliberately **not** moved here — it stays in the app's working directory, for the reasons ADR-010 already gives
+(deleting or updating the app takes the JDK with it). That reasoning is about the JDK's lifecycle tracking the app installation, which does
+not apply to the config file or the log — both are user data belonging to the person running the app, independent of which copy of the app
+they later run.
+
+**Rationale:**
+
+- A user's home directory is shared with every other application on the machine; a bare `traquity.config.json` sitting directly in it is
+  clutter that gives no hint which app it belongs to, unlike the folder it now lives in.
+- Both files are technical input/output the user might legitimately want to look at (hand-editing the config, reading the log after a
+  failed start) — worth keeping easy to find, not worth hiding inside a dotdir or `userData`, and not worth leaving loose in `$HOME`
+  either.
+- `~/traquity/` is also a staging ground for future app files that are neither the config nor the log — e.g. a system prompt, should an AI
+  feature be added later — without inventing a new location for each one.
+
+**Consequences:** `~/traquity/` needs to exist before either file is written; `ensureAppDataDir` creates it (`fs.mkdirSync` with
+`recursive: true`) once at startup, before anything else in `main.js` touches either path. A failure to create it is logged rather than
+thrown - the write it would have enabled (`config-file.js`'s `save()`, or the backend's log stream) then fails on its own terms right
+after, through error handling that already exists for a missing/unwritable file and needs no change here.

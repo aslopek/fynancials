@@ -32,11 +32,15 @@ if (process.platform === 'darwin') {
 const resourcesDir = app.isPackaged ? process.resourcesPath : path.join(__dirname, '..', 'resources');
 const backendPath = path.join(resourcesDir, 'backend.jar');
 
-const logPath = path.join(process.cwd(), 'traquity.log');
+// the app's own technical input/output goes here, e.g. `traquity.config.json` and `traquity.log`
+const appDataDir = path.join(os.homedir(), 'traquity');
+ensureAppDataDir();
+
+const logPath = path.join(appDataDir, 'traquity.log');
 
 const configFile = createConfigFile({
   fileSystem: fs,
-  configFilePath: path.join(os.homedir(), 'traquity.config.json')
+  configFilePath: path.join(appDataDir, 'traquity.config.json')
 });
 const {config, state: configFileState} = configFile.load();
 const authRegistry = createAuthRegistry({configFile, config});
@@ -147,6 +151,21 @@ function downloadJava(onProgress) {
     platform: process.platform,
     arch: process.arch
   });
+}
+
+/**
+ * Creates `appDataDir` if it does not exist yet, so that both `configFile.save()` and the backend's log writes have
+ * somewhere to land - neither creates its own parent directory. A failure is logged rather than thrown: the write it
+ * would have enabled fails on its own terms right after, through its own existing error handling.
+ *
+ * @returns {void}
+ */
+function ensureAppDataDir() {
+  try {
+    fs.mkdirSync(appDataDir, {recursive: true});
+  } catch (error) {
+    console.error(`Failed to create ${appDataDir}:`, error);
+  }
 }
 
 /**

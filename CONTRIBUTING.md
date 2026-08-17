@@ -4,7 +4,7 @@ Thanks for your interest in TraQuity!
 
 **Feature requests and bug reports are very welcome** — please open a GitHub issue. For bugs,
 include what you did, what you expected, and what happened instead; the log file
-(`traquity.log`, next to the application) often helps.
+(`traquity.log`, in a `traquity` folder in your home directory) often helps.
 
 Please refer to [SECURITY.md](./SECURITY.md) for guidance on how to report vulnerabilities.
 

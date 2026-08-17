@@ -8,6 +8,10 @@ The Electron main process: the desktop shell that owns `traquity.config.json`, r
 process, and opens the `BrowserWindow` on the built Angular app (`../dist/traquity/browser/index.html`). `main.js` is the entry point
 named by `package.json`'s `"main"`.
 
+`traquity.config.json` and `traquity.log` both live in `~/traquity/` (`appDataDir` in `main.js`), created once at startup if missing
+(`ensureAppDataDir`) — see `architecture/configuration.md` ADR-011 for why the two are kept together and out of the home directory itself.
+The downloaded JDK is the one artifact that stays in the app's own working directory instead, per ADR-010.
+
 Paths here are relative to `electron/`, so `__dirname` needs a `'..'` to reach the package root — that is where `dist/`, `resources/` and
 `node_modules/` live.
 
