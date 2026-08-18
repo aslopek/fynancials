@@ -41,7 +41,9 @@ remain. Links you click — the repository, a dependency's page — open in your
   key. Exchange rates come from the official ECB reference rates, so multi-currency depots are
   converted with daily precision.
 - **Privacy by design** — password-protected, AES-encrypted local database; a "hide absolute
-  values" mode for sharing your screen without sharing your net worth.
+  values" mode for sharing your screen without sharing your net worth. No account, no cloud, no
+  telemetry — and the app itself lists every server it contacts, in the About dialog's
+  `Transparency` tab.
 
 <p>
   <img src="./doc-assets/depot-positions-list.png" alt="Positions with per-holding returns and income" width="49%">
@@ -262,6 +264,16 @@ key pinned in the source before anything is extracted.
 certificate verification for the whole process. The app treats that as a state it cannot work in
 rather than as a setting: it starts into a dead end that explains the variable, spawns no JVM, and
 registers two IPC channels — read the startup state, and quit.
+
+**What the app sends out.** Four recipients, and the app names all of them itself, in the About
+dialog's `Transparency` tab:
+GitHub for the update check (once per start), the ECB for exchange rates (once per backend start),
+whichever market data provider you configured (once per backend start, carrying the security
+identifier and your API key), and Amazon Corretto if you ask for a JDK download. There is no telemetry, no
+analytics and no crash reporting, and nothing about your portfolio leaves the machine other than
+the security identifier a data source you configured is asked about. That notice is a claim about
+the code, so adding a request to a new recipient means updating it in the same change — see the
+root `LLM.md`.
 
 Every one of these trade-offs is made for a process that lives and dies with one desktop app on one
 machine, which is also what makes `traquity-server-spring` **not suitable to deploy as a hosted

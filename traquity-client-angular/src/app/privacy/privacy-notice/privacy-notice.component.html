@@ -1,0 +1,58 @@
+<div>
+    <h3>Transparency note</h3>
+    <p>
+        TraQuity is built with privacy in mind. The app sends no telemetry, no crash reports, and no other data to the creator of the app.
+        However, to provide a useful and secure application, TraQuity needs to reach out to some third-party services. Please find all such
+        requests carried out by the app below:
+    </p>
+
+    <h3>What third-party services TraQuity connects to</h3>
+
+    <h4>GitHub — <code>api.github.com</code></h4>
+    <p>
+        Asks for the latest published release of TraQuity to tell you when a newer version exists. The request carries
+        no data of yours; GitHub sees your IP address.
+    </p>
+
+    <h4>European Central Bank — <code>www.ecb.europa.eu</code></h4>
+    <p>
+        Downloads the European Central Bank's (ECB) euro foreign exchange reference rate history, which is what converts depots and
+        securities held in other currencies. The request carries no data of yours; the ECB sees your IP address.
+    </p>
+
+    <h4>The market data sources you configure</h4>
+    <p>
+        Historical prices and dividend announcements come from APIs you configure yourself. The request goes to
+        the URL pattern you entered and carries exactly what that pattern contains. That depends solely on your configuration. Usually,
+        it is an identifier of the security itself, such as an ISIN or a ticker symbol. You may also have configured an API key that travels
+        to the third party's servers. In addition to your IP address, that provider therefore learns which securities you track, and its own
+        terms and privacy policy apply to what it does with that. Before configuring any third-party data feed, ensure you review and accept
+        that provider's respective privacy policy and terms of service.
+    </p>
+    <p>
+        TraQuity ships data sources for a few providers as a convenience, but none of them makes a request until you add your own API key.
+        By adding an API key, you instruct TraQuity to make the necessary functional requests on your behalf to those pre-configured data
+        sources.
+    </p>
+
+    <h4>Amazon Corretto — <code>corretto.aws</code></h4>
+    <p>
+        Downloads the Corretto JDK archive and its signature, which is verified before anything is unpacked. The
+        request carries no data of yours; corretto.aws sees your IP address. If you do not click the download button, this request is never
+        made.
+    </p>
+
+    <h4>Links you click</h4>
+    <p>
+        The GitHub button in the header, the package links in the 'About' dialog, and the Amazon Corretto FAQ link on the
+        configuration screen open in your default browser. From that point, the request is your browser's, made with
+        whatever it sends on your behalf.
+    </p>
+
+    <h4>The local backend</h4>
+    <p>
+        TraQuity's own backend runs as a second process on this computer and listens on <code>127.0.0.1</code> only,
+        so its traffic never reaches a network. Any other program running under your user account on this machine can
+        reach it while the app is open.
+    </p>
+</div>

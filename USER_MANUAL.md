@@ -13,6 +13,7 @@ short sentences, names buttons and screens exactly as the app labels them, and a
 - [Quick reference](#quick-reference)
 - [Installation](#installation)
 - [What happens when the app starts](#what-happens-when-the-app-starts)
+- [Privacy: what leaves your computer](#privacy-what-leaves-your-computer)
 - [The configuration screen](#the-configuration-screen)
 - [The unlock screen](#the-unlock-screen)
 - [Your database](#your-database)
@@ -74,6 +75,28 @@ case 6. While the backend boots, the splash screen is shown. Once the backend an
 The TLS warning screen (case 1) is a refusal, not a prompt. TraQuity downloads files over HTTPS and relies on certificate verification, so
 with verification disabled it starts nothing at all: no backend, no database access. Unset `NODE_TLS_REJECT_UNAUTHORIZED` or set it to `1`,
 then start the app again.
+
+## Privacy: what leaves your computer
+
+TraQuity keeps everything in one encrypted database file on your computer. There is no account, no cloud sync, no telemetry, no analytics
+and no crash reporting, and no font or icon is fetched at runtime. The full, current text is in the app: open the About dialog (the `ⓘ`
+button, in the header and in the top right corner of the unlock and configuration screens) and select the `Transparency` tab.
+
+What the app sends, and when:
+
+| Recipient                             | When                                           | What it carries                               |
+|---------------------------------------|------------------------------------------------|-----------------------------------------------|
+| GitHub (`api.github.com`)             | automatically, once each time the app opens    | nothing of yours; asks for the latest release |
+| European Central Bank                 | automatically, on every backend start          | nothing of yours; the daily rates file        |
+| the market data sources you configure | on every backend start, and on a manual update | the symbol/ISIN and the API key in your URL   |
+| Amazon Corretto (`corretto.aws`)      | only when you start the Java download          | nothing of yours                              |
+
+Links you click — the GitHub button, the package links in the About dialog, the Corretto FAQ link — open in your default browser, which
+makes those requests instead of the app.
+
+The market data row is the only one that says anything about your portfolio, and it is the one you control: no request is made until you
+enter an API key and assign a source to a security, and deleting or deactivating a source stops it. The provider's own terms and privacy
+policy apply to what it does with what it receives.
 
 ## The configuration screen
 
@@ -145,6 +168,9 @@ The unlock screen asks for the password of the selected database. It shows the f
   about, `OK` is enabled right away and the database file itself decides.
 - **Cancel** — quits the app.
 - **Use a different database…** — opens the [configuration screen](#the-configuration-screen).
+- **ⓘ**, in the top right corner — opens the About dialog, including the
+  [transparency note](#privacy-what-leaves-your-computer). The configuration screen carries the same button. The third-party licenses of the
+  backend are missing there, because at that point no backend is running yet.
 - Pressing `Enter` in the password field is the same as pressing `OK`.
 
 If the backend fails to start, the screen shows *wrong password or corrupted database* and you can try again. If the app had remembered a
@@ -829,8 +855,9 @@ Upcoming dividend announcements, grouped by week. New announcements also appear 
 ### The header
 
 Besides the page controls, the header holds the notification bell for new dividend announcements, an indicator that appears when a newer
-TraQuity release exists on GitHub, a link to the GitHub repository, an **About** dialog with version and third-party license information,
-and — while dev mode is active — the database button.
+TraQuity release exists on GitHub, a link to the GitHub repository, an **About** dialog with version and third-party license information on
+its `About` tab and the [transparency note](#privacy-what-leaves-your-computer) on its `Transparency` tab, and — while dev mode is active
+— the database button.
 
 ## Understanding your depot performance numbers
 

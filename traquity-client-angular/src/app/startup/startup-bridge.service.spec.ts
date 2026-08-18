@@ -7,13 +7,13 @@ import {
   BackendStartOutcome,
   ConfigurationChanges,
   ConfigureState,
-  TraQuityBridge,
   JavaDownloadOutcome,
   JavaDownloadProgress,
   JavaPickResult,
   JavaVerification,
   PickedDatabase,
-  StartupState
+  StartupState,
+  TraQuityBridge
 } from './startup-bridge.type';
 
 type GetStartupState = () => Promise<StartupState>;

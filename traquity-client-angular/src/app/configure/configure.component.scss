@@ -11,6 +11,14 @@
   height: 100%;
 }
 
+// pinned to the window rather than to the scrolling column, so it stays reachable while the sections scroll past
+.about-button {
+  position: fixed;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
+}
+
 .configure-content {
   display: flex;
   flex-direction: column;

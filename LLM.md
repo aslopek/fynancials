@@ -122,6 +122,18 @@ the channel it serves, a delegate implementation the endpoint it fulfills, a pre
 the statement stays true when every existing caller is deleted. If it does, it is the unit's contract; if it doesn't, it is a caller's
 business.
 
+## Outbound requests are disclosed in the app
+
+The app tells the user, in the About dialog's `Transparency` tab, every server it contacts that this project does not run itself — who
+receives the request, when it happens, and what it carries. That text is
+`traquity-client-angular/src/app/privacy/privacy-notice/privacy-notice.component.html`, and it is a claim about the code in all three
+parts: the renderer's update check, the Electron main process's JDK download, and the backend's exchange-rate and market-data fetches are
+all listed there.
+
+**A change that makes the app contact a recipient the notice does not name updates the notice in the same change**, in whichever part the
+request lives. The same goes for a change to *when* an existing request happens (a poll where there was one request per start, say). A
+recipient added to the code and not to the notice makes the notice false.
+
 ## Dependency licensing
 
 This project is MIT-licensed. Only add a new dependency (npm or Maven, in any of the three parts) if its license is compatible with that —

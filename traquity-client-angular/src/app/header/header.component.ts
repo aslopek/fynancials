@@ -11,7 +11,7 @@ import {AdminApi, DatabaseConfig} from "../../gen/api/admin";
 import {AppConfigActions} from "../../store/app-config/app-config.actions";
 import {getOpenPage, isDevModeActive, isSideMenuOpen,} from "../../store/app-config/app-config.selector";
 import {DatabaseComponent} from "../database/database.component";
-import {InfoComponent} from "../info/info.component";
+import {AboutButtonComponent} from "../info/about-button/about-button.component";
 import {NotificationsComponent} from "./notifications/notifications.component";
 import {AppState} from "../../store/app.state";
 import {Page} from "../page.type";
@@ -30,6 +30,7 @@ import {UpdateIndicatorComponent} from "./update-indicator/update-indicator.comp
     SecurityControlsComponent,
     DepotControlsComponent,
     UpdateIndicatorComponent,
+    AboutButtonComponent,
   ],
   templateUrl: "header.component.html",
   styleUrls: ["header.component.scss"],
@@ -60,16 +61,6 @@ export class HeaderComponent {
       this.appConfigStore.dispatch(
         AppConfigActions.setSideMenuOpen({sideMenuOpen: !isOpen}),
       );
-    });
-  }
-
-  protected openAboutDialog(): void {
-    this.dialog.open(InfoComponent, {
-      width: "30%",
-      height: "50%",
-      panelClass: "mat-app-background",
-      autoFocus: false,
-      disableClose: true,
     });
   }
 

@@ -11,6 +11,14 @@
   height: 100%;
 }
 
+// the only control on this screen that is not about the database being unlocked, so it sits out of the centered
+// column rather than in it
+.about-button {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+}
+
 .unlock-content {
   display: flex;
   flex-direction: column;
