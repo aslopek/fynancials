@@ -11,7 +11,7 @@ copyleft and source-available ones need an explicit decision first. Three mechan
   serves each library's license, falling back to the canonical texts in `traquity-server-spring/src/main/resources/licenses/` where a jar
   embeds none.
 
-The gap in the second bullet is not hypothetical. Both records below describe dependencies that entered in this repository's initial
+The gap in the second bullet is not hypothetical. ADR-1 and ADR-2 below describe dependencies that entered in this repository's initial
 commit and were therefore never part of any pull request's diff.
 
 ## ADR-1: Liquibase stays on 5.x under FSL-1.1-ALv2
@@ -45,3 +45,23 @@ terms for that one component, so "TraQuity is MIT" describes the source in this 
 
 One list now holds two entries that mean opposite things, which is why removing either of them means reading this file first. Should the
 action ever parse H2's declaration correctly, this entry belongs deleted rather than kept for symmetry with ADR-1.
+
+## ADR-3: Fonts are bundled under OFL-1.1, unmodified
+
+**Status:** ACCEPTED
+
+**Decision:** `OFL-1.1` is on the allow-lists of both `ci.yml` and `check-third-party-licenses.js`, for the font packages the Electron app
+bundles (`@fontsource/roboto`, `@fontsource/noto-color-emoji`; `material-symbols` is Apache-2.0). The font files ship byte-for-byte as the
+packages provide them.
+
+**Rationale:** The SIL Open Font License is permissive and OSI-approved, and its conditions bind the fonts rather than the software that
+renders them, so the app's own MIT license is unaffected by embedding them. What it does require is that the license text travels with the
+files — `scripts/generate-third-party-licenses.js` collects it into the About dialog — and that a *modified* font may not keep its reserved
+name.
+
+**Consequences, accepted:**
+
+Subsetting or otherwise editing a font file would be a modification and would force a rename, so the packages are consumed as-is and the
+size that costs is paid — around 9 MB of glyphs, most of it one color-emoji and one icon font. `traquity-client-angular/LLM.md`'s `Fonts`
+section carries that rule where a change to a font would be made. A font may also not be sold on its own, which constrains redistributing
+the packages rather than shipping the app.
