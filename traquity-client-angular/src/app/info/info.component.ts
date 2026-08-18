@@ -3,24 +3,28 @@ import {HttpClient} from "@angular/common/http";
 import {MatButtonModule} from "@angular/material/button";
 import {MatDialogRef} from "@angular/material/dialog";
 import {MatIconModule} from "@angular/material/icon";
+import {MatTabsModule} from "@angular/material/tabs";
 import {MatToolbarModule} from "@angular/material/toolbar";
 import {firstValueFrom} from "rxjs";
 import * as packageJson from "../../../package.json";
 import {TitleToolbarComponent} from "../../common";
 import {AdminApi, ThirdPartyLicense} from "../../gen/api/admin";
 import {LicenseComponent} from "../license/license.component";
+import {PrivacyNoticeComponent} from "../privacy/privacy-notice/privacy-notice.component";
 import {LicenseEntryKeyPipe, LicenseSection} from "./license-entry-key.pipe";
 import {ThirdPartyLicenseEntry, ThirdPartyLicensesFile} from "./third-party-license-entry.type";
 
 @Component({
   selector: "app-info",
   imports: [
+    MatTabsModule,
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
     TitleToolbarComponent,
     LicenseComponent,
     LicenseEntryKeyPipe,
+    PrivacyNoticeComponent,
   ],
   templateUrl: "info.component.html",
   styleUrls: ["info.component.scss"],

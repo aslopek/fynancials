@@ -75,7 +75,13 @@ The Angular + NgRx frontend, packaged as the Electron desktop app that ships to 
   store + generated API clients directly, or a local Signal Store where one exists; `src/common` holds cross-feature building blocks
   (re-exported via `src/common/index.ts`: shared components, `tq-*` pipes for currency/date/decimal/percent formatting, the
   `ReadableSignalStore`/ `WritableSignalStore` types); `src/app` holds app-shell chrome (header incl. notifications, database connection
-  dialog, splash screen, license, info).
+  dialog, splash screen, license, info, privacy).
+- **The About dialog and the transparency note**: `src/app/info/` is the About dialog, two `mat-tab`s — `About` (version, license,
+  third-party software; the tab that opens) and `Transparency`, which renders `PrivacyNoticeComponent` from `src/app/privacy/`. That
+  component is static text and renders before a backend exists, which is what lets the note be read from every screen.
+  `src/app/info/about-button/` is the icon that opens the dialog, which is why the header, `/unlock` and `/configure` all open the same
+  dialog with the same size; `/insecure` deliberately offers none. The note is a disclosure, not a consent: nothing gates on it, and the
+  root `LLM.md` states the rule that keeps its text true.
 - **Custom Pipes**: Use the aforementioned custom pipes instead of angular default pipes. In addition, there are pipes for specific purposes
   which must be used instead of accessing raw properties:
   - `country.pipe.ts`: displaying country flag emojis
