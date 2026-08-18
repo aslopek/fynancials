@@ -9,8 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- The About dialog now has a `Transparency` tab listing every third-party server or service the app contacts. Its info button is now
-  available on the unlock and configuration screens as well.
+- The About dialog now has a `Transparency` tab naming every third-party server the app contacts, when it does so and what the request
+  carries. Its `ⓘ` button is now available on the unlock and configuration screens as well, so the note can be read before a database is
+  opened.
 
 ### Fixed
 

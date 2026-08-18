@@ -137,10 +137,10 @@ recipient added to the code and not to the notice makes the notice false.
 ## Dependency licensing
 
 This project is MIT-licensed. Only add a new dependency (npm or Maven, in any of the three parts) if its license is compatible with that —
-permissive licenses (MIT, BSD, Apache-2.0, ISC, 0BSD, BlueOak-1.0.0, etc.) are fine. Do not add a dependency under a copyleft license
-(GPL/AGPL/LGPL) or a source-available/non-OSI license (e.g. BSL, FSL, Commons Clause) without explicitly flagging it and getting
-confirmation first — check the dependency's own `package.json` `license` field (npm) or its POM's `<licenses>` block (Maven, inherited from
-its parent POM if not set directly)before adding it.
+permissive licenses (MIT, BSD, Apache-2.0, ISC, 0BSD, BlueOak-1.0.0, OFL-1.1 for fonts, etc.) are fine. Do not add a dependency under a
+copyleft license (GPL/AGPL/LGPL) or a source-available/non-OSI license (e.g. BSL, FSL, Commons Clause) without explicitly flagging it and
+getting confirmation first — check the dependency's own `package.json` `license` field (npm) or its POM's `<licenses>` block (Maven,
+inherited from its parent POM if not set directly) before adding it.
 
 ## How the pieces fit together at runtime
 
