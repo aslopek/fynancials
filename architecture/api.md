@@ -148,10 +148,10 @@ there is no user, account or tenant anywhere in the model — no owner on `Depot
 IDs a caller passes itself — and that is not planned.
 
 **Rationale:** The shipped product is a single-user desktop app whose backend binds `127.0.0.1` and lives and dies with its window, so
-today the process boundary and the operating system's user account are the access control. But the specs are a product in their own right
-(ADR-013), and the cheapest moment to put a failure mode on a public contract is before anyone depends on its absence. A client that
-handles `401` and `403` from the first release keeps working when the registration mechanism ships; a client written against a spec that
-stayed silent about them has to be rewritten, and would be within its rights to call that a breaking change.
+today the process boundary is the access control: any process that can reach the loopback interface can call the API. But the specs are a
+product in their own right (ADR-013), and the cheapest moment to put a failure mode on a public contract is before anyone depends on its
+absence. A client that handles `401` and `403` from the first release keeps working when the registration mechanism ships; a client written
+against a spec that stayed silent about them has to be rewritten, and would be within its rights to call that a breaking change.
 
 The `401`/`403` split is worth stating because it is the read-only registration that gives `403` a job. Without it a server would only ever
 have "who are you?" to answer; with it, a read-only app issuing a `PUT` is a fully authenticated caller doing something it may not, and

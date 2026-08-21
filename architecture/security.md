@@ -39,9 +39,7 @@ the origin check does not already provide. Two further properties bound the expo
 **Consequences, accepted:**
 
 - The protection rests on `Origin` being present and honest on cross-origin requests, which is the browser's job rather than this app's. A
-  non-browser client on the same machine can call every endpoint unhindered — it always could, and ADR-007 of [API](api.md) already names
-  that as the position the shipped app takes: the process boundary and the operating system's user account are the access control until
-  the registration mechanism described there ships.
+  non-browser client on the same machine can call every endpoint unhindered.
 - Adding an endpoint that accepts `multipart/form-data`, `application/x-www-form-urlencoded`, or `text/plain` on a `POST` breaks the second
   bullet of the rationale: such a request is a simple request, and a foreign page can send it without a preflight. The `Origin` check still
   rejects it, but the reasoning above no longer has two independent legs. Revisit this ADR rather than adding the endpoint quietly.

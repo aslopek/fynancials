@@ -1,26 +1,10 @@
 # TraQuity
 
+![TraQuity — local-first portfolio tracking for the desktop](./doc-assets/social-preview.png)
+
 Local-first portfolio tracking for the desktop. TraQuity keeps your complete investment
 history — depots, transactions, dividends, performance — in an AES-encrypted database on your
 own machine. No account, no cloud, no telemetry.
-
-Your portfolio never leaves your computer. These are all the requests that do:
-
-- **Your market data sources** — the HTTP/JSON APIs you configured yourself, called with the API
-  key you gave them. Historical prices on each app start, and again whenever you point a security
-  at a source; dividend announcements on each app start.
-- **The ECB**, for the official euro reference rates that convert multi-currency depots
-  (`ecb.europa.eu`). Once per app start.
-- **GitHub**, to compare the latest release tag against the running version
-  (`api.github.com`). Once per app start; it fails silently when offline.
-- **Amazon Corretto**, for the JDK archive and its signature (`corretto.aws`) — only if you ask
-  the app to download a Java runtime for you, and never otherwise.
-
-That is the whole list. Fonts and icons are bundled rather than fetched, so the app renders
-fully offline; without market data / dividend sources configured, only the ECB and GitHub requests
-remain. Links you click — the repository, a dependency's page — open in your own browser, not in the app.
-
-![TraQuity — local-first portfolio tracking for the desktop](./doc-assets/social-preview.png)
 
 ## Features
 
@@ -227,14 +211,10 @@ is not.
 **The backend.** It binds to `127.0.0.1` only, so the port is never on a network, and CORS is
 restricted to two origins: the literal `null` Chromium sends for the packaged app's `file://`
 document, and the local dev server. There is no authentication layer — no login, no session, no
-cookie — because the process boundary and the operating system's user account are what the access
-control rests on. CSRF protection is deliberately disabled: with no ambient credential to forge a
-request with, a token would add nothing the origin allowlist does not already provide, and
-[ADR-001](./architecture/security.md) argues that case in full, including what would have to change
-to revisit it. What that leaves in the open is stated there rather than glossed over: another
-program running as the same user on the same machine can call every endpoint. The database
-connection details, and the embedded H2 console, are exposed to the UI only when the user
-explicitly enables dev mode.
+cookie — because the process boundary is what the access control rests on. CSRF protection is
+deliberately disabled: with no ambient credential to forge a request with, a token would add nothing
+the origin allowlist does not already provide, and [ADR-001](./architecture/security.md) argues that
+case in full, including what would have to change to revisit it.
 
 **The desktop shell.** The renderer runs sandboxed, with context isolation on and Node integration
 off, and its only door to the main process is a preload bridge of named IPC channels. Each of those

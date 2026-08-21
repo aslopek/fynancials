@@ -57,7 +57,8 @@
     <h4>The local backend</h4>
     <p>
         TraQuity's own backend runs as a second process on this computer and listens on <code>127.0.0.1</code> only,
-        so its traffic never reaches a network. Any other program running under your user account on this machine can
-        reach it while the app is open.
+        so its traffic never reaches a network. Any other program on this machine can reach it while the app is open.
+        Therefore, while an encrypted database file is opened in the app, it can be read and manipulated by other
+        programs running on the computer.
     </p>
 </div>
